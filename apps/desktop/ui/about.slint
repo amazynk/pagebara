@@ -1,0 +1,142 @@
+// Product identity, community links and the notices for components in this build.
+import { AboutSlint } from "std-widgets.slint";
+import { AppState } from "state.slint";
+import { OcrState } from "ocr.slint";
+import { Theme } from "theme.slint";
+import { Pressable, Reveal } from "components/button.slint";
+import { Heading, Body, Hint } from "components/dialog-parts.slint";
+import { Divider } from "components/panel.slint";
+import { RowLayout } from "components/row.slint";
+import { PreferenceCard } from "settings-controls.slint";
+
+component ResourceLink inherits Pressable {
+    in property <image> icon;
+    in property <string> title: root.label;
+    min-height: max(52px, line.preferred-height);
+    border-radius: Theme.radius-small;
+    background: self.pressed ? Theme.pressed : self.has-hover ? Theme.hover : transparent;
+    line := RowLayout {
+        spacing: 12px;
+        padding: 3px;
+        Rectangle {
+            width: 34px; height: 34px;
+            border-radius: Theme.radius;
+            background: Theme.accent-soft;
+            cross-axis-self-alignment: center;
+            Image {
+                source: root.icon;
+                colorize: Theme.accent-fg;
+                width: 18px; height: 18px;
+                accessible-role: none;
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 3px;
+            Body { text: root.title; color: Theme.text; font-weight: 600; accessible-role: none; }
+            Hint { text: root.description; accessible-role: none; }
+        }
+        Image {
+            source: @image-url("icons/arrow.svg");
+            colorize: Theme.muted;
+            width: 14px; height: 14px;
+            cross-axis-self-alignment: center;
+            accessible-role: none;
+        }
+    }
+}
+
+export component AboutPage inherits VerticalLayout {
+    in property <length> viewport-height;
+    property <bool> show-notices;
+    changed show-notices => {
+        if self.show-notices {
+            // Keep the disclosure visible along with as much of the credits as will fit.
+            Reveal.show(disclosure.absolute-position.x, disclosure.absolute-position.y,
+                min(root.absolute-position.y + root.height - disclosure.absolute-position.y, root.viewport-height - 16px));
+        }
+    }
+    alignment: start;
+    spacing: 16px;
+    Rectangle {
+        min-height: identity.preferred-height;
+        background: Theme.high-contrast ? Theme.chrome : @linear-gradient(105deg, Theme.accent-soft, Theme.chrome);
+        border-radius: Theme.radius;
+        identity := RowLayout {
+            padding: 14px;
+            spacing: 12px;
+            Image {
+                source: @image-url("../../../packaging/icons/app.svg");
+                width: 78px; height: 78px;
+                cross-axis-self-alignment: center;
+                accessible-role: none;
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                spacing: 3px;
+                Heading { text: AppState.app-name; font-size: 28px * Theme.text-scale; }
+                Hint { text: @tr("Version {}", AppState.version); accessible-role: text; }
+                Body {
+                    text: @tr("A PDF viewer and editor for everyone. Your documents stay on your device.");
+                    accessible-role: text;
+                }
+            }
+        }
+    }
+    PreferenceCard {
+        ResourceLink {
+            label: "amazynk.com";
+            description: @tr("Explore more software from Amazynk, including Specular and Dozed.");
+            icon: @image-url("icons/link.svg");
+            clicked => { AppState.open-website(); }
+        }
+        if AppState.discord-available: Divider {}
+        if AppState.discord-available: ResourceLink {
+            title: "Discord";
+            label: @tr("Join the community on Discord");
+            description: @tr("Ask questions, report bugs and share ideas with the Amazynk community.");
+            icon: @image-url("icons/discord.svg");
+            clicked => { AppState.open-discord(); }
+        }
+    }
+    VerticalLayout {
+        spacing: 6px;
+        Body { text: @tr("Licences"); color: Theme.text; font-weight: 600; }
+        Hint {
+            text: @tr("Licensed under the MIT License or the Apache License, Version 2.0, at your option.");
+            accessible-role: text;
+        }
+        disclosure := Pressable {
+            label: @tr("Third-party notices");
+            height: Theme.control-height;
+            accessible-expandable: true;
+            accessible-expanded: root.show-notices;
+            accessible-action-expand => { root.show-notices = !root.show-notices; }
+            clicked => { root.show-notices = !root.show-notices; }
+            background: self.has-hover ? Theme.hover : transparent;
+            border-radius: Theme.radius-small;
+            RowLayout {
+                alignment: start;
+                spacing: 6px;
+                Image {
+                    source: root.show-notices ? @image-url("icons/chevron-down.svg")
+                        : Theme.rtl ? @image-url("icons/chevron-left.svg") : @image-url("icons/chevron-right.svg");
+                    colorize: Theme.accent-fg;
+                    width: 14px; height: 14px; cross-axis-self-alignment: center; accessible-role: none;
+                }
+                Text {
+                    text: disclosure.label; color: Theme.accent-fg;
+                    font-size: Theme.font-body; font-weight: 500;
+                    vertical-alignment: center; accessible-role: none;
+                }
+            }
+        }
+    }
+    if root.show-notices: PreferenceCard {
+        AboutSlint { height: 108px; }
+        if OcrState.attribution != "": ocr-credit := Hint { text: OcrState.attribution; accessible-role: text; }
+        if AppState.spelling-notices != "": Hint { text: AppState.spelling-notices; accessible-role: text; }
+    }
+}

@@ -1,0 +1,339 @@
+import { Theme } from "../theme.slint";
+import { FocusRing, Tip, Keys } from "button.slint";
+import { MenuCard, MenuItem } from "panel.slint";
+import { ColourRow, Palette2, LabeledSlider, Check } from "controls.slint";
+
+// A button of the tool row: an icon and its name. The name gives way in a narrow window
+// (`labelled` off) and stays in the tooltip and for screen readers. `shown` off takes the
+// button out of the row: the rows of all the groups are one layout.
+export component ToolButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    // A shortcut, or why the button is disabled; shown in the tooltip.
+    in property <string> description;
+    in property <bool> enabled: true;
+    in property <bool> shown: true;
+    in property <bool> labelled: true;
+    in property <bool> checkable;
+    in property <bool> checked;
+    // Opens a menu: a small arrow after the name.
+    in property <bool> caret;
+    in property <bool> danger;
+    // A filled button, for the step that finishes a tool's work.
+    in property <bool> primary;
+    callback clicked;
+
+    // The width with the name, whether or not it shows.
+    out property <length> full-width: 10px + (icon.width > 0 ? 22px : 0px) + txt.preferred-width + (caret ? 14px : 0px) + 11px;
+    // And without it.
+    out property <length> tight-width: (icon.width > 0 ? 32px : 22px + txt.preferred-width) + (caret ? 10px : 0px);
+    property <bool> with-text: labelled || icon.width == 0;
+    property <color> fg: !enabled ? Theme.faint : primary ? Theme.on-accent : danger ? Theme.danger : checked ? Theme.accent-fg : Theme.text;
+
+    public function focus-button() {
+        focus.focus();
+    }
+
+    accessible-role: button;
+    accessible-label: label;
+    accessible-description: description;
+    accessible-enabled: enabled;
+    accessible-checkable: checkable;
+    accessible-checked: checked;
+    accessible-action-default => {
+        if enabled {
+            clicked();
+        }
+    }
+    forward-focus: focus;
+    visible: shown;
+    width: !shown ? 0px : with-text ? full-width : tight-width;
+    height: Theme.touch ? 40px : 30px;
+
+    // A pixel of air on each side: the row's layout has no spacing, for the buttons that
+    // are not shown.
+    Rectangle {
+        x: 1px;
+        width: max(0px, root.width - 2px);
+        border-radius: Theme.radius-small;
+        background: root.primary ? (touch.has-hover ? Theme.accent-hover : Theme.accent).with-alpha(root.enabled ? 1 : 0.4) : root.checked ? Theme.accent-soft : touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
+        border-width: root.checked && Theme.high-contrast ? 1px : 0px;
+        border-color: Theme.accent-fg;
+    }
+
+    focus := FocusScope {
+        enabled: root.enabled && root.shown;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) && !e.modifiers.control {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    if root.icon.width > 0: Image {
+        x: Theme.rtl ? root.width - 10px - self.width : (root.with-text ? 10px : (root.width - self.width - (root.caret ? 10px : 0px)) / 2);
+        source: root.icon;
+        width: 16px;
+        height: 16px;
+        colorize: root.fg;
+        accessible-role: none;
+    }
+    txt := Text {
+        x: Theme.rtl ? (root.caret ? 21px : 11px) : 10px + (root.icon.width > 0 ? 22px : 0px);
+        visible: root.with-text;
+        text: root.label;
+        color: root.fg;
+        font-size: Theme.font-body;
+        font-weight: 500;
+        vertical-alignment: center;
+        accessible-role: none;
+    }
+    if root.caret: Image {
+        x: Theme.rtl ? 6px : root.width - self.width - 6px;
+        source: @image-url("../icons/chevron-down.svg");
+        width: 12px;
+        height: 12px;
+        colorize: root.enabled ? Theme.muted : Theme.faint;
+        accessible-role: none;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    Tooltip {
+        Tip {
+            text: root.description != "" ? root.label + " · " + Keys.label(root.description, false) : root.label;
+        }
+    }
+
+    FocusRing {
+        x: -2px;
+        y: -2px;
+        width: root.width + 4px;
+        height: root.height + 4px;
+        show: focus.has-focus;
+    }
+}
+
+// A thin line between groups of buttons in the tool row.
+export component ToolSep inherits Rectangle {
+    in property <bool> shown: true;
+    width: shown ? 13px : 0px;
+    visible: shown;
+    Rectangle {
+        width: 1px;
+        height: 18px;
+        background: Theme.border;
+    }
+}
+
+// The colour of a tool or of the selection: a dot that opens the swatches.
+export component ColourButton inherits Rectangle {
+    in property <int> selected;
+    in property <string> label: @tr("Colour");
+    in property <bool> shown: true;
+    callback picked(index: int);
+
+    public function focus-button() {
+        focus.focus();
+    }
+
+    accessible-role: button;
+    accessible-label: label;
+    accessible-value: selected >= 0 && selected < Palette2.names.length ? Palette2.names[selected] : "";
+    forward-focus: focus;
+    visible: shown;
+    width: shown ? 34px : 0px;
+    height: Theme.touch ? 40px : 30px;
+    border-radius: Theme.radius-small;
+    background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
+
+    focus := FocusScope {
+        enabled: root.shown;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) && !e.modifiers.control {
+                menu.show();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    Rectangle {
+        width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        background: root.selected >= 0 && root.selected < Palette2.colours.length ? Palette2.colours[root.selected] : transparent;
+        border-width: 1px;
+        border-color: Theme.high-contrast ? Theme.text : root.selected < 0 ? Theme.control-border : Theme.dark ? #FFFFFF59 : #00000018;
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            menu.show();
+        }
+    }
+
+    Tooltip {
+        Tip {
+            text: root.label;
+        }
+    }
+
+    menu := PopupWindow {
+        x: (root.width - self.width) / 2;
+        y: root.height + 6px;
+        width: row.preferred-width + 20px;
+        MenuCard {
+            Rectangle {
+                height: row.preferred-height + 12px;
+                row := ColourRow {
+                    x: 6px;
+                    y: 6px;
+                    name: root.label;
+                    selected: root.selected;
+                    init => {
+                        self.focus();
+                    }
+                    picked(i) => {
+                        menu.close();
+                        root.picked(i);
+                    }
+                }
+            }
+        }
+    }
+
+    FocusRing {
+        x: -2px;
+        y: -2px;
+        width: root.width + 4px;
+        height: root.height + 4px;
+        show: focus.has-focus;
+    }
+}
+
+// A value of a tool or of the selection (line width, font size): shows it, and opens a
+// slider to change it.
+export component ValueButton inherits Rectangle {
+    in property <string> label;
+    in property <string> value-text;
+    // The value now: where the slider starts each time it opens.
+    in property <float> current;
+    in property <float> minimum;
+    in property <float> maximum;
+    in property <bool> shown: true;
+    // A check box under the slider, when it has a label.
+    in property <string> check-text;
+    in-out property <bool> checked;
+    callback changed-value(value: float);
+    callback released(value: float);
+    out property <length> full-width: btn.full-width;
+
+    width: btn.width;
+    height: btn.height;
+    visible: shown;
+
+    btn := ToolButton {
+        x: 0px;
+        shown: root.shown;
+        label: root.value-text;
+        description: root.label;
+        caret: true;
+        accessible-label: root.label;
+        accessible-value: root.value-text;
+        clicked => {
+            menu.show();
+        }
+    }
+
+    menu := PopupWindow {
+        close-policy: close-on-click-outside;
+        x: (root.width - self.width) / 2;
+        y: root.height + 6px;
+        width: 240px;
+        MenuCard {
+            VerticalLayout {
+                padding: 10px;
+                spacing: 8px;
+                LabeledSlider {
+                    label: root.label;
+                    value-text: root.value-text;
+                    value: root.current;
+                    minimum: root.minimum;
+                    maximum: root.maximum;
+                    changed-value(v) => {
+                        root.changed-value(v);
+                    }
+                    released(v) => {
+                        root.released(v);
+                    }
+                }
+                if root.check-text != "": Check {
+                    text: root.check-text;
+                    checked <=> root.checked;
+                }
+            }
+        }
+    }
+}
+
+// A font size of the page's text: shows it, and opens the common sizes to choose from.
+// `current` 0 shows as mixed. Any other size is typed in the inspector.
+export component SizeButton inherits Rectangle {
+    in property <string> label: @tr("Font size");
+    in property <float> current;
+    in property <[float]> presets;
+    in property <bool> shown: true;
+    callback picked(value: float);
+    out property <length> full-width: btn.full-width;
+
+    public function focus-button() {
+        btn.focus-button();
+    }
+
+    width: btn.width;
+    height: btn.height;
+    visible: shown;
+
+    btn := ToolButton {
+        x: 0px;
+        shown: root.shown;
+        // TRANSLATORS: on the font size button when the selected texts have different sizes
+        label: root.current > 0 ? @tr("{} pt", round(root.current * 10) / 10) : @tr("Mixed");
+        description: root.label;
+        caret: true;
+        accessible-label: root.label;
+        accessible-value: self.label;
+        accessible-expandable: true;
+        clicked => {
+            menu.show();
+        }
+    }
+
+    menu := PopupWindow {
+        x: (root.width - self.width) / 2;
+        y: root.height + 6px;
+        width: 120px;
+        MenuCard {
+            for p[i] in root.presets: MenuItem {
+                text: @tr("{} pt", p);
+                // The size now, or the first one above it.
+                initial-focus: root.current <= 0 ? i == 0 : (p >= root.current && (i == 0 || root.presets[i - 1] < root.current)) || (i == root.presets.length - 1 && p < root.current);
+                clicked => {
+                    // Before the menu goes: its rows cannot reach `root` after it.
+                    root.picked(p);
+                    menu.close();
+                }
+            }
+        }
+    }
+}

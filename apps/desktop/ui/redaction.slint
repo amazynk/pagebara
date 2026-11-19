@@ -1,0 +1,333 @@
+// Redaction: the Redact tool's panel (marking by hand and by search), the confirmation
+// before applying, and the check of the result.
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button, Pressable } from "components/button.slint";
+import { Dialog, Divider } from "components/panel.slint";
+import { TextField } from "components/text-field.slint";
+import { Check, ChoiceRow, SectionLabel } from "components/controls.slint";
+import { Heading, Body, Hint, ErrorText, Buttons, Field, Note, Verdicts, Choice, PathText } from "components/dialog-parts.slint";
+
+export struct HitRow {
+    page: int,
+    text: string,
+    checked: bool,
+}
+
+export global RedactState {
+    // 0 mark text, 1 draw boxes.
+    in-out property <int> mode;
+    in property <[string]> find-kinds;
+    in-out property <int> find-kind;
+    in-out property <string> find-text;
+    in-out property <bool> match-case;
+    in-out property <bool> whole-word;
+    in property <[HitRow]> hits;
+    in property <string> find-status;
+    in property <bool> finding;
+    // Marks in the document.
+    in property <int> marks;
+    // The look of new marks: fill 0 black, 1 white, 2 none.
+    in-out property <int> fill;
+    in-out property <string> overlay;
+    // The selected mark.
+    in property <bool> has-mark;
+    in-out property <string> mark-overlay;
+    in-out property <int> mark-fill;
+
+    // Applying.
+    in property <[string]> sanitize-labels;
+    in-out property <[bool]> sanitize;
+    in property <bool> busy;
+    // The check of the redacted file.
+    in property <bool> clean;
+    in property <string> report-file;
+    in property <[string]> findings;
+    in property <[string]> warnings;
+
+    callback action(what: string, value: string);
+    callback hit-toggled(index: int);
+}
+
+component FillChoice inherits ChoiceRow {
+    height: 36px;
+    items: [{ label: @tr("Black") }, { label: @tr("White") }, { label: @tr("No fill") }];
+}
+
+export component RedactPanel inherits VerticalLayout {
+    spacing: 12px;
+    if RedactState.has-mark: VerticalLayout {
+        spacing: 10px;
+        Text {
+            text: @tr("Selected mark");
+            color: Theme.text;
+            font-weight: 600;
+        }
+        Field {
+            label: @tr("Text over the area");
+            TextField {
+                text <=> RedactState.mark-overlay;
+                placeholder: @tr("None");
+                label: @tr("Overlay text of the mark");
+                accepted => {
+                    RedactState.action("mark-style", "");
+                }
+            }
+        }
+        Field {
+            label: @tr("Fill");
+            FillChoice {
+                selected: RedactState.mark-fill;
+                picked(i) => {
+                    RedactState.mark-fill = i;
+                    RedactState.action("mark-style", "");
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: @tr("Apply style");
+                clicked => {
+                    RedactState.action("mark-style", "");
+                }
+            }
+            Button {
+                text: @tr("Remove mark");
+                icon: @image-url("icons/trash.svg");
+                clicked => {
+                    AppState.selection-action("delete");
+                }
+            }
+        }
+        Divider { }
+    }
+    ChoiceRow {
+        height: 36px;
+        items: [
+            { label: @tr("Mark text") },
+            { label: @tr("Draw box") },
+        ];
+        selected: RedactState.mode;
+        picked(i) => {
+            RedactState.mode = i;
+            RedactState.action("mode", i);
+        }
+    }
+    Hint {
+        text: RedactState.mode == 0 ? @tr("Drag across text to mark it for redaction. Double-click marks a word.") : @tr("Drag on the page to mark an area: text, images and drawings under it will be removed.");
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        Field {
+            horizontal-stretch: 1;
+            label: @tr("Fill");
+            FillChoice {
+                selected: RedactState.fill;
+                picked(i) => {
+                    RedactState.fill = i;
+                }
+            }
+        }
+    }
+    Field {
+        label: @tr("Text over redacted areas (optional)");
+        TextField {
+            text <=> RedactState.overlay;
+            placeholder: @tr("e.g. Redacted");
+            label: @tr("Overlay text");
+        }
+    }
+    Divider { }
+    Text {
+        text: @tr("Find & mark");
+        color: Theme.text;
+        font-weight: 600;
+    }
+    Choice {
+        model: RedactState.find-kinds;
+        current-index <=> RedactState.find-kind;
+        label: @tr("What to find");
+    }
+    if RedactState.find-kind <= 1: TextField {
+        text <=> RedactState.find-text;
+        placeholder: RedactState.find-kind == 0 ? @tr("Text to find") : @tr("Regular expression");
+        label: @tr("Text to redact");
+        accepted => {
+            RedactState.action("find", "");
+        }
+    }
+    if RedactState.find-kind <= 1: HorizontalLayout {
+        spacing: 12px;
+        Check {
+            text: @tr("Match case");
+            checked <=> RedactState.match-case;
+        }
+        if RedactState.find-kind == 0: Check {
+            text: @tr("Whole words");
+            checked <=> RedactState.whole-word;
+        }
+    }
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            // TRANSLATORS: verb, on the button that searches the document
+            text: RedactState.finding ? @tr("Searching…") : @tr("Find");
+            icon: @image-url("icons/search.svg");
+            enabled: !RedactState.finding;
+            clicked => {
+                RedactState.action("find", "");
+            }
+        }
+    }
+    if RedactState.find-status != "": Hint {
+        text: RedactState.find-status;
+    }
+    if RedactState.hits.length > 0: VerticalLayout {
+        spacing: 2px;
+        for h[i] in RedactState.hits: Rectangle {
+            height: 30px;
+            border-radius: Theme.radius-small;
+            background: t.has-hover ? Theme.hover : transparent;
+            t := Pressable {
+                x: 34px;
+                width: parent.width - 34px;
+                label: @tr("{}, page {}", h.text, h.page);
+                description: @tr("Show it on the page");
+                clicked => {
+                    RedactState.action("show-hit", i);
+                }
+            }
+            HorizontalLayout {
+                padding-left: 4px;
+                spacing: 6px;
+                Check {
+                    width: 24px;
+                    label: @tr("Redact {}", h.text);
+                    checked: h.checked;
+                    toggled => {
+                        RedactState.hit-toggled(i);
+                    }
+                }
+                Text {
+                    text: h.text;
+                    color: Theme.text;
+                    overflow: elide;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                    accessible-role: none;
+                }
+                Text {
+                    accessible-role: none;
+                    text: @tr("p. {}", h.page);
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+    if RedactState.hits.length > 0: HorizontalLayout {
+        spacing: 8px;
+        Button {
+            horizontal-stretch: 1;
+            text: @tr("Mark all");
+            clicked => {
+                RedactState.action("mark-all", "");
+            }
+        }
+        Button {
+            horizontal-stretch: 1;
+            text: @tr("Mark selected");
+            clicked => {
+                RedactState.action("mark-selected", "");
+            }
+        }
+    }
+    Divider { }
+    Hint {
+        text: RedactState.marks == 0 ? @tr("Nothing is marked yet. Marks can be undone until they are applied.") : @tr("{n} area is marked." | "{n} areas are marked." % RedactState.marks);
+    }
+    Button {
+        text: @tr("Apply redactions…");
+        primary: true;
+        enabled: RedactState.marks > 0 && !RedactState.busy;
+        clicked => {
+            RedactState.action("confirm", "");
+        }
+    }
+}
+
+export component RedactApplyDialog inherits Dialog {
+    title: @tr("Apply redactions");
+    card-width: 500px;
+    Heading {
+        text: @tr("Apply {n} redaction?" | "Apply {n} redactions?" % RedactState.marks);
+    }
+    Body {
+        text: @tr("Everything under the marked areas is removed for good: text, images and drawings, and comments and form fields over them. The redacted document is saved as a new file and opened; this one stays as it is.");
+    }
+    SectionLabel {
+        text: @tr("Also remove");
+    }
+    for l[i] in RedactState.sanitize-labels: Check {
+        text: l;
+        checked: RedactState.sanitize[i];
+        toggled => {
+            RedactState.sanitize[i] = self.checked;
+        }
+    }
+    if RedactState.busy: Hint {
+        text: @tr("Redacting and checking the result…");
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Cancel");
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+        Button {
+            text: @tr("Apply and save as…");
+            primary: true;
+            enabled: !RedactState.busy;
+            clicked => {
+                RedactState.action("apply", "");
+            }
+        }
+    }
+}
+
+export component RedactReportDialog inherits Dialog {
+    title: @tr("Redaction check");
+    card-width: 520px;
+    Heading {
+        text: RedactState.clean ? @tr("✓ Redaction verified") : @tr("Redaction needs attention");
+        color: RedactState.clean ? Verdicts.colours[0] : Theme.danger;
+    }
+    Body {
+        text: RedactState.clean ? @tr("Nothing of the redacted content was found in {}: not in the text, the images, the comments or anywhere in the file's bytes.", RedactState.report-file) : @tr("The check of {} found:", RedactState.report-file);
+    }
+    for f in RedactState.findings: Note {
+        text: f;
+        level: 3;
+    }
+    if RedactState.warnings.length > 0: SectionLabel {
+        text: @tr("Notes");
+    }
+    for w in RedactState.warnings: Hint {
+        text: w;
+    }
+    Buttons {
+        Button {
+            text: @tr("OK");
+            primary: true;
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+    }
+}

@@ -1,0 +1,123 @@
+import { Theme } from "../theme.slint";
+import { FocusRing, Reveal } from "button.slint";
+
+export struct SegmentItem {
+    label: string,
+    icon: image,
+}
+
+// A row of mutually exclusive choices on a grey track; the selected one is raised.
+// Arrow keys move the selection when focused.
+export component SegmentedControl inherits Rectangle {
+    in property <[SegmentItem]> items;
+    in-out property <int> selected;
+    // Icons only, labels go to tooltips and the accessibility tree.
+    in property <bool> compact;
+    // Room around a compact segment's icon (less in a narrow toolbar).
+    in property <length> compact-pad: 8px;
+    in property <bool> stretch;
+    in property <length> segment-height: Theme.touch ? 40px : 28px;
+    // What the choices are about, for screen readers.
+    in property <string> name;
+    // The owner sets `selected` (from a binding) when told by `activated`.
+    in property <bool> controlled;
+    callback activated(index: int);
+
+    accessible-role: tab-list;
+    accessible-label: name;
+    forward-focus: focus;
+    border-radius: Theme.radius;
+    background: Theme.track;
+    height: segment-height + 6px;
+
+    function choose(i: int) {
+        if i >= 0 && i < items.length && i != selected {
+            if !controlled {
+                selected = i;
+            }
+            activated(i);
+        }
+    }
+
+    focus := FocusScope {
+        changed has-focus => {
+            if self.has-focus {
+                Reveal.show(root.absolute-position.x, root.absolute-position.y, root.height);
+            }
+        }
+        key-pressed(e) => {
+            if e.text == Key.LeftArrow {
+                root.choose(root.selected - 1);
+                return accept;
+            }
+            if e.text == Key.RightArrow {
+                root.choose(root.selected + 1);
+                return accept;
+            }
+            reject
+        }
+    }
+
+    HorizontalLayout {
+        padding: 3px;
+        spacing: 2px;
+        for item[i] in root.items: Rectangle {
+            horizontal-stretch: root.stretch ? 1 : 0;
+            height: root.segment-height;
+            min-width: root.compact ? root.segment-height + root.compact-pad : 0px;
+            border-radius: Theme.radius - 2px;
+            background: i == root.selected ? Theme.raised : touch.has-hover ? Theme.hover : transparent;
+            drop-shadow-blur: i == root.selected ? 3px : 0px;
+            drop-shadow-offset-y: 1px;
+            drop-shadow-color: i == root.selected ? #0000001f : transparent;
+            accessible-role: tab;
+            accessible-label: item.label;
+            accessible-item-selectable: true;
+            accessible-item-selected: i == root.selected;
+            accessible-item-index: i;
+            accessible-item-count: root.items.length;
+            accessible-action-default => {
+                root.choose(i);
+            }
+
+            HorizontalLayout {
+                padding-left: root.compact ? 0px : 10px;
+                padding-right: root.compact ? 0px : 12px;
+                spacing: 6px;
+                alignment: center;
+                if item.icon.width > 0: Image {
+                    accessible-role: none;
+                    source: item.icon;
+                    width: 16px;
+                    height: 16px;
+                    y: (parent.height - self.height) / 2;
+                    colorize: i == root.selected ? Theme.text : Theme.muted;
+                }
+                if !root.compact: Text {
+                    accessible-role: none;
+                    text: item.label;
+                    vertical-alignment: center;
+                    font-size: Theme.font-body;
+                    font-weight: i == root.selected ? 600 : 500;
+                    color: i == root.selected ? Theme.text : Theme.muted;
+                }
+            }
+
+            touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.choose(i);
+                }
+            }
+        }
+    }
+
+    FocusRing {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        show: focus.has-focus;
+        radius: Theme.radius;
+    }
+}

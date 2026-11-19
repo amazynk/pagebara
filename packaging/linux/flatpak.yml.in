@@ -1,0 +1,31 @@
+# Flatpak manifest template; build-flatpak.sh fills it in and builds it. It packages a binary
+# built beforehand (the workspace needs a pinned nightly toolchain, which the Flathub SDK
+# extensions do not provide), staged by stage.sh into ./stage next to the filled manifest.
+app-id: @APP_ID@
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: @APP_BIN@
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Opening and saving documents anywhere the user chooses; the portal covers dialogs.
+  - --filesystem=home
+  - --talk-name=org.freedesktop.portal.Desktop
+  # Optional, on request only: OCR model download, timestamps, revocation checks.
+  - --share=network
+  # Printing runs lp/lpstat, which are not in the runtime yet: unavailable in the sandbox
+  # until bundled or moved to the print portal.
+  - --socket=cups
+  # Read aloud talks to the host's Speech Dispatcher over its socket.
+  - --filesystem=xdg-run/speech-dispatcher:ro
+modules:
+  - name: @APP_BIN@
+    buildsystem: simple
+    build-commands:
+      - cp -a usr/. /app/
+    sources:
+      - type: dir
+        path: stage

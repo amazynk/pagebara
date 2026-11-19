@@ -1,0 +1,24 @@
+# Live text in a document in another script (here marked Greek) whose models the phone
+# does not have: a quiet offer to download them over the pages. "Download" fetches them
+# (run.sh points PAGEBARA_OCR_FETCH_DIR at a folder instead of the network) and the pictures
+# are read again with them. Needs $PAGEBARA_OCR_MODELS.
+open "$SAMPLES/live-text-greek.pdf"
+wait 800
+assert live.available == true
+assert offer.state == none
+# A long press on the screenshot: read as Latin meanwhile, and the offer.
+drag page 1 100,251 page 1 100,251 1000
+await offer.state == offered 5000
+assert offer contains Greek
+await live.words:1 >= 10 20000
+screenshot 08-offer.png
+click "Download" 200
+await message contains ready 30000
+assert offer.state == none
+assert offer == ""
+assert file.exists:$OUT/profile/ocr-models/ppocrv5-greek-rec.onnx == true
+# Read again with the Greek models: nothing recognised is kept from before.
+assert live.words:1 == 0
+drag page 1 100,251 page 1 100,251 1000
+await live.words:1 >= 5 20000
+assert dirty == false

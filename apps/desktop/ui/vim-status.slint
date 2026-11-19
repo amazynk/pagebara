@@ -1,0 +1,132 @@
+import { AppState, DialogKind } from "state.slint";
+import { Theme } from "theme.slint";
+import { RowLayout } from "components/row.slint";
+import { VimGuide, VimKeycap, VimBinding } from "vim-bindings.slint";
+
+export component VimStatus inherits Rectangle {
+    in property <length> available-width;
+    in property <length> available-height;
+    property <string> sequence: AppState.vim-line;
+    property <bool> prompt: AppState.vim-before-caret != "";
+    property <bool> visual: AppState.vim-mode == "VISUAL" || AppState.vim-mode == "V-LINE";
+    property <bool> idle: !prompt && sequence == "" && !visual;
+    property <bool> zoom: !prompt && sequence.ends-with("z");
+    property <bool> go: !prompt && sequence.ends-with("g");
+    property <bool> mark: !prompt && sequence.ends-with("m");
+    property <bool> jump: !prompt && (sequence.ends-with("'") || sequence.ends-with("`"));
+    property <bool> next-annot: !prompt && sequence.ends-with("]");
+    property <bool> prev-annot: !prompt && sequence.ends-with("[");
+    property <string> menu-title: zoom ? @tr("Zoom") : go ? @tr("Go to") : mark || jump ? @tr("Marks")
+        : next-annot || prev-annot ? @tr("Annotations") : "";
+    property <[VimBinding]> choices: zoom ? [
+        {keys:"w", action:@tr("Fit width")}, {keys:"p", action:@tr("Fit page")},
+        {keys:"i", action:@tr("Zoom in")}, {keys:"o", action:@tr("Zoom out")},
+        {keys:"0", action:@tr("Actual size")}, {keys:"z", action:@tr("Center page")},
+    ] : go && visual ? [{keys:"g", action:@tr("Start of page")}]
+        : go ? [
+            {keys:"g", action: sequence == "g" ? @tr("First page") : @tr("Go to page")},
+            {keys:"t", action: sequence == "g" ? @tr("Next document") : @tr("Go to document")},
+            {keys:"T", action:@tr("Previous document")},
+        ] : mark || jump ? [{keys:"a–z", action: mark ? @tr("Set mark") : @tr("Jump to mark")}]
+        : next-annot || prev-annot ? [{keys:"a", action: next-annot ? @tr("Next annotation") : @tr("Previous annotation")}]
+        : [];
+    property <color> mode-color: Theme.high-contrast ? Theme.accent : visual ? #f6cf85 : AppState.vim-mode == "COMMAND" ? #c8c5ff : VimGuide.mint;
+    property <length> bar-height: max(34px, Theme.font-body + 17px);
+    property <length> row-height: max(30px, Theme.font-small + 17px);
+    property <length> menu-height: root.choices.length > 0 ? min(38px + choices.length * row-height, max(0px, available-height - bar-height - 5px)) : 0px;
+    property <length> mode-width: mode.preferred-width + 23px;
+    width: min(available-width, prompt ? 418px * min(Theme.text-scale, 1.3)
+        : menu-height > 0px ? 238px * min(Theme.text-scale, 1.4)
+        : mode-width + 26px + (idle ? help-text.preferred-width : visual ? visual-label.preferred-width : typed.preferred-width));
+    height: bar-height + (menu-height > 0px ? menu-height + 5px : 0px);
+
+    if root.menu-height > 0px: Rectangle {
+        y: 0px; height: root.menu-height;
+        border-radius: Theme.radius; background: Theme.chrome;
+        border-width: 1px; border-color: Theme.high-contrast ? Theme.control-border : Theme.border;
+        drop-shadow-blur: 8px; drop-shadow-offset-y: 2px; drop-shadow-color: Theme.shadow-near;
+        clip: true;
+        RowLayout {
+            x: 12px; y: 0px; width: parent.width - 24px; height: min(34px, parent.height);
+            cross-axis-alignment: center;
+            Text { text: root.menu-title; color: Theme.text; font-size: Theme.font-title; font-weight: 700; horizontal-stretch: 1; }
+        }
+        Flickable {
+            y: 34px; height: max(0px, parent.height - self.y - 4px);
+            content-height: root.choices.length * root.row-height; content-width: self.width;
+            interactive: self.content-height > self.height;
+            for binding[i] in root.choices: choice := Rectangle {
+                x: 4px; y: i * root.row-height; width: root.width - 8px; height: root.row-height;
+                property <bool> actionable: !root.mark && !root.jump;
+                if !choice.actionable: Rectangle {
+                    accessible-role: text; accessible-label: binding.action; accessible-description: binding.keys;
+                }
+                background: actionable && choice-hit.has-hover ? Theme.hover : transparent;
+                border-radius: 4px;
+                RowLayout {
+                    padding-left: 8px; padding-right: 8px; spacing: 8px; cross-axis-alignment: center;
+                    Text { text: binding.action; color: Theme.text; font-size: Theme.font-body; horizontal-stretch: 1; accessible-role: none; }
+                    VimKeycap { keys: binding.keys; }
+                }
+                choice-hit := TouchArea {
+                    visible: parent.actionable; mouse-cursor: pointer;
+                    accessible-role: button; accessible-label: binding.action; accessible-description: binding.keys;
+                    accessible-action-default => { AppState.shortcut(binding.keys, false, false, false, false); }
+                    clicked => { AppState.shortcut(binding.keys, false, false, false, false); }
+                }
+            }
+        }
+    }
+
+    bar := Rectangle {
+        y: root.height - self.height; height: root.bar-height;
+        border-radius: 6px; clip: true; background: VimGuide.ink;
+        border-width: 1px; border-color: Theme.high-contrast ? Theme.control-border : #416353;
+        drop-shadow-blur: 6px; drop-shadow-offset-y: 2px; drop-shadow-color: Theme.shadow-near;
+        tag := Rectangle {
+            x: Theme.rtl ? parent.width - self.width - 4px : 4px; y: 4px;
+            width: root.mode-width; height: parent.height - 8px; border-radius: 3px;
+            background: root.mode-color;
+            mode := Text {
+                text: AppState.vim-mode; font-weight: 700; font-size: Theme.font-small; font-family: "monospace";
+                color: Theme.high-contrast ? Theme.on-accent : #122a22;
+                horizontal-alignment: center; vertical-alignment: center;
+                accessible-role: text; accessible-label: @tr("Vim mode: {}", AppState.vim-mode);
+            }
+        }
+        entry := Rectangle {
+            x: Theme.rtl ? 9px : tag.width + 13px; width: max(0px, bar.width - tag.width - 22px);
+            height: bar.height; clip: true;
+            typed := Text {
+                x: root.prompt ? min(0px, parent.width - prefix.preferred-width - 2px) : 0px;
+                width: self.preferred-width; height: parent.height;
+                text: root.sequence; font-family: "monospace"; font-size: Theme.font-body; color: VimGuide.paper;
+                vertical-alignment: center; accessible-role: text;
+            }
+            prefix := Text { visible: false; text: AppState.vim-before-caret; font-family: "monospace"; font-size: Theme.font-body; accessible-role: none; }
+            if root.prompt: Rectangle {
+                x: typed.x + prefix.preferred-width; y: (parent.height - self.height) / 2;
+                width: 2px; height: Theme.font-body + 3px; background: VimGuide.mint;
+            }
+            if root.prompt && (root.sequence == ":" || root.sequence == "/" || root.sequence == "?"): Text {
+                x: typed.width + 7px; width: max(0px, parent.width - self.x);
+                text: root.sequence == ":" ? @tr("Enter a command") : root.sequence == "/" ? @tr("Search forward") : @tr("Search backward");
+                color: VimGuide.paper; font-size: Theme.font-body; vertical-alignment: center; overflow: elide; accessible-role: text;
+            }
+            visual-label := Text {
+                visible: root.visual && root.sequence == "";
+                text: @tr("y  Copy   ·   o  Swap ends"); color: VimGuide.paper; font-size: Theme.font-small; vertical-alignment: center;
+            }
+            help := Rectangle {
+                visible: root.idle; accessible-role: button; accessible-label: @tr("Vim shortcuts");
+                accessible-action-default => { AppState.show-dialog(DialogKind.vim-help); }
+                help-text := Text {
+                    text: ":help"; color: hit.has-hover ? VimGuide.mint : VimGuide.paper;
+                    font-size: Theme.font-small; font-family: "monospace"; vertical-alignment: center; horizontal-alignment: center;
+                    accessible-role: none;
+                }
+                hit := TouchArea { mouse-cursor: pointer; clicked => { AppState.show-dialog(DialogKind.vim-help); } }
+            }
+        }
+    }
+}

@@ -1,0 +1,307 @@
+// What Rust shows and the callbacks the UI raises.
+
+export struct PageSlot {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    visible: bool,
+    number: int,
+    preview: image,
+}
+
+export struct TileSlot {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    visible: bool,
+}
+
+// Something drawn over the pages, placed like a page slot (sizes in points).
+// kind: 0 filled box, 1 selection frame with handles, 2 path (stroked, and filled with
+// `fill`), 3 field outline, 4 a text selection handle (at the left of a zero-width box the
+// height of the line), 5 an image (turned by `angle`); with `halo` boxes, outlines and
+// paths are in the accent colour edged with a contrasting halo, to show on any page.
+export struct Mark {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    kind: int,
+    fill: color,
+    stroke: color,
+    width: float,
+    commands: string,
+    image: image,
+    // Clockwise rotation of an image mark about its centre, in degrees.
+    angle: float,
+    halo: bool,
+}
+
+export struct Thumb {
+    index: int,
+    image: image,
+    // Height over width.
+    aspect: float,
+    label: string,
+    current: bool,
+}
+
+export struct SigCard {
+    name: string,
+    image: image,
+    selected: bool,
+}
+
+export struct RecentFile {
+    name: string,
+    folder: string,
+}
+
+export global ViewState {
+    // An item at (di, by, bx, w, h) is drawn at x = cx + k * bx, y = oy + 16px * di + k * by,
+    // sized k * w by k * h, snapped to device pixels.
+    in property <float> k: 1;
+    in property <float> cx;
+    in property <float> oy;
+    in property <float> dpr: 1;
+    in property <[PageSlot]> pages;
+    // Per page slot: tiles cover the page, so its paper and preview need no drawing.
+    in property <[bool]> page-covered;
+    // Blank paper in the page colours chosen.
+    in property <color> paper: #FFFFFF;
+    in property <[TileSlot]> tiles;
+    in property <[image]> tile-images;
+    in property <[TileSlot]> fallback;
+    in property <[image]> fallback-images;
+    in property <[Mark]> marks;
+
+    callback resized(width: float, height: float);
+    // kind: 0 down, 1 move, 2 up, 3 cancel.
+    callback pointer(kind: int, x: float, y: float);
+    callback pinch-start();
+    callback pinch(scale: float, x: float, y: float);
+    // The two fingers' turn since the pinch started, before each `pinch`.
+    callback pinch-rotation(degrees: float);
+    callback pinch-end();
+
+    // Items of the pages' layer, which sits at (ox, oy), are placed with lx and ly: then
+    // scrolling moves the layer alone, and only zooming moves its items.
+    public pure function ox() -> float {
+        return round(cx * dpr) / dpr;
+    }
+    public pure function oy-px() -> float {
+        return round(oy * dpr) / dpr;
+    }
+    public pure function lx(bx: float) -> float {
+        return round(k * bx * dpr) / dpr;
+    }
+    public pure function ly(di: int, by: float) -> float {
+        return round((16 * di + k * by) * dpr) / dpr;
+    }
+    // In the view, for items outside the layer.
+    public pure function px(bx: float) -> float {
+        return ox() + lx(bx);
+    }
+    public pure function py(di: int, by: float) -> float {
+        return oy-px() + ly(di, by);
+    }
+}
+
+// The tools of the bottom bar.
+export enum Tool { read, highlight, draw, sign, forms, edit, prepare }
+
+// Sheets and dialogs over the reader.
+export enum Sheet { none, pages, signatures, more, draw-pad, choices, tools, field-props, language, licences }
+
+export global AppState {
+    in property <string> app-name: "pagebara";
+    // Credits and licences of the text recognition models and spelling dictionaries.
+    in property <string> licences;
+    // The UI languages: "Follow the system", then each by its own name; the chosen row and
+    // the name of the language shown.
+    in property <[string]> languages;
+    in property <int> language-index;
+    in property <string> language-name;
+    callback set-language(index: int);
+    // false: the home screen.
+    in property <bool> reading;
+    in property <bool> tablet;
+    in property <length> side-width: 240px;
+    in property <bool> busy;
+    in property <string> message;
+    // A question with a button over the bottom of the pages ("" when none); the button's
+    // label, "" while there is nothing to do but dismiss it.
+    in property <string> offer;
+    in property <string> offer-action;
+    callback offer-accept();
+    callback offer-dismiss();
+
+    // Home.
+    in property <[RecentFile]> recent;
+    in property <string> home-hint;
+    callback open();
+    callback open-recent(index: int);
+
+    // The document.
+    in property <string> title;
+    in property <string> page-label;
+    in property <int> page-count;
+    in property <int> current-page;
+    in property <bool> dirty;
+    in property <bool> can-undo;
+    in property <bool> can-redo;
+    in property <bool> can-share: true;
+    callback back();
+    callback undo();
+    callback redo();
+    callback save();
+    callback save-copy();
+    // Output tools: a smaller copy with preset 0-2, a PDF/A copy, the accessibility check.
+    callback optimize(preset: int);
+    callback save-pdfa();
+    callback check-access();
+    callback fix-access();
+    in property <bool> access-fixable;
+    // An output tool: "page-numbers", "watermark" or "flatten".
+    callback output-tool(name: string);
+    callback share();
+    callback go-to-page(index: int);
+    // The page colours: 0 normal, 1 dark, 2 sepia, 3 high contrast.
+    in property <int> page-theme;
+    callback set-page-theme(index: int);
+
+    in-out property <Tool> tool;
+    in-out property <Sheet> sheet;
+    callback tool-changed();
+    callback sheet-changed();
+
+    // Ink colours; the drawing and highlighting colour.
+    in property <[color]> colours: [#FACC15, #4ADE80, #60A5FA, #F472B6, #DC2626, #18181B];
+    in-out property <int> colour;
+
+    // Search.
+    in-out property <bool> searching;
+    in-out property <string> find-text;
+    in property <string> find-status;
+    callback find(text: string);
+    callback find-next(forward: bool);
+    callback find-close();
+
+    // Page thumbnails.
+    in property <[Thumb]> thumbs;
+    in property <int> thumb-columns: 2;
+    callback thumbs-shown(first: int, last: int);
+
+    // Text selection (long press) and the selected signature.
+    in property <bool> has-selection;
+    in property <float> selection-x;
+    in property <float> selection-y;
+    callback highlight-selection();
+    callback copy-selection();
+    callback clear-selection();
+    in property <bool> has-selected-annot;
+    in property <float> selected-x;
+    in property <float> selected-y;
+    callback delete-selected();
+
+    // The signature library.
+    in property <[SigCard]> signatures;
+    in property <string> sig-hint: @tr("Tap a signature, then tap the page to place it. Pinch it to resize, drag to move.");
+    callback sig-select(index: int);
+    callback sig-delete(index: int);
+    callback sig-from-photo();
+    // The finger drawing pad: kind 0 down, 1 move, 2 up; 3 clears.
+    in property <string> draw-path;
+    callback sig-draw(kind: int, x: float, y: float);
+    callback sig-draw-save();
+
+    // Edit mode: the selected page object and what the action bar can do with it.
+    in property <bool> edit-selected;
+    in property <string> edit-description;
+    in property <bool> edit-can-fill;
+    in property <bool> edit-can-stroke;
+    in property <bool> edit-is-image;
+    in property <bool> edit-is-text;
+    // The bar's open row: 0 none, 1 colour, 2 opacity, 3 arrange.
+    in-out property <int> edit-panel;
+    // Colours change the outline rather than the fill.
+    in-out property <bool> edit-stroke-mode;
+    in property <[color]> edit-colours: [#18181B, #FFFFFF, #DC2626, #F59E0B, #16A34A, #2563EB, #9333EA];
+    callback edit-colour(c: color);
+    callback edit-opacity(percent: int);
+    // 0 to the front, 1 forward, 2 backward, 3 to the back.
+    callback edit-arrange(how: int);
+    callback edit-duplicate();
+    callback edit-delete();
+    callback edit-replace-image();
+    callback edit-text-start();
+    // Editing a text block in place through a hidden text field.
+    in property <bool> edit-text-editing;
+    in-out property <string> edit-text;
+    // Where the field puts the selection (byte offsets): applied when the serial changes.
+    in property <int> edit-sel-anchor;
+    in property <int> edit-sel-focus;
+    in property <int> edit-sel-serial;
+    // The field's text, caret and anchor (byte offsets) and input method preedit.
+    callback edit-text-input(text: string, cursor: int, anchor: int, preedit: string);
+    callback edit-text-done(commit: bool);
+    // Up, Down, Home or End (0 to 3) by the paragraph's own lines.
+    callback edit-text-move(motion: int, extend: bool);
+    // The selection's style, and toggling bold (0) or italic (1).
+    in property <bool> edit-text-bold;
+    in property <bool> edit-text-italic;
+    callback edit-text-style(which: int);
+    // Where the text being edited is on the screen (for the input method's popups).
+    in property <float> edit-x;
+    in property <float> edit-y;
+
+    // Filling in a text or choice field.
+    in property <bool> field-editing;
+    in property <string> field-label;
+    in-out property <string> field-text;
+    in property <bool> field-multiline;
+    in property <[string]> field-options;
+    in property <int> field-selected: -1;
+    callback field-done(commit: bool);
+    callback field-pick(index: int);
+
+    // Preparing forms: the field type the next tap places (an index of the bar's types,
+    // -1 none), the selected field, how many fields were found on the page.
+    in-out property <int> prep-type: -1;
+    in property <bool> prep-selected;
+    in property <string> prep-description;
+    in property <bool> prep-radio;
+    in property <int> prep-found;
+    callback prep-type-changed();
+    // "props", "duplicate", "delete", "add-radio", "deselect", "detect", "accept", "dismiss".
+    callback prep-action(what: string);
+    // The selected field's properties sheet; kind 0 text, 1 choice, 2 check box or radio
+    // button, 3 other.
+    in property <int> prop-kind;
+    in-out property <string> prop-name;
+    in-out property <string> prop-tooltip;
+    in-out property <bool> prop-required;
+    in-out property <bool> prop-read-only;
+    in-out property <bool> prop-multiline;
+    in-out property <string> prop-font-size;
+    in-out property <string> prop-options;
+    in-out property <string> prop-export;
+    callback prop-apply();
+    // Form tools: "prepare", "import", "export-fdf", "export-xfdf", "reset", "clear".
+    callback form-tool(name: string);
+
+    // A protected document's password.
+    in property <bool> password-needed;
+    in property <string> password-title;
+    in property <string> password-error;
+    callback unlock(password: string);
+    callback unlock-cancel();
+
+    // The Android back button; true when handled.
+    callback back-key() -> bool;
+}

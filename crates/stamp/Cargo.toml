@@ -1,0 +1,28 @@
+[package]
+name = "pagebara-stamp"
+description = "Page stamps: watermarks (text, image, PDF page), headers and footers, Bates numbering; as optional content and pagination artifacts, removable later"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-content.workspace = true
+pagebara-filters.workspace = true
+pagebara-typeset.workspace = true
+pagebara-font.workspace = true
+pagebara-edit.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+# The local time zone for {date} and {time} (the system's zone database, /etc/localtime).
+jiff = "0.2"
+
+[dev-dependencies]
+pagebara-render.workspace = true
+pagebara-samples.workspace = true
+pagebara-tagged.workspace = true
+
+[lints]
+workspace = true

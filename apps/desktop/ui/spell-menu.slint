@@ -1,0 +1,97 @@
+// The menu of a misspelled word: its corrections, Add to dictionary and Ignore. It is drawn
+// over the window (not a popup window), so every editor shares it.
+import { Theme } from "theme.slint";
+import { Divider, MenuCard, MenuItem } from "components/panel.slint";
+import { SpellState, SpellMarks, SpellWord } from "../../../crates/ui/slint/spell.slint";
+
+export { SpellState, SpellMarks, SpellWord }
+
+export global SpellMenuState {
+    in-out property <bool> open;
+    // Where it opens, in the window.
+    in-out property <length> x;
+    in-out property <length> y;
+    // The editor it is for (SpellState's numbers): it gets the focus back.
+    in-out property <int> editor;
+    // Bumped when the menu closes.
+    in-out property <int> closed;
+
+    public function show(for-editor: int, at-x: length, at-y: length) {
+        SpellMenuState.editor = for-editor;
+        SpellMenuState.x = at-x;
+        SpellMenuState.y = at-y;
+        SpellMenuState.open = true;
+    }
+
+    public function hide() {
+        if SpellMenuState.open {
+            SpellMenuState.open = false;
+            SpellMenuState.closed += 1;
+        }
+    }
+}
+
+component SpellMenu inherits VerticalLayout {
+    MenuCard {
+        for s[i] in SpellState.suggestions: MenuItem {
+            text: s;
+            initial-focus: i == 0;
+            clicked => {
+                SpellState.action("pick", s);
+                SpellMenuState.hide();
+            }
+        }
+        if SpellState.suggestions.length == 0: Text {
+            x: 10px;
+            height: Theme.row-height;
+            text: @tr("No suggestions");
+            color: Theme.faint;
+            vertical-alignment: center;
+        }
+        Divider { }
+        MenuItem {
+            text: @tr("Add to dictionary");
+            initial-focus: SpellState.suggestions.length == 0;
+            clicked => {
+                SpellState.action("add", SpellState.word);
+                SpellMenuState.hide();
+            }
+        }
+        MenuItem {
+            // TRANSLATORS: ignore a misspelled word until the app quits
+            text: @tr("Ignore");
+            clicked => {
+                SpellState.action("ignore", SpellState.word);
+                SpellMenuState.hide();
+            }
+        }
+    }
+}
+
+// The open menu over the whole window: a press elsewhere or Escape closes it.
+export component SpellMenuLayer inherits Rectangle {
+    accessible-role: none;
+    TouchArea {
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down {
+                SpellMenuState.hide();
+            }
+        }
+    }
+    FocusScope {
+        x: max(0px, min(SpellMenuState.x, root.width - 240px));
+        y: max(0px, min(SpellMenuState.y, root.height - menu.preferred-height - 4px));
+        width: 236px;
+        height: menu.preferred-height;
+        key-pressed(e) => {
+            if e.text == Key.Escape {
+                SpellMenuState.hide();
+                return accept;
+            }
+            reject
+        }
+        menu := SpellMenu {
+            width: parent.width;
+        }
+    }
+}

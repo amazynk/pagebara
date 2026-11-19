@@ -1,0 +1,22 @@
+[package]
+name = "corpus-check"
+description = "Runs the engine over PDF corpora in sandboxed child processes and reports crashes, hangs and failures, and checks conformance verdicts against the veraPDF corpus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-render.workspace = true
+pagebara-content.workspace = true
+pagebara-annot.workspace = true
+pagebara-forms.workspace = true
+pagebara-optimize.workspace = true
+pagebara-conform.workspace = true
+serde_json.workspace = true
+pagebara-thread.workspace = true
+
+[lints]
+workspace = true

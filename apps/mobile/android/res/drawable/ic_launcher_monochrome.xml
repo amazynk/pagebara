@@ -1,0 +1,14 @@
+<!-- Generated from packaging/icons/app.svg by render.sh. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="440" android:viewportHeight="440">
+    <group android:translateX="92" android:translateY="92">
+        <group>
+            <clip-path android:pathData="M 0 0 H 256 V 138 H 0 Z" />
+            <path android:pathData="M 40 164 V 104 C 40 78 60 60 88 58 C 118 55 150 56 176 60 C 198 63 216 74 218 94 C 219 108 218 120 214 130 C 210 144 200 154 186 158 V 164 H 40 Z M 143.5 84 a 6.5 6.5 0 1 0 13 0 a 6.5 6.5 0 1 0 -13 0 Z M 202.4 77.9 A 4.2 2.8 30 1 0 209.6 82.1 A 4.2 2.8 30 1 0 202.4 77.9 Z M 216.5 118 C 207 124 196 125.5 184 122 C 195.5 128.5 208 127.5 216 122.5 Z" android:fillColor="#000000" android:fillType="evenOdd" />
+            <path android:pathData="M 71.2 46.8 A 12 15 -20 1 0 81.4 75 A 12 15 -20 1 0 71.2 46.8 Z M 186.4 102 a 1.7 1.7 0 1 0 3.4 0 a 1.7 1.7 0 1 0 -3.4 0 Z M 195.4 106 a 1.7 1.7 0 1 0 3.4 0 a 1.7 1.7 0 1 0 -3.4 0 Z M 184.4 111 a 1.7 1.7 0 1 0 3.4 0 a 1.7 1.7 0 1 0 -3.4 0 Z" android:fillColor="#000000" android:fillType="evenOdd" />
+            <path android:pathData="M 108 42 a 16 16 0 1 0 32 0 a 16 16 0 1 0 -32 0 Z" android:fillColor="#000000" android:fillType="evenOdd" />
+            <path android:pathData="M 124 27 C 129 18 140 17 145 21 C 141 30 131 31 124 27 Z" android:fillColor="#000000" android:fillType="evenOdd" />
+        </group>
+        <path android:pathData="M 48 146 H 192 L 210 164 V 222 C 210 227.5 205.5 232 200 232 H 48 C 42.5 232 38 227.5 38 222 V 156 C 38 150.5 42.5 146 48 146 Z M 64 173 H 184 a 4 4 0 0 1 0 8 H 64 a 4 4 0 0 1 0 -8 Z M 64 190.5 H 184 a 4 4 0 0 1 0 8 H 64 a 4 4 0 0 1 0 -8 Z M 64 208 H 124 a 4 4 0 0 1 0 8 H 64 a 4 4 0 0 1 0 -8 Z" android:fillColor="#000000" android:fillType="evenOdd" />
+        <path android:pathData="M 71 134 H 79 a 11 11 0 0 1 11 11 V 149 a 11 11 0 0 1 -11 11 H 71 a 11 11 0 0 1 -11 -11 V 145 a 11 11 0 0 1 11 -11 Z M 129 134 H 137 a 11 11 0 0 1 11 11 V 149 a 11 11 0 0 1 -11 11 H 129 a 11 11 0 0 1 -11 -11 V 145 a 11 11 0 0 1 11 -11 Z" android:fillColor="#000000" android:fillType="evenOdd" />
+    </group>
+</vector>

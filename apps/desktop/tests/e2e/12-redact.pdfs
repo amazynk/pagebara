@@ -1,0 +1,71 @@
+# Redaction: find e-mail addresses and mark them (undoable), mark text by dragging and an
+# area by drawing a box, restyle a mark, apply into a new file and check it: the addresses
+# are gone from the new file, so search no longer finds them. Also the about box.
+cursor on
+key ctrl+k
+type "About Pagebara" 300
+key return
+await dialog == settings 3000
+move "amazynk.com" 150
+# The first frame may not be drawn yet on a busy machine.
+wait 500
+screenshot 12-about.png
+key escape
+open "$SAMPLES/personal.pdf"
+zoom 100 0
+tool redact
+assert tool == 6
+call redact-find email
+await redact.hits == 2 10000
+assert redact.hits.text contains jane.doe@example.org
+assert redact.hits.text contains j.doe@northwind.example
+screenshot 12-hits.png
+click "Mark all" 400
+assert redact.marks == 2
+assert undo == Mark 2 for redaction
+key ctrl+z
+assert redact.marks == 0
+key ctrl+y
+assert redact.marks == 2
+# Drag across the phone number to mark it.
+drag text 1 "+44" text-end 1 "0958" 600
+assert redact.marks == 3
+# Draw a box over the card number.
+call redact-mode 1
+drag page 1 60,214 page 1 320,240 600
+assert redact.marks == 4
+# Give the first mark an overlay text.
+click annot 1 1 400
+assert redact.has-mark == true
+call redact-mark-style 0 "REDACTED"
+assert undo == Change redaction mark
+screenshot 12-marked.png
+key escape
+call redact-confirm
+assert dialog == redactapply
+screenshot 12-confirm.png
+call redact-apply "$OUT/personal-redacted.pdf"
+await dialog == redactreport 30000
+assert redact.clean == true
+assert file.exists:$OUT/personal-redacted.pdf == true
+await title == personal-redacted.pdf 20000
+screenshot 12-report.png
+key escape
+# The redacted file: no marks left, and the addresses cannot be found.
+assert redact.marks == 0
+assert page.text:1 contains Customer record
+key ctrl+f
+type "jane.doe" 400
+await search.done == true 10000
+assert search.hits == 0
+key escape
+key ctrl+f
+type "4111" 400
+await search.done == true 10000
+assert search.hits == 0
+key escape
+assert info:Author == ""
+# The bookmark named an address: it is replaced there too.
+assert outline == 1
+assert outline.text == Mail to [redacted]
+screenshot 12-redacted.png

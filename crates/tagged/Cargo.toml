@@ -1,0 +1,13 @@
+[package]
+name = "pagebara-tagged"
+description = "Tagged PDF: the logical structure tree and page content in its reading order"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-content.workspace = true
+
+[lints]
+workspace = true

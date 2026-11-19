@@ -1,0 +1,67 @@
+# Comparing two versions: the change list, the paired pages with the change marked,
+# filters, overlay and blink, the PDF report.
+open "$SAMPLES/signed.pdf"
+wait 500
+call vim-keys on
+call pro-open 5
+assert pro.dialog == 5
+assert vim.active == false
+key ctrl+w
+assert tabs == 1
+call pro-file "$SAMPLES/signed-tampered.pdf"
+wait 300
+assert pro.error == ""
+screenshot 26-compare-setup.png
+call pro-apply
+await compare.visible == true 5000
+await compare.busy == false 30000
+assert compare.visible == true
+assert compare.rows.text contains “1,250” → “9,250”
+await compare.images == true true 15000
+assert compare.current == 0
+assert compare.marks == 1 1
+assert compare.labels contains page 1
+wait 300
+screenshot 26-compare.png
+call compare-mode 1
+wait 300
+screenshot 26-compare-overlay.png
+call compare-mode 0
+# Only visual differences: the changed word explains its pixels, nothing else differs.
+call compare-filter false true true true
+assert compare.rows == 0
+call compare-filter true true true true
+call compare-report "$OUT/compare-report.pdf"
+await file.exists:$OUT/compare-report.pdf == true 30000
+key tab
+key ctrl+w
+assert tabs == 1
+assert vim.active == false
+key escape
+assert compare.visible == false
+assert vim.active == true
+# A watermarked copy against the original: inserted words on every page.
+open "$SAMPLES/lease.pdf"
+wait 500
+call pro-open 1
+call pro-set wm-text "SAMPLE"
+call pro-apply
+call save-as "$OUT/lease-marked.pdf"
+await title == lease-marked.pdf 20000
+open "$SAMPLES/lease.pdf"
+wait 500
+call pro-open 5
+call pro-file "$OUT/lease-marked.pdf"
+wait 300
+assert pro.error == ""
+call pro-apply
+await compare.visible == true 5000
+await compare.busy == false 30000
+assert compare.rows == 4
+assert compare.rows.text contains Inserted “SAMPLE”
+call compare-next
+assert compare.current == 1
+assert compare.pair == 2/4
+screenshot 26-compare-pages.png
+key escape
+assert compare.visible == false

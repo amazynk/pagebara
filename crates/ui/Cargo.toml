@@ -1,0 +1,16 @@
+[package]
+name = "pagebara-ui"
+description = "Slint glue shared by the desktop and mobile apps: the page view bridge, tile images and window snapshots"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-app-core.workspace = true
+pagebara-budget.workspace = true
+slint.workspace = true
+pagebara-png.workspace = true
+log.workspace = true
+
+[lints]
+workspace = true

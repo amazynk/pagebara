@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app id (com.amazynk.pagebara) is the Java package of android/java. The label comes from
+     APP_NAME in src/lib.rs (build-apk.sh writes it to values/strings.xml). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.amazynk.pagebara"
+    android:versionCode="1"
+    android:versionName="0.1.0">
+
+    <!-- 26: adaptive icons, and Slint's Java helper loads from memory. -->
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
+
+    <!-- Only to download another script's text recognition models when the user agrees. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:hasCode="true"
+        android:allowBackup="false"
+        android:extractNativeLibs="true"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data android:name="android.app.lib_name" android:value="pagebara_mobile" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- "Open with" for PDFs from files, mail, browsers... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+
+            <!-- PDFs shared to the app. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+
+        <!-- Copies handed to other apps by Share. -->
+        <provider
+            android:name=".ShareProvider"
+            android:authorities="com.amazynk.pagebara.share"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

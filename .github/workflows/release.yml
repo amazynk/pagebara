@@ -1,0 +1,129 @@
+name: Release
+
+# A tag v* builds the AppImage, .deb, MSI and DMG and attaches them to a draft release.
+# Signing runs only when its secrets exist (see packaging/windows/build-msi.sh and
+# packaging/macos/build-dmg.sh); without them the Windows and macOS packages are unsigned.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    # The oldest supported glibc, 2.35: the AppImage and .deb run on this distro and newer.
+    # Building on it uses its own glibc and linker, with nothing to set up; building
+    # elsewhere needs cargo-zigbuild (packaging/linux/build-release.sh) for the same result.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev \
+            libxkbcommon-dev libwayland-dev dpkg-dev desktop-file-utils appstream file
+      - name: Toolchain
+        run: rustup toolchain install
+      - name: Build
+        run: cargo build --release --locked -p pagebara-app
+      - name: Runs on glibc 2.35
+        run: packaging/linux/check-glibc.sh target/release/pagebara 2.35
+      - name: appimagetool
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL -o "$RUNNER_TEMP/bin/appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/bin/appimagetool"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Validate desktop file and metainfo
+        run: |
+          packaging/linux/stage.sh target/release/pagebara "$RUNNER_TEMP/stage"
+          desktop-file-validate "$RUNNER_TEMP"/stage/usr/share/applications/*.desktop
+          appstreamcli validate --no-net "$RUNNER_TEMP"/stage/usr/share/metainfo/*.xml
+      - name: Packages
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: |
+          packaging/linux/build-appimage.sh target/release/pagebara dist
+          packaging/linux/build-deb.sh target/release/pagebara dist
+          dpkg-deb -f dist/*.deb Depends | grep -q 'libc6 (>= 2\.3[0-5])'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/*
+
+  windows:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: rustup toolchain install
+      - name: Build
+        run: cargo build --release --locked -p pagebara-app -p pagebara-shell-win
+      - name: WiX
+        run: dotnet tool install --global wix --version 5.0.2
+      - name: MSI
+        env:
+          WINDOWS_CERT_PFX: ${{ secrets.WINDOWS_CERT_PFX }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        run: packaging/windows/build-msi.sh target/release/pagebara.exe dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.msi
+
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          rustup toolchain install
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
+      - name: Build (universal)
+        run: |
+          cargo build --release --locked -p pagebara-app --target aarch64-apple-darwin
+          cargo build --release --locked -p pagebara-app --target x86_64-apple-darwin
+          mkdir -p target/universal
+          lipo -create -output target/universal/pagebara \
+            target/aarch64-apple-darwin/release/pagebara target/x86_64-apple-darwin/release/pagebara
+      - name: App bundle and DMG
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          MACOS_NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          MACOS_NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+          MACOS_NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+        run: packaging/macos/build-dmg.sh target/universal/pagebara dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.dmg
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: dist/*

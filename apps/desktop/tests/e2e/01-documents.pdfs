@@ -1,0 +1,38 @@
+# Tabs, undo/redo, dirty state, save (incremental and full), reopen.
+cursor on
+open "$SAMPLES/lease.pdf"
+assert pages == 4
+assert outline == 11
+assert dirty == false
+open "$SAMPLES/report.pdf"
+assert tabs == 2
+assert label == i
+# A tab opened later gets its sidebar thumbnails too.
+await thumbs.drawn >= 4 5000
+wait 300
+screenshot 01-tabs.png
+click "lease.pdf" 300
+assert title == lease.pdf
+tool draw
+stroke page 1 120,520 160,500 200,540 240,505 280,530 600
+assert annotations == 1
+assert dirty == true
+key ctrl+z
+assert annotations == 0
+assert dirty == false
+key ctrl+shift+z
+assert annotations == 1
+call save-as "$OUT/lease-saved.pdf"
+assert dirty == false
+assert title == lease-saved.pdf
+assert file.exists:$OUT/lease-saved.pdf == true
+# A second edit saves incrementally onto the saved file.
+stroke page 1 120,600 300,600 400
+call save
+assert dirty == false
+assert message contains Saved
+open "$OUT/lease-saved.pdf"
+assert annotations == 2
+key ctrl+w
+assert tabs == 1
+screenshot 01-saved.png

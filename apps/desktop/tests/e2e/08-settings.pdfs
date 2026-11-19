@@ -1,0 +1,81 @@
+# Use Settings from the welcome screen. Focus starts on the section tabs.
+cursor on
+key ctrl+,
+assert dialog == settings
+key tab
+key home
+key down
+key down
+assert settings.theme == dark
+click "High contrast" 150
+assert theme.high-contrast == true
+click "Light" 150
+assert theme.dark == false
+assert theme.high-contrast == true
+click "Follow the system" 150
+assert settings.theme == system
+click "Dark" 150
+assert settings.theme == dark
+click "115%" 150
+assert theme.text-scale == 1.15
+screenshot 08-settings-general.png
+click "100%" 150
+click "Editing" 150
+click "Author name" 150
+key ctrl+a
+type "Robin" 150
+click "About" 150
+call a11y-check
+move "amazynk.com" 150
+move "Join the community on Discord" 150
+screenshot 08-settings-about.png
+click "Third-party notices" 150
+move #AboutPage::ocr-credit 150
+click "Third-party notices" 150
+click "System" 150
+click "Manage…" 150
+assert dialog == integration
+key escape
+assert dialog == settings
+# Returning from integration keeps the System tab and the pending author name.
+key up
+key tab
+key ctrl+a
+key right
+type " Lee" 150
+screenshot 08-settings-editing.png
+click "Done" 150
+assert dialog == none
+assert settings.author == Robin Lee
+
+# Escape dismisses an unfinished author change even after an immediate preference change.
+key ctrl+,
+key right
+click "Author name" 150
+key ctrl+a
+type "Draft" 150
+click "Check spelling as you type" 150
+key escape
+assert settings.author == Robin Lee
+open "$SAMPLES/form.pdf"
+click "Fill & Sign" 300
+click "Fill forms" 300
+wait 300
+screenshot 08-forms-dark.png
+call theme light
+tool draw
+stroke page 1 100,600 200,640 300,600 500
+assert dirty == true
+key ctrl+w
+assert dialog == unsaved
+screenshot 08-unsaved.png
+click "Cancel" 300
+assert tabs == 1
+key ctrl+w
+click "Don't save" 300
+assert tabs == 0
+assert mode == welcome
+click "All tools" 300
+move "Join the community on Discord" 400
+screenshot 08-menu.png
+key escape

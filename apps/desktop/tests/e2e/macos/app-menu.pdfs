@@ -1,0 +1,49 @@
+# Invoke the real NSMenu items. Finder registrations stay inside the test profile.
+wait 300
+call app-menu "About Pagebara"
+await dialog == settings 3000
+move "Join the community on Discord" 150
+screenshot macos-about.png
+key escape
+call app-menu "Settings…"
+await dialog == settings 3000
+click "Editing" 150
+click "Author name" 150
+key ctrl+a
+type "Robin" 150
+call app-menu "About Pagebara"
+move "amazynk.com" 150
+call app-menu "Finder Quick Actions…"
+await dialog == integration 3000
+wait 300
+click "Convert images to PDF" 200
+await os.integration contains type-images=on 5000
+click "Back" 150
+assert dialog == settings
+click "Done" 150
+assert settings.author == Robin
+
+call app-menu "Finder Quick Actions…"
+await dialog == integration 3000
+click "Done" 150
+assert dialog == none
+
+call language fr
+wait 150
+call app-menu "Réglages…"
+await dialog == settings 3000
+call app-menu "À propos de Pagebara"
+move "amazynk.com" 150
+key escape
+call language en
+wait 150
+
+open "$SAMPLES/lease.pdf"
+tool draw
+stroke page 1 100,600 200,640 300,600 500
+assert dirty == true
+call app-menu "Quit Pagebara"
+await dialog == unsaved 3000
+click "Cancel" 150
+assert dirty == true
+screenshot macos-quit-cancelled.png

@@ -1,0 +1,147 @@
+# Preparing a form on the phone: fields found on a printed form, fields placed from the
+# bar, properties changed, a field moved and resized, radio buttons, saved and reopened,
+# filled; form data exported as FDF and XFDF and imported again; reset and clear.
+open "$SAMPLES/printed-form.pdf"
+wait 600
+call sheet tools
+wait 300
+screenshot 13-tools.png
+click "Prepare form" 400
+assert tool == prepare
+wait 300
+screenshot 13-bar.png
+# The places for fields on the page, added at once.
+click "Detect fields" 300
+assert prep.found == 10
+wait 300
+screenshot 13-found.png
+click "Add 10 fields" 400
+assert fields == 10
+assert undo == Add fields found
+assert field.kind:Postcode == text
+assert field.kind:Weekends == checkbox
+assert field.kind:Signature == signature
+# A text field placed with a tap.
+click "Add Text field" 200
+assert prep.type == 0
+click page 1 80,560 300
+assert fields == 11
+assert prep.selected == Text1
+assert undo == Add text field
+wait 300
+screenshot 13-placed.png
+# Its properties: name, tooltip, required, several lines, text size.
+click "Field properties" 300
+assert sheet == field-props
+assert prop.name == Text1
+call prop-set name "comments"
+call prop-set tooltip "Your comments"
+call prop-set required true
+call prop-set multiline true
+call prop-set font-size 9
+wait 200
+screenshot 13-props.png
+click "Apply" 300
+assert sheet == none
+assert prep.selected == comments
+assert field.label:comments == Your comments
+assert field.required:comments == true
+assert field.multiline:comments == true
+assert field.font-size:comments == 9
+assert undo == Change field properties
+# Moved down, then made taller with its lower right handle.
+drag page 1 120,571 page 1 120,621 400
+assert undo == Move field
+assert field.rect:comments == 80,160,240,182
+drag page 1 240,632 page 1 280,672 400
+assert undo == Resize field
+assert field.rect:comments == 80,120,280,182
+# A check box, a drop-down with its options, a date field.
+click "Deselect field" 200
+click "Add Check box field" 200
+click page 1 300,560 300
+assert field.kind:CheckBox1 == checkbox
+click "Field properties" 300
+call prop-set export "Agreed"
+click "Apply" 300
+assert field.exports:CheckBox1 == Agreed
+click "Deselect field" 200
+click "Add Drop-down field" 200
+click page 1 300,600 300
+click "Field properties" 300
+call prop-set options "Small, Medium, Large"
+click "Apply" 300
+assert field.options:Dropdown1 == Small, Medium, Large
+click "Deselect field" 200
+click "Add Date field" 200
+click page 1 300,640 300
+assert field.date:Date1 == true
+click "Deselect field" 200
+# Radio buttons: one placed, one more added from the bar.
+click "Add Radio field" 200
+click page 1 460,560 300
+assert prep.selected == Group1
+click "Add radio button" 300
+assert field.widgets:Group1 == 2
+assert field.exports:Group1 == Choice1, Choice2
+# A duplicate of the group; Delete takes one of its buttons.
+click "Duplicate field" 300
+assert prep.selected == Group2
+assert fields == 16
+assert field.widgets:Group2 == 2
+click "Delete field" 300
+assert undo == Delete field
+assert field.widgets:Group2 == 1
+call undo
+assert field.widgets:Group2 == 2
+call redo
+assert field.widgets:Group2 == 1
+wait 300
+screenshot 13-fields.png
+call save
+assert dirty == false
+key back
+key back
+open "$SAMPLES/printed-form.pdf"
+wait 600
+assert fields == 16
+assert field.label:comments == Your comments
+# The created fields fill in.
+tool forms
+wait 300
+click annot 1 11 300
+assert field.editing == true
+type "Ada Lovelace" 300
+click "Done" 200
+assert field:comments == Ada Lovelace
+click annot 1 12 300
+assert field:CheckBox1 == on
+wait 300
+screenshot 13-filled.png
+# Form data out and back in.
+call sheet tools
+wait 300
+click "Export form data (FDF)" 300
+assert tools.output contains printed-form.fdf
+assert tools.output-exists == true
+call sheet tools
+wait 300
+click "Clear form" 300
+assert undo == Clear form
+assert field:comments == ""
+call form-data output
+assert field:comments == Ada Lovelace
+assert field:CheckBox1 == on
+assert undo == Import form data
+call sheet tools
+wait 300
+click "Export form data (XFDF)" 300
+assert tools.output contains printed-form.xfdf
+call sheet tools
+wait 300
+click "Reset form" 300
+assert undo == Reset form
+assert field:comments == ""
+call form-data output
+assert field:comments == Ada Lovelace
+assert message contains Filled in

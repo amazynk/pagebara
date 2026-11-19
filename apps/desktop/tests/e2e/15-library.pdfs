@@ -1,0 +1,54 @@
+# The library: a folder of generated samples is indexed in the background, a search
+# finds the pages with a phrase, and opening a hit shows that page.
+cursor on
+# The file picker hands focus to a protected PDF's password dialog.
+key ctrl+l
+call answer-file "$SAMPLES/lease-protected.pdf"
+key ctrl+o
+await password.visible == true 5000
+assert library.visible == false
+key escape
+assert password.visible == false
+key ctrl+l
+assert library.visible == true
+call library-add "$SAMPLES"
+wait 2500
+assert library.indexing == false
+assert library.docs >= 4
+assert library.status contains indexed
+screenshot 15-library.png
+click "Search library" 300
+type "fridge freezer" 400
+wait 500
+# Copies of the lease (protected, restricted, ...) match too.
+assert library.hits >= 2
+assert library.hit-list contains lease.pdf p4
+screenshot 15-search.png
+click "Open lease.pdf at page 4" 400
+wait 1200
+assert library.visible == false
+assert tabs == 1
+assert title contains lease
+assert page == 4
+# Back in the library: nothing changed, so nothing is read again; a hit in another file
+# opens it at its page, one in an open document just goes there.
+key ctrl+l
+wait 1500
+assert library.status contains 0 new or changed
+call library-search "Prepared for the board"
+wait 500
+assert library.hits == 1
+call library-open-hit 1
+wait 1200
+assert title == report.pdf
+assert page == 1
+call library show
+call library-search "fridge freezer"
+wait 500
+click "Open lease.pdf at page 4" 400
+wait 800
+assert tabs == 2
+assert page == 4
+key ctrl+l
+key escape
+assert library.visible == false

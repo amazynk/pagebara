@@ -1,0 +1,124 @@
+# Spell checking while typing (American English, built in): misspelled words in a form
+# field, a multi-line field, a text box, a comment and page text in Edit mode get a red
+# wavy underline; a right click (or Shift+F10) on one offers corrections, Add to
+# dictionary and Ignore; a correction replaces the word. The setting turns it off.
+cursor on
+open "$SAMPLES/form.pdf"
+zoom 100 0
+wait 800
+click "Fill & Sign" 300
+click "Fill forms" 300
+assert spell.enabled == true
+assert spell.language contains en
+# A single-line field.
+click annot 1 1 300
+assert field.editing == true
+type "Ada recieve teh plans" 600
+wait 400
+assert spell.words == recieve teh
+assert spell.drawn == 2
+screenshot 30-field.png
+rclick misspelling 1 300
+assert spell.word == recieve
+assert spell.suggestions contains receive
+screenshot 30-field-menu.png
+click "receive" 300
+assert field.text == Ada receive teh plans
+wait 300
+assert spell.words == teh
+# The menu key opens it too, with the caret in the word.
+click misspelling 1 300
+key shift+f10
+assert spell.word == teh
+click "Ignore" 300
+wait 300
+assert spell.marks == 0
+key return
+assert field:name == Ada receive teh plans
+# A multi-line field: words on the second line are found where they are drawn.
+click annot 1 11 300
+type "Raised beds near the shed" 300
+key return
+type "with tomatos and beens" 500
+wait 400
+assert spell.words == tomatos beens
+assert spell.drawn == 2
+screenshot 30-multiline.png
+rclick misspelling 1 300
+assert spell.suggestions contains tomatoes
+click "tomatoes" 300
+assert field.text contains with tomatoes and beens
+key ctrl+return
+assert field:notes contains with tomatoes and beens
+# Zoomed: the underlines follow the larger text.
+zoom 160 400
+click annot 1 11 300
+wait 400
+assert spell.drawn == 1
+screenshot 30-multiline-zoomed.png
+key escape
+zoom 100 400
+# A text box.
+click "Annotate" 300
+click "Text box" 300
+click page 1 300,620 400
+assert editing == true
+type "Mulch the begonia bed in Octobr" 600
+wait 400
+assert spell.words == Octobr
+screenshot 30-text-box.png
+rclick misspelling 1 300
+assert spell.suggestions contains October
+click "October" 300
+assert spell.marks == 0
+key ctrl+return
+assert annotation.kinds contains Text box
+# A comment of a sticky note: Add to dictionary keeps the word for later sessions.
+call set text-mode 1
+click page 1 480,120 400
+click "Comment text" 400
+type "Ask Jorunn about the seedlings" 700
+wait 400
+assert spell.words == Jorunn
+screenshot 30-comment.png
+rclick misspelling 1 300
+click "Add to dictionary" 300
+assert spell.dictionary contains Jorunn
+wait 300
+assert spell.marks == 0
+# Page text in Edit mode, at 100% and zoomed.
+open "$SAMPLES/flyer.pdf"
+zoom 100 0
+tool edit
+wait 600
+dblclick text 1 "Saturday" 300
+assert edit.text-editing == true
+key ctrl+right|alt+right
+type " mornnig" 500
+wait 300
+assert spell.words == mornnig
+screenshot 30-page-text.png
+zoom 160 400
+wait 400
+screenshot 30-page-text-zoomed.png
+zoom 100 400
+wait 300
+rclick misspelling 1 300
+assert spell.suggestions contains morning
+screenshot 30-page-text-menu.png
+click "morning" 300
+assert edit.text contains Saturday morning
+assert spell.marks == 0
+key escape
+assert page.text:1 contains Saturday morning
+# Turned off in Settings: nothing is underlined.
+call show-dialog settings
+click "Editing" 200
+click "Check spelling as you type" 300
+click "Done" 300
+assert spell.enabled == false
+dblclick text 1 "Saturday" 300
+type " mornnig" 400
+wait 300
+assert spell.marks == 0
+key escape

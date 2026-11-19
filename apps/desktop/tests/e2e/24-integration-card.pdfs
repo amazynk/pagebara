@@ -1,0 +1,27 @@
+# The optional "Set up system integration" card on the start screen: it opens the
+# settings page, or goes away for good with "Not now". (Test runs hide it unless asked.)
+call show-setup-card
+wait 300
+screenshot 24-setup-card.png
+click "Set up…" 300
+assert dialog == integration
+await os.integration contains single-instance=on 5000
+assert os.setting.setup_card_done == true
+screenshot 24-integration-page.png
+move #IntegrationDialog::rows 200
+scroll 1500 600
+scroll 1500 600
+click "Reopen last documents" 300
+assert os.setting.restore_session == true
+click "Done" 300
+assert dialog == none
+call show-setup-card
+wait 300
+click "Not now" 300
+assert os.setting.setup_card_done == true
+open "$SAMPLES/lease.pdf"
+wait 500
+call show-dialog settings
+wait 300
+click "Done" 300
+assert os.setting.session contains lease.pdf

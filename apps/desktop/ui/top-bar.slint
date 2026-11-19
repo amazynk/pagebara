@@ -1,0 +1,532 @@
+// The window's one bar: the document, the groups of tools (modes), search, every command
+// (All tools) and Save.
+import { RowLayout } from "components/row.slint";
+import { Theme } from "theme.slint";
+import { AppState, Mode, DialogKind, Chrome } from "state.slint";
+import { Button, IconButton, Pressable, FocusNav, Keys } from "components/button.slint";
+import { SegmentedControl } from "components/segmented.slint";
+import { Divider, MenuCard, MenuItem } from "components/panel.slint";
+import { LibraryState } from "library.slint";
+import { PrintState } from "print-dialog.slint";
+
+// Search in the document: typing searches as you go, Enter goes to the next hit. Closed,
+// it is a field to click or to reach with Ctrl+F.
+component SearchField inherits Rectangle {
+    property <bool> active: AppState.find-visible;
+    out property <bool> focused: input.has-focus;
+    // Enter in the field while the search was closed: search for what is in it again.
+    callback opened();
+
+    public function focus-field() {
+        AppState.find-collapsed = false;
+        input.focus();
+        input.select-all();
+    }
+
+    height: Theme.touch ? 40px : 30px;
+    border-radius: 8px;
+    background: input.has-focus ? Theme.chrome : Theme.track;
+    border-width: input.has-focus ? 1.5px : Theme.high-contrast ? 1px : 0px;
+    border-color: input.has-focus ? Theme.focus : Theme.control-border;
+    accessible-role: search;
+    accessible-label: @tr("Find in document");
+    forward-focus: input;
+
+    RowLayout {
+        padding-left: 9px;
+        padding-right: 3px;
+        spacing: 6px;
+        cross-axis-alignment: center;
+        Image {
+            source: @image-url("icons/search.svg");
+            width: 14px;
+            height: 14px;
+            colorize: Theme.muted;
+            accessible-role: none;
+        }
+        input := TextInput {
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+            color: Theme.text;
+            selection-background-color: Theme.accent-soft;
+            selection-foreground-color: Theme.text;
+            font-size: Theme.font-body;
+            single-line: true;
+            text <=> AppState.find-text;
+            // TRANSLATORS: accessible label of the search field
+            accessible-label: @tr("Find");
+            accessible-placeholder-text: @tr("Find in document");
+            accessible-description: AppState.find-hits > 0 ? "↓  " + @tr("Browse matches from the Find field") : "";
+            // Typing opens the search, not the focus alone: Tab passes through here.
+            edited => {
+                AppState.find-visible = true;
+                AppState.find(self.text);
+            }
+            accepted => {
+                if !AppState.find-visible {
+                    AppState.find-visible = true;
+                    root.opened();
+                } else {
+                    AppState.find-next(true);
+                }
+            }
+            key-pressed(e) => {
+                if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && AppState.find-visible {
+                    if e.text == Key.DownArrow && !e.modifiers.shift && AppState.find-hits > 0 {
+                        AppState.find-collapsed = false;
+                        FocusNav.request(2);
+                        return accept;
+                    }
+                    if e.text == Key.Return && e.modifiers.shift {
+                        AppState.find-next(false);
+                        return accept;
+                    }
+                }
+                // With the search closed there is nothing for Esc to close: back to the pages.
+                if e.text == Key.Escape && !AppState.find-visible {
+                    FocusNav.request(3);
+                    return accept;
+                }
+                reject
+            }
+        }
+        if root.active: Text {
+            text: AppState.find-status;
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+            accessible-role: text;
+            accessible-label: AppState.find-status;
+            accessible-live-region: polite;
+        }
+        if root.active: IconButton {
+            width: 24px;
+            height: 24px;
+            icon: @image-url("icons/chevron-up.svg");
+            icon-size: 14px;
+            label: @tr("Previous match");
+            description: Keys.label(Keys.find-previous, false);
+            enabled: AppState.find-hits > 0;
+            clicked => {
+                AppState.find-next(false);
+            }
+        }
+        if root.active: IconButton {
+            width: 24px;
+            height: 24px;
+            icon: @image-url("icons/chevron-down.svg");
+            icon-size: 14px;
+            label: @tr("Next match");
+            description: Keys.label(Keys.find-next, false);
+            enabled: AppState.find-hits > 0;
+            clicked => {
+                AppState.find-next(true);
+            }
+        }
+        if root.active: IconButton {
+            width: 24px;
+            height: 24px;
+            icon: @image-url("icons/close.svg");
+            icon-size: 13px;
+            label: @tr("Close search");
+            clicked => {
+                AppState.find-visible = false;
+                AppState.find-close();
+            }
+        }
+        if !root.active: Text {
+            text: Keys.label("Ctrl+F", false) + " ";
+            color: Theme.faint;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+
+    if AppState.find-text == "": Text {
+        x: Theme.rtl ? parent.width - 29px - self.width : 29px;
+        // TRANSLATORS: placeholder of the search field in the toolbar
+        text: @tr("Search");
+        color: Theme.faint;
+        font-size: Theme.font-body;
+        vertical-alignment: center;
+        height: parent.height;
+        accessible-role: none;
+    }
+}
+
+export component TopBar inherits Rectangle {
+    // The window's height, for how tall a menu can be.
+    in property <length> window-height: 10000px;
+    // Room kept free at the start for the window's own buttons, when this bar is also
+    // the window's title bar.
+    in property <length> inset: 0px;
+    // The search was opened again with text still in its field: show the hits again.
+    callback find-opened();
+    property <bool> has-doc: AppState.mode != Mode.welcome;
+    property <bool> view: AppState.mode == Mode.view;
+    property <bool> tabbed: AppState.tabs.length > 1;
+
+    property <length> cs: Theme.control-height;
+    // The names of the groups, measured for the room the switch needs.
+    property <[string]> groups: [
+        // TRANSLATORS: the groups of tools, in the toolbar: looking at the document,
+        @tr("View"),
+        // TRANSLATORS: marking it up (highlights, drawings, notes),
+        @tr("Annotate"),
+        // TRANSLATORS: filling in forms and signing,
+        @tr("Fill & Sign"),
+        // TRANSLATORS: changing the text and images of the pages,
+        @tr("Edit"),
+        // TRANSLATORS: and moving, rotating and removing pages
+        @tr("Organize"),
+    ];
+    property <length> switch-width: m0.preferred-width + m1.preferred-width + m2.preferred-width + m3.preferred-width + m4.preferred-width + 5 * 22px + 4 * 2px + 6px;
+    property <length> gap-start: Theme.rtl ? end.x + end.width : start.x + start.width;
+    property <length> gap-end: Theme.rtl ? start.x : end.x;
+    // What the search field and the name can have; the switch and the buttons come first.
+    property <length> spare: root.width - inset - 20px - cs - 8px - (2 * cs + 12px + save-btn.preferred-width + 8px);
+    property <bool> search-wide: view && (AppState.find-visible || spare - switch-width - 60px >= 210px);
+    property <length> search-width: !search-wide ? cs : AppState.find-visible ? max(180px, min(300px, spare - 150px)) : 200px;
+    property <bool> segmented: spare - search-width - 6px - switch-width - 28px >= 0px;
+    property <length> name-room: spare - search-width - 6px - (segmented ? switch-width : 132px) - 40px;
+    property <bool> show-name: !tabbed && (!has-doc || name-room >= 70px);
+    property <int> group: AppState.mode == Mode.organize ? 4 : Chrome.group;
+
+    public function focus-search() {
+        search.focus-field();
+    }
+    // The search opened: its field takes the keyboard, unless it has it already (typing
+    // in it is what opened the search, and selecting the text would lose what was typed).
+    public function open-search() {
+        if !search.focused {
+            search.focus-field();
+        }
+    }
+
+    height: Theme.toolbar-height;
+    background: Theme.chrome;
+    accessible-role: banner;
+    accessible-label: @tr("Toolbar");
+
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 1 {
+            if root.has-doc && root.view {
+                sidebar-btn.focus-button();
+            } else {
+                all-tools.focus-button();
+            }
+        }
+    }
+
+    // As the window's title bar: dragging it moves the window, a double click zooms it.
+    if Chrome.unified: TouchArea {
+        moved => {
+            if self.pressed && (abs(self.mouse-x - self.pressed-x) > 3px || abs(self.mouse-y - self.pressed-y) > 3px) {
+                Chrome.drag-window();
+            }
+        }
+        double-clicked => {
+            Chrome.zoom-window();
+        }
+    }
+
+    // Only measured.
+    m0 := Text { visible: false; text: root.groups[0]; font-size: Theme.font-body; font-weight: 600; accessible-role: none; }
+    m1 := Text { visible: false; text: root.groups[1]; font-size: Theme.font-body; font-weight: 600; accessible-role: none; }
+    m2 := Text { visible: false; text: root.groups[2]; font-size: Theme.font-body; font-weight: 600; accessible-role: none; }
+    m3 := Text { visible: false; text: root.groups[3]; font-size: Theme.font-body; font-weight: 600; accessible-role: none; }
+    m4 := Text { visible: false; text: root.groups[4]; font-size: Theme.font-body; font-weight: 600; accessible-role: none; }
+
+    // Placed, not laid out: the bar's own size must not follow what it shows (the
+    // window's minimum width would then depend on it). In the order the Tab key goes:
+    // the document, the modes, then search and the buttons.
+    start := RowLayout {
+        x: Theme.rtl ? root.width - 10px - root.inset - self.width : 10px + root.inset;
+        y: 0px;
+        width: self.preferred-width;
+        height: root.height;
+        spacing: 8px;
+        cross-axis-alignment: center;
+        sidebar-btn := IconButton {
+            icon: @image-url("icons/sidebar.svg");
+            label: @tr("Show sidebar");
+            checkable: true;
+            checked: AppState.sidebar-shown;
+            enabled: root.view;
+            visible: root.has-doc;
+            width: root.has-doc ? root.cs : 0px;
+            clicked => {
+                AppState.toggle-sidebar();
+            }
+        }
+        if !root.has-doc: Text {
+            text: AppState.app-name;
+            color: Theme.text;
+            font-size: Theme.font-title;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        // The document: its name, whether it has unsaved changes or is protected, and
+        // the file's own commands.
+        if root.has-doc && root.show-name: Rectangle {
+            width: min(doc-row.preferred-width, max(70px, root.name-room));
+            height: root.cs;
+            doc := Pressable {
+                border-radius: Theme.radius-small;
+                background: self.has-hover ? Theme.hover : transparent;
+                arrows: false;
+                label: AppState.title;
+                description: (AppState.dirty ? @tr("Unsaved changes") + ". " : "") + AppState.protection;
+                accessible-expandable: true;
+                clicked => {
+                    file-menu.show();
+                }
+                doc-row := RowLayout {
+                    padding-left: 8px;
+                    padding-right: 6px;
+                    spacing: 6px;
+                    cross-axis-alignment: center;
+                    Text {
+                        horizontal-stretch: 1;
+                        text: AppState.title;
+                        color: Theme.text;
+                        font-size: Theme.font-title;
+                        font-weight: 600;
+                        overflow: elide;
+                        vertical-alignment: center;
+                        accessible-role: none;
+                    }
+                    if AppState.protection != "": Image {
+                        source: @image-url("icons/lock.svg");
+                        width: 13px;
+                        height: 13px;
+                        colorize: Theme.muted;
+                        accessible-role: none;
+                    }
+                    if AppState.dirty: Text {
+                        // TRANSLATORS: after the document's name in the toolbar: it has unsaved changes
+                        text: @tr("Edited");
+                        color: Theme.muted;
+                        font-size: Theme.font-small;
+                        vertical-alignment: center;
+                        accessible-role: none;
+                    }
+                    Image {
+                        source: @image-url("icons/chevron-down.svg");
+                        width: 12px;
+                        height: 12px;
+                        colorize: Theme.muted;
+                        accessible-role: none;
+                    }
+                }
+            }
+            file-menu := PopupWindow {
+                x: 0px;
+                y: root.cs + 6px;
+                width: 270px;
+                MenuCard {
+                    MenuItem {
+                        initial-focus: true;
+                        text: @tr("Open…");
+                        icon: @image-url("icons/folder.svg");
+                        shortcut: "Ctrl+O";
+                        clicked => {
+                            file-menu.close();
+                            AppState.open-file();
+                        }
+                    }
+                    for f[i] in AppState.recent: MenuItem {
+                        visible: i < 4;
+                        height: i < 4 ? Theme.row-height : 0px;
+                        text: f.name;
+                        icon: @image-url("icons/file.svg");
+                        clicked => {
+                            file-menu.close();
+                            AppState.open-recent(i);
+                        }
+                    }
+                    Divider { }
+                    MenuItem {
+                        text: @tr("Save as…");
+                        icon: @image-url("icons/save.svg");
+                        shortcut: "Ctrl+Shift+S";
+                        clicked => {
+                            file-menu.close();
+                            AppState.save-as(false);
+                        }
+                    }
+                    MenuItem {
+                        text: @tr("Save a smaller copy…");
+                        icon: @image-url("icons/compress.svg");
+                        clicked => {
+                            file-menu.close();
+                            AppState.save-as(true);
+                        }
+                    }
+                    MenuItem {
+                        text: @tr("Print…");
+                        icon: @image-url("icons/printer.svg");
+                        shortcut: "Ctrl+P";
+                        clicked => {
+                            file-menu.close();
+                            PrintState.open();
+                        }
+                    }
+                    MenuItem {
+                        text: @tr("Document properties");
+                        icon: @image-url("icons/properties.svg");
+                        clicked => {
+                            file-menu.close();
+                            AppState.show-dialog(DialogKind.properties);
+                        }
+                    }
+                    Divider { }
+                    MenuItem {
+                        text: @tr("Close document");
+                        icon: @image-url("icons/close.svg");
+                        shortcut: "Ctrl+W";
+                        clicked => {
+                            file-menu.close();
+                            AppState.close-tab(-1);
+                        }
+                    }
+                }
+            }
+        }
+        // With tabs the names are there; a protected file still shows its lock.
+        if root.has-doc && root.tabbed && AppState.protection != "": Image {
+            source: @image-url("icons/lock.svg");
+            width: 14px;
+            height: 14px;
+            colorize: Theme.muted;
+            accessible-role: image;
+            accessible-label: AppState.protection;
+        }
+    }
+
+
+    // Between the two ends: in the middle when there is room, else as near as fits.
+    if root.has-doc && root.segmented: SegmentedControl {
+        x: max(root.gap-start + 12px, min((root.width - self.width) / 2, root.gap-end - 12px - self.width));
+        width: self.preferred-width;
+        // TRANSLATORS: name of the switch between the groups of tools (View, Annotate, …)
+        name: @tr("Mode");
+        items: [{ label: root.groups[0] }, { label: root.groups[1] }, { label: root.groups[2] }, { label: root.groups[3] }, { label: root.groups[4] }];
+        controlled: true;
+        selected: root.group;
+        activated(i) => {
+            Chrome.choose(i);
+        }
+    }
+    // In a narrow window the switch is a menu.
+    if root.has-doc && !root.segmented: Rectangle {
+        x: max(root.gap-start + 8px, min((root.width - self.width) / 2, root.gap-end - 8px - self.width));
+        width: mode-btn.preferred-width;
+        height: Theme.control-height;
+        mode-btn := Button {
+            text: root.groups[root.group];
+            icon: @image-url("icons/chevron-down.svg");
+            description: @tr("Mode");
+            clicked => {
+                mode-menu.show();
+            }
+        }
+        mode-menu := PopupWindow {
+            y: parent.height + 6px;
+            width: 190px;
+            MenuCard {
+                for name[i] in root.groups: MenuItem {
+                    text: name;
+                    initial-focus: i == root.group;
+                    clicked => {
+                        mode-menu.close();
+                        Chrome.choose(i);
+                    }
+                }
+            }
+        }
+    }
+
+    end := RowLayout {
+        x: Theme.rtl ? 10px : root.width - 10px - self.width;
+        y: 0px;
+        width: self.preferred-width;
+        height: root.height;
+        spacing: 6px;
+        cross-axis-alignment: center;
+        Rectangle {
+            visible: root.search-wide;
+            width: root.search-wide ? root.search-width : 0px;
+            height: Theme.touch ? 40px : 30px;
+            search := SearchField {
+                opened => {
+                    root.find-opened();
+                }
+            }
+        }
+        if root.view && !root.search-wide: IconButton {
+            icon: @image-url("icons/search.svg");
+            label: @tr("Search");
+            description: "Ctrl+F";
+            clicked => {
+                AppState.find-visible = true;
+                root.find-opened();
+                search.focus-field();
+            }
+        }
+        all-tools := IconButton {
+            icon: @image-url("icons/tools.svg");
+            label: @tr("All tools");
+            description: "Ctrl+K";
+            checkable: true;
+            checked: Chrome.palette-open;
+            clicked => {
+                Chrome.palette-open = true;
+            }
+        }
+        if !root.has-doc: IconButton {
+            icon: Theme.dark ? @image-url("icons/sun.svg") : @image-url("icons/moon.svg");
+            label: Theme.dark ? @tr("Switch to light mode") : @tr("Switch to dark mode");
+            clicked => {
+                AppState.set-theme(Theme.high-contrast ? (Theme.dark ? 4 : 3) : Theme.dark ? 1 : 2);
+            }
+        }
+        // Measured even without a document, for the room the rest has.
+        Rectangle {
+            width: root.has-doc ? save-btn.preferred-width : 0px;
+            height: Theme.control-height;
+            visible: root.has-doc;
+            save-btn := Button {
+                width: self.preferred-width;
+                height: Theme.control-height;
+                // TRANSLATORS: verb, on the button that saves the document
+                text: @tr("Save");
+                // The accent marks unsaved changes; with none, Save stays available (it
+                // says so, or flattens on save) but does not call for attention.
+                primary: AppState.dirty;
+                enabled: root.has-doc && !AppState.busy;
+                clicked => {
+                    AppState.save();
+                }
+            }
+        }
+        if root.view: IconButton {
+            icon: @image-url("icons/panel-right.svg");
+            // TRANSLATORS: the side panel with the options of the tool or the properties of the selection
+            label: @tr("Inspector");
+            checkable: true;
+            checked: Chrome.inspector-open;
+            clicked => {
+                Chrome.toggle-inspector();
+            }
+        }
+    }
+
+    Rectangle {
+        y: root.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "pagebara-i18n"
+description = "UI languages: the translation catalogs shared with the Slint UI, plurals, the system language, numbers, sizes and dates"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+miniz_oxide.workspace = true
+sys-locale = "0.3.2"
+
+[build-dependencies]
+miniz_oxide.workspace = true
+
+[lints]
+workspace = true

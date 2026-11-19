@@ -1,0 +1,197 @@
+# Accessibility: everything from the keyboard (open a recent file, move between areas,
+# turn pages, search, highlight, place a signature, save), every control has a name for
+# screen readers, the theme's contrast, the shortcuts list, high contrast and larger text.
+cursor off
+call a11y-check
+call contrast-check
+assert theme.high-contrast == false
+# A copy of the lease to change (the samples stay as they are for the other scripts); both
+# are then recent files. From the welcome screen, Shift+Tab goes back from the end through
+# the recent files (the lease, then the copy) and Enter opens one.
+open "$SAMPLES/lease.pdf"
+call save-as "$OUT/keyboard.pdf"
+await file.exists:$OUT/keyboard.pdf == true 5000
+assert title == keyboard.pdf
+wait 300
+key ctrl+w
+assert tabs == 0
+wait 400
+key shift+tab
+key shift+tab
+key return
+wait 800
+assert tabs == 1
+assert title == keyboard.pdf
+call a11y-check
+# The page text is there for screen readers, in reading order, and links name their target.
+assert a11y.page-text contains RESIDENTIAL LEASE AGREEMENT
+assert a11y.links contains Link to
+# F6 goes to the page number in the tool row, which takes a page.
+key f6
+type "3" 200
+key return
+wait 500
+assert page == 3
+# F6 again: the toolbar, the tools, then the sidebar; Tab reaches the thumbnails, where
+# the arrows and Home turn pages and Enter goes back to the pages.
+key f6
+key f6
+key f6
+assert focus.region == 2
+key tab
+key right
+wait 400
+assert page == 4
+key home
+wait 400
+assert page == 1
+key return
+key end
+wait 600
+assert page == 4
+assert focus.region == 3
+screenshot 17-keyboard.png
+# Search from the keyboard; the status is announced (a live region).
+key ctrl+f
+type "rent" 300
+key return
+wait 400
+assert search.hits > 0
+assert find.status contains of
+key escape
+# Choose the highlight tool: F6 goes round the page number to the toolbar, where Tab
+# reaches the modes (after the sidebar button and the document) and Right chooses
+# Annotate; F6 then goes to its tools, Tab to Highlight.
+key f6
+key f6
+assert focus.region == 1
+key tab
+key tab
+key right
+key f6
+assert focus.region == 8
+key tab
+key return
+assert tool == 1
+# Select the page's text and press Enter to highlight it.
+key f6
+key f6
+assert focus.region == 3
+key ctrl+a
+key return
+wait 300
+assert annotations == 1
+# ] selects it; the arrows move it.
+key escape
+key ]
+assert message contains selected, 1 of 1
+key down
+wait 200
+assert undo == Move
+key escape
+key escape
+assert tool == 0
+# Signatures: import one, choose the sign tool, Enter places it in the middle of the page.
+call import-signature "$SAMPLES/signature-photo.png"
+assert signatures == 1
+wait 800
+key f6
+key f6
+assert focus.region == 1
+key tab
+key tab
+key right
+key f6
+key tab
+key return
+assert tool == 4
+key f6
+key f6
+assert focus.region == 3
+key return
+wait 600
+assert annotation.kinds contains Signature
+key ctrl+right
+wait 200
+assert undo == Resize
+screenshot 17-signed.png
+key escape
+key escape
+key ctrl+s
+wait 1500
+assert dirty == false
+# The keyboard shortcuts: F1 opens them, Esc closes; focus is in the dialog.
+key f1
+assert dialog == shortcuts
+call a11y-check
+screenshot 17-shortcuts.png
+key tab
+key escape
+assert dialog == none
+key ctrl+/
+assert dialog == shortcuts
+key escape
+# Dialogs: names, Esc and focus.
+call show-dialog settings
+wait 200
+assert dialog == settings
+call a11y-check
+key escape
+assert dialog == none
+call show-dialog properties
+wait 200
+call a11y-check
+key escape
+assert dialog == none
+# All tools: Ctrl+K opens the list with the keyboard in its search field, Down moves,
+# Enter chooses (the library), Esc closes it again.
+key ctrl+k
+wait 300
+call a11y-check
+# The two recent files, Open…, then the library.
+key down
+key down
+key down
+screenshot 17-menu.png
+key return
+wait 400
+assert library.visible == true
+call a11y-check
+key escape
+wait 300
+assert library.visible == false
+# Organize: the arrows move between pages, Shift extends, Ctrl+arrows move pages.
+call organize
+wait 600
+call a11y-check
+key right
+key shift+right
+wait 200
+assert grid.selected == 2
+key ctrl+right
+wait 400
+assert undo == Move pages
+key ctrl+z
+wait 300
+key escape
+assert mode == view
+# High contrast and larger text; the contrast of what is shown is checked.
+call theme high-contrast
+assert theme.high-contrast == true
+assert theme.dark == true
+call contrast-check
+call text-scale 1.3
+assert theme.text-scale == 1.3
+screenshot 17-high-contrast.png
+call theme high-contrast-light
+call contrast-check
+screenshot 17-high-contrast-light.png
+call theme dark
+call contrast-check
+call text-scale 1
+call motion reduce
+assert theme.reduce-motion == true
+call motion system
+call theme light
+call contrast-check
+call a11y-check

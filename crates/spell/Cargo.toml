@@ -1,0 +1,22 @@
+[package]
+name = "pagebara-spell"
+description = "Offline spell checking with Hunspell dictionaries: checking, suggestions and word tokenizing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+miniz_oxide.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+ureq = { version = "3.5", optional = true, default-features = false, features = ["rustls"] }
+
+[build-dependencies]
+miniz_oxide.workspace = true
+
+[features]
+# HttpFetch: dictionary downloads over HTTPS (ureq with rustls/ring).
+download = ["dep:ureq"]
+
+[lints]
+workspace = true

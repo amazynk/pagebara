@@ -1,0 +1,152 @@
+# Editing what a page draws: select objects by clicking, Tab and a box; move them by
+# dragging and with the arrows, scale and rotate with the handles, recolour, change the
+# opacity, arrange, duplicate and delete them; replace, crop and save an image; add an
+# image; undo and redo; save, open again and check. Zoomed while dragging, the dragged
+# objects are rendered again sharp; dragged past its opposite edge, a picture is mirrored.
+cursor on
+open "$SAMPLES/flyer.pdf"
+zoom 100 0
+assert object.kinds:1 == text,text,image,path,path,text
+tool edit
+assert tool == 7
+assert message contains Edit:
+# The pointer over the blue box outlines it; a click selects it.
+move object 1 4 300
+click object 1 4 300
+assert edit.count == 1
+assert edit.kinds == path
+assert edit.selected contains Drawing, 200 by 150 points
+assert message contains Selected: Drawing
+assert edit.bbox == 320,420,520,570
+screenshot 21-selected.png
+# While dragging, the object itself moves (the page shows through where it was).
+drag-hold object 1 4 page 1 470,247 700
+screenshot 21-dragging.png
+assert edit.preview-sharp == true
+assert edit.preview-scale < 2.2
+zoom 150 300
+assert edit.preview-sharp == true
+assert edit.preview-scale > 2.7
+screenshot 21-dragging-zoomed.png
+zoom 100 300
+assert edit.preview-sharp == true
+release
+# Dragging moves it as one step.
+assert undo == Move object
+assert edit.bbox == 370,470,570,620
+# Arrows nudge it, Shift by ten points.
+key right
+assert edit.bbox == 371,470,571,620
+key shift+down
+assert edit.bbox == 371,460,571,610
+# The bottom right handle (just outside the corner) scales it from the top left corner.
+drag handle br page 1 625,386 700
+assert undo == Resize object
+assert edit.bbox == 371,410,621,610
+screenshot 21-scaled.png
+# Recolour and opacity from the panel.
+call edit fill 5
+assert undo == Change fill colour
+assert edit.fill == #dc2626
+call edit opacity 50
+assert undo == Change opacity
+assert edit.opacity == 50
+# Arrangement: to the back and to the front again.
+assert edit.order == 4
+call edit back
+assert undo == Send to back
+assert edit.order == 1
+key ctrl+z
+assert edit.order == 4
+key ctrl+y
+assert edit.order == 1
+key ctrl+shift+]
+assert undo == Bring to front
+assert edit.order == 6
+# Duplicate and delete.
+key ctrl+d
+assert undo == Duplicate object
+assert edit.objects == 7
+assert edit.bbox == 383,398,633,598
+key delete
+assert undo == Delete object
+assert edit.objects == 6
+assert edit.count == 0
+# Tab moves from object to object in reading order.
+key tab
+assert edit.selected contains Spring Garden Fair
+key tab
+assert edit.selected contains Join us on Saturday
+key shift+tab
+assert edit.selected contains Spring Garden Fair
+key escape
+assert edit.count == 0
+# A box dragged over the heading and the paragraph selects both.
+drag page 1 50,60 page 1 300,175 600
+assert edit.count == 2
+assert edit.kinds == text,text
+screenshot 21-marquee.png
+key escape
+# The rule: thicker and dashed from the panel, then rotated with its handle.
+click page 1 300,402 300
+assert edit.kinds == path
+assert edit.line == 2.0
+call edit line-width 4
+assert undo == Change line width
+assert edit.line == 4.0
+call edit dashed 1
+assert undo == Change line style
+assert edit.line == 4.0 dashed
+screenshot 21-line.png
+drag handle rotate page 1 450,330 700
+assert undo == Rotate object
+screenshot 21-rotated.png
+# The picture: replaced, cropped, saved as PNG.
+click object 1 3 300
+assert edit.kinds == image
+assert edit.image == 96x64
+# Its bottom edge dragged above the top: upside down while dragging and once let go.
+assert edit.mirrored == false
+drag-hold handle b page 1 172,110 700
+screenshot 21-mirroring.png
+release
+assert undo == Resize object
+assert edit.mirrored == true
+wait 600
+screenshot 21-mirrored.png
+key ctrl+z
+click object 1 3 300
+assert edit.mirrored == false
+call edit-replace-image "$SAMPLES/chart.png"
+assert undo == Replace image
+assert edit.image == 640x420
+call edit crop
+assert edit.cropping == true
+call edit-crop 72 230 120 130
+screenshot 21-crop.png
+key return
+assert edit.cropping == false
+assert undo == Crop image
+call edit-extract-image "$OUT/flyer-picture.png"
+assert file.exists:$OUT/flyer-picture.png == true
+# A new image.
+call edit-add-image "$SAMPLES/signature-photo.png"
+assert undo == Add image
+assert edit.kinds == image
+assert object.kinds:1 == text,text,image,path,text,path,image
+screenshot 21-edited.png
+# Undo and redo across tools.
+tool select
+call undo
+assert undo == Crop image
+call redo
+assert undo == Add image
+# Saved and read again.
+call save-as "$OUT/flyer-objects.pdf"
+await title == flyer-objects.pdf 20000
+open "$OUT/flyer-objects.pdf"
+assert object.kinds:1 == text,text,image,path,text,path,image
+assert object.fill:1,6 == #dc2626
+assert page.text:1 contains Spring Garden Fair
+assert page.text:1 contains Tickets at the gate
+screenshot 21-reopened.png

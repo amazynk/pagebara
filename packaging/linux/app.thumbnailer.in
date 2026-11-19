@@ -1,0 +1,4 @@
+[Thumbnailer Entry]
+TryExec=@APP_BIN@
+Exec=@APP_BIN@ --thumbnail %i %o %s
+MimeType=application/pdf;application/x-pdf;

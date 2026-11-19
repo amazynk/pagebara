@@ -1,0 +1,157 @@
+# A reference PDF and an edit in progress. Switching keeps the edit with its
+# document, and closing a background tab leaves the active editor alone.
+open "$SAMPLES/form.pdf"
+call answer-file "$SAMPLES/lease.pdf"
+key ctrl+t
+await title == lease.pdf 5000
+tool text
+click page 1 300,200 300
+type "Check the lease dates" 300
+click "form.pdf" 200
+assert tool == 0
+assert dirty == false
+tool forms
+zoom 100 0
+wait 400
+click annot 1 1 300
+assert field.editing == true
+type "Ada Lovelace" 300
+assert field.text == Ada Lovelace
+# Move the tab while the caret is in the field. At an end it stays put.
+key ctrl+shift+pagedown|ctrl+alt+shift+right
+assert title == form.pdf
+assert field.editing == true
+key ctrl+shift+pagedown|ctrl+alt+shift+right
+type " Jr" 150
+assert field.text == Ada Lovelace Jr
+key ctrl+shift+pageup|ctrl+alt+shift+left
+key ctrl+shift+pageup|ctrl+alt+shift+left
+assert field.editing == true
+key physical-ctrl+tab
+assert title == lease.pdf
+assert tool == 3
+assert dirty == true
+assert annotations == 1
+key ctrl+z
+assert annotations == 0
+assert dirty == false
+click "form.pdf" 200
+assert tool == 5
+assert field:name == Ada Lovelace Jr
+click annot 1 1 300
+key ctrl+a
+type "Ada Lovelace Byron" 300
+assert field.text == Ada Lovelace Byron
+click "Close lease.pdf" 200
+assert tabs == 1
+assert field.editing == true
+assert field.text == Ada Lovelace Byron
+# A new file opens in View. Organize and its selection belong to one tab.
+open "$SAMPLES/report.pdf"
+assert tool == 0
+call organize
+wait 400
+click "Page i" 200
+assert grid.selected == 1
+click "form.pdf" 200
+assert mode == view
+assert field:name == Ada Lovelace Byron
+click "Switch document" 250
+key down
+key return
+assert title == report.pdf
+assert mode == organize
+assert grid.selected == 1
+open "$SAMPLES/flyer.pdf"
+assert mode == view
+zoom 100 0
+tool edit
+wait 500
+dblclick text 1 "Saturday" 300
+assert edit.text-editing == true
+type "afternoon" 300
+assert edit.text contains afternoon
+key physical-ctrl+shift+tab
+assert title == report.pdf
+assert mode == organize
+click "flyer.pdf" 200
+assert tool == 7
+assert page.text:1 contains afternoon
+key ctrl+z
+assert page.text:1 !contains afternoon
+# A close request sees a text box that hasn't been finished explicitly.
+tool text
+click page 1 300,200 300
+type "Keep this note" 200
+key ctrl+w
+assert dialog == unsaved
+click "Cancel" 200
+assert annotations == 1
+# Save As includes a text box even when the insertion caret is still in it.
+click page 1 300,250 300
+type "Saved from the editor" 200
+call answer-file "$OUT/edited-flyer.pdf"
+key ctrl+shift+s
+await title == edited-flyer.pdf 5000
+assert dirty == false
+key ctrl+w
+open "$OUT/edited-flyer.pdf"
+assert annotations == 2
+# Save As from the paragraph editor writes the edit to the copy.
+tool edit
+zoom 100 0
+wait 400
+dblclick text 1 "Saturday" 300
+assert edit.text-editing == true
+type "evening" 200
+call answer-file "$OUT/evening.pdf"
+key ctrl+shift+s
+await title == evening.pdf 5000
+assert edit.text-editing == false
+key ctrl+w
+open "$OUT/evening.pdf"
+assert page.text:1 contains evening
+key ctrl+w
+open "$OUT/edited-flyer.pdf"
+assert page.text:1 !contains evening
+# More files than fit in the strip. Keyboard switching wraps to the first
+# document and the switcher can reach a file outside the visible tabs.
+open "$SAMPLES/lease.pdf"
+open "$SAMPLES/rotated.pdf"
+open "$SAMPLES/printed-form.pdf"
+open "$SAMPLES/tagged.pdf"
+open "$SAMPLES/scan.pdf"
+open "$SAMPLES/personal.pdf"
+open "$SAMPLES/live-text.pdf"
+open "$SAMPLES/scan-turned.pdf"
+key physical-ctrl+tab
+assert title == form.pdf
+click "Switch document" 250
+key down
+key return
+assert title == report.pdf
+key physical-ctrl+shift+tab
+key physical-ctrl+shift+tab
+assert title == scan-turned.pdf
+click "Switch document" 250
+screenshot 33-document-switcher.png
+key escape
+assert title == scan-turned.pdf
+click "Switch document" 250
+key home
+key return
+assert title == form.pdf
+assert tool == 5
+
+# Reordering changes the neighbours used by both sets of cycling shortcuts.
+key ctrl+shift+pagedown|ctrl+alt+shift+right
+key ctrl+pageup|ctrl+alt+left
+assert title == report.pdf
+key physical-ctrl+tab
+assert title == form.pdf
+key ctrl+pagedown|ctrl+alt+right
+assert title == edited-flyer.pdf
+key physical-ctrl+shift+tab
+key ctrl+shift+pageup|ctrl+alt+shift+left
+key ctrl+pageup|ctrl+alt+left
+assert title == scan-turned.pdf

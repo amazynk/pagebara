@@ -1,0 +1,72 @@
+# Browse individual occurrences in the Find panel and return to reading.
+open "$SAMPLES/report.pdf"
+zoom 90 0
+click "Show sidebar"
+key ctrl+f
+type "revenue"
+await find.status == 1 of 53 5000
+key return
+assert search.current == 2
+key shift+return
+assert search.current == 1
+key down
+assert focus.region == 2
+key down
+assert search.current == 2
+key down
+assert search.current == 3
+click "Page 3 (1) — of revenue from subscriptions doubled." 300
+assert search.current == 4
+assert focus.region == 2
+wait 250
+screenshot 34-find-results.png
+call a11y-check
+key end
+assert search.current == 53
+await page == 12 3000
+click "Page 12 (10) — of revenue from subscriptions doubled." 300
+assert search.current == 50
+key down
+assert search.current == 51
+key pageup
+assert search.current < 51
+key home
+assert search.current == 1
+key return
+assert focus.region == 3
+assert find.visible == true
+await page == 2 3000
+click "Show sidebar"
+assert find.results-visible == false
+assert search.current == 1
+click "Show sidebar"
+assert find.results-visible == true
+
+# Changing tabs keeps each document's own matches. Editing a query replaces old rows.
+open "$SAMPLES/lease.pdf"
+key ctrl+f
+type "residential"
+await find.status == 1 of 1 5000
+key physical-ctrl+tab
+await find.status == 1 of 53 3000
+click "Page 3 (1) — of revenue from subscriptions doubled." 300
+assert search.current == 4
+key ctrl+f
+type "no-such-phrase"
+await find.status == No matches 5000
+assert search.hits == 0
+key escape
+assert find.visible == false
+assert focus.region == 3
+
+# At high zoom, selecting the occurrence at the right edge must bring the word on screen.
+page 1
+zoom 400 0
+key ctrl+f
+type "revenue"
+await search.hits == 53 5000
+click "Page 3 (1) — … and tools. Revenue" 300
+assert search.current == 3
+wait 300
+dblclick text 3 "Revenue from garden furniture" 300
+assert selection.text == Revenue

@@ -1,0 +1,6 @@
+disallowed-methods = [
+    { path = "std::thread::spawn", reason = "unnamed thread: use pagebara_thread::spawn(name, f)" },
+    { path = "std::thread::Builder::new", reason = "use pagebara_thread::builder(name)" },
+    { path = "std::thread::Scope::spawn", reason = "unnamed thread: use pagebara_thread::spawn_scoped(scope, name, f)" },
+    { path = "rayon::ThreadPoolBuilder::new", reason = "unnamed pool threads: use pagebara_thread::rayon_pool(prefix)", allow-invalid = true },
+]

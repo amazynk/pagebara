@@ -1,0 +1,37 @@
+// Colours and sizes of the phone and tablet UI.
+
+export global Theme {
+    in property <bool> dark;
+    // Right-to-left UI (Arabic, Hebrew): rows and arrows are mirrored.
+    in property <bool> rtl;
+
+    out property <color> bg: dark ? #141416 : #F1F1F3;
+    out property <color> chrome: dark ? #1E1E21 : #FFFFFF;
+    out property <color> text: dark ? #F4F4F5 : #18181B;
+    out property <color> muted: dark ? #A1A1AA : #52525B;
+    out property <color> border: dark ? #3A3A40 : #E4E4E7;
+    out property <color> accent-soft: dark ? #1E2A44 : #EAF1FF;
+    out property <color> accent: #2563EB;
+    // Accent text and icons on the chrome.
+    out property <color> accent-fg: dark ? #60A5FA : #2563EB;
+    out property <color> on-accent: #FFFFFF;
+    // The edge around the accent colour of marks on the page (Edit mode's frames, handles
+    // and caret), so they show on any page colour, the accent's own too.
+    out property <color> accent-halo: #FFFFFFE6;
+    out property <color> pressed: dark ? #2A2A2F : #E4E4E7;
+    out property <color> danger: dark ? #F87171 : #B91C1C;
+    out property <color> scrim: #0000005C;
+    out property <color> shadow: dark ? #00000066 : #18181B1F;
+    out property <color> selection: #2563EB40;
+    out property <color> hit: #F59E0B55;
+    out property <color> hit-current: #F9731699;
+
+    out property <length> header-height: 56px;
+    out property <length> toolbar-height: 62px;
+    out property <length> touch: 44px;
+    out property <length> radius: 12px;
+
+    out property <length> font-small: 12px;
+    out property <length> font-body: 15px;
+    out property <length> font-title: 17px;
+}

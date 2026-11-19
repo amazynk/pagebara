@@ -1,0 +1,13 @@
+# Protected documents ask for their password; dark mode.
+call dark on
+open "$SAMPLES/lease-protected.pdf"
+assert password == true
+wait 300
+screenshot 06-password.png
+call unlock "wrong"
+assert password == true
+call unlock "user"
+assert password == false
+assert pages == 4
+wait 800
+screenshot 06-dark.png

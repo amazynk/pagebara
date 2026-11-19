@@ -1,0 +1,51 @@
+# Reading on a phone: the start screen, opening, page thumbnails, search, zooming with
+# a pinch and a double tap, flinging, and back to the start screen.
+wait 300
+assert reading == false
+assert gap-y:Home::open-pdf,Home::language >= 16
+screenshot 01-home.png
+open "$SAMPLES/lease.pdf"
+wait 800
+assert pages == 4
+assert page == 1
+assert fit-width == true
+assert missing == 0
+screenshot 01-lease.png
+# Page thumbnails: tap one to go there.
+click "Pages" 200
+wait 600
+assert sheet == pages
+screenshot 01-pages.png
+click "Page 3" 300
+assert sheet == none
+assert page == 3
+# Search: the hits are marked and the first one is shown.
+click "Search" 200
+# Tap the far side of the already focused, empty search field and type.
+click 230,28 100
+type "deposit" 400
+assert search.hits >= 2
+assert find.status contains of
+wait 300
+screenshot 01-search.png
+click "Next match" 200
+assert search.current == 2
+click "Close search" 200
+# Two fingers zoom in; a double tap goes back to the page width.
+call pinch 2.2
+wait 500
+assert fit-width == false
+assert zoom > 0.8
+screenshot 01-zoomed.png
+dblclick 195,450 200
+assert fit-width == true
+# A fling carries on after the finger lifts.
+page 1
+wait 400
+call fling 4000
+wait 1500
+assert page > 1
+# Back closes the document.
+key back
+assert reading == false
+assert recent == 1

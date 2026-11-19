@@ -1,0 +1,26 @@
+[package]
+name = "pagebara-optimize"
+description = "Making PDF files smaller: object streams, recompression, deduplication, unused objects and resources, font subsetting, image downsampling and re-encoding, stripping, linearization"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-filters.workspace = true
+pagebara-content.workspace = true
+pagebara-font.workspace = true
+pagebara-pages.workspace = true
+pagebara-jpeg.workspace = true
+pagebara-i18n.workspace = true
+sha2.workspace = true
+rayon.workspace = true
+zopfli = { version = "0.8", default-features = false, features = ["std", "zlib"] }
+
+[dev-dependencies]
+pagebara-ccitt.workspace = true
+pagebara-render.workspace = true
+pagebara-samples.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,330 @@
+// Preparing forms: the bar of field types (the next tap places one), the actions for the
+// selected field, the fields found on the page, and the selected field's properties.
+
+import { RowLayout } from "row.slint";
+import { Theme } from "theme.slint";
+import { AppState, Sheet } from "state.slint";
+import { Button } from "controls.slint";
+
+// A field type or action in the bar's row.
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <string> label: text;
+    in property <bool> checked;
+    in property <bool> danger;
+    callback clicked();
+
+    height: 40px;
+    min-width: max(44px, t.preferred-width + 16px);
+    preferred-width: t.preferred-width + 24px;
+    border-radius: 20px;
+    background: root.checked ? Theme.accent-soft : touch.pressed ? Theme.pressed : Theme.bg;
+    border-width: root.checked ? 1px : 0px;
+    border-color: Theme.accent-fg;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => {
+        root.clicked();
+    }
+    t := Text {
+        text: root.text;
+        font-size: Theme.font-small;
+        font-weight: 600;
+        color: root.danger ? Theme.danger : root.checked ? Theme.accent-fg : Theme.text;
+        accessible-role: none;
+    }
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component PrepBar inherits Rectangle {
+    background: Theme.chrome;
+    height: col.preferred-height;
+    accessible-role: groupbox;
+    accessible-label: @tr("Prepare form");
+
+    // Taps on the bar do not reach the page behind.
+    TouchArea { }
+    Rectangle {
+        y: 0;
+        height: 1px;
+        background: Theme.border;
+    }
+
+    col := VerticalLayout {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        spacing: 6px;
+
+        Text {
+            x: 14px;
+            width: parent.width - 28px;
+            text: AppState.prep-found > 0 ? @tr("{n} field found on this page" | "{n} fields found on this page" % AppState.prep-found)
+                : AppState.prep-selected ? AppState.prep-description
+                : AppState.prep-type >= 0 ? @tr("Tap the page where the field goes")
+                : @tr("Choose a field to add, or tap a field to change it");
+            font-size: Theme.font-small;
+            color: Theme.muted;
+            overflow: elide;
+        }
+
+        if AppState.prep-found > 0: RowLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 8px;
+            alignment: end;
+            Button {
+                text: @tr("Dismiss");
+                clicked => {
+                    AppState.prep-action("dismiss");
+                }
+            }
+            Button {
+                text: @tr("Add {n} field" | "Add {n} fields" % AppState.prep-found);
+                primary: true;
+                clicked => {
+                    AppState.prep-action("accept");
+                }
+            }
+        }
+
+        if AppState.prep-found == 0 && AppState.prep-selected: RowLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 6px;
+            Chip {
+                text: @tr("Properties");
+                label: @tr("Field properties");
+                clicked => {
+                    AppState.prep-action("props");
+                }
+            }
+            Chip {
+                text: @tr("Duplicate");
+                label: @tr("Duplicate field");
+                clicked => {
+                    AppState.prep-action("duplicate");
+                }
+            }
+            if AppState.prep-radio: Chip {
+                // TRANSLATORS: adds a radio button to the group
+                text: @tr("+ Button");
+                label: @tr("Add radio button");
+                clicked => {
+                    AppState.prep-action("add-radio");
+                }
+            }
+            Chip {
+                text: @tr("Delete");
+                label: @tr("Delete field");
+                danger: true;
+                clicked => {
+                    AppState.prep-action("delete");
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+            Chip {
+                text: @tr("Done");
+                label: @tr("Deselect field");
+                clicked => {
+                    AppState.prep-action("deselect");
+                }
+            }
+        }
+
+        if AppState.prep-found == 0 && !AppState.prep-selected: VerticalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            spacing: 6px;
+            RowLayout {
+                spacing: 6px;
+                for t[i] in [
+                    // TRANSLATORS: kinds of form field
+                    { name: @tr("Text"), label: @tr("Add Text field") },
+                    { name: @tr("Date"), label: @tr("Add Date field") },
+                    { name: @tr("Check box"), label: @tr("Add Check box field") },
+                    { name: @tr("Radio"), label: @tr("Add Radio field") },
+                ]: Chip {
+                    horizontal-stretch: 1;
+                    text: t.name;
+                    label: t.label;
+                    checked: AppState.prep-type == i;
+                    clicked => {
+                        AppState.prep-type = AppState.prep-type == i ? -1 : i;
+                        AppState.prep-type-changed();
+                    }
+                }
+            }
+            RowLayout {
+                spacing: 6px;
+                for t[i] in [
+                    { name: @tr("Drop-down"), label: @tr("Add Drop-down field") },
+                    { name: @tr("List"), label: @tr("Add List field") },
+                    { name: @tr("Button"), label: @tr("Add Button field") },
+                    { name: @tr("Signature"), label: @tr("Add Signature field") },
+                ]: Chip {
+                    horizontal-stretch: 1;
+                    text: t.name;
+                    label: t.label;
+                    checked: AppState.prep-type == i + 4;
+                    clicked => {
+                        AppState.prep-type = AppState.prep-type == i + 4 ? -1 : i + 4;
+                        AppState.prep-type-changed();
+                    }
+                }
+                Chip {
+                    horizontal-stretch: 1;
+                    // TRANSLATORS: verb, finds places for fields on the page
+                    text: @tr("Detect");
+                    label: @tr("Detect fields");
+                    clicked => {
+                        AppState.prep-action("detect");
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A labelled text box of the properties sheet.
+component Entry inherits VerticalLayout {
+    in property <string> label;
+    in-out property <string> text;
+    spacing: 4px;
+    Text {
+        text: root.label;
+        font-size: Theme.font-small;
+        color: Theme.muted;
+        accessible-role: none;
+    }
+    Rectangle {
+        height: Theme.touch;
+        border-radius: 8px;
+        border-width: 1px;
+        border-color: Theme.border;
+        background: Theme.bg;
+        TextInput {
+            x: 10px;
+            width: parent.width - 20px;
+            height: self.preferred-height;
+            y: (parent.height - self.height) / 2;
+            single-line: true;
+            font-size: Theme.font-body;
+            color: Theme.text;
+            accessible-label: root.label;
+            text <=> root.text;
+        }
+    }
+}
+
+// An on/off row.
+component Toggle inherits Rectangle {
+    in property <string> text;
+    in-out property <bool> on;
+    height: Theme.touch;
+    accessible-role: checkbox;
+    accessible-label: root.text;
+    accessible-checkable: true;
+    accessible-checked: root.on;
+    accessible-action-default => {
+        root.on = !root.on;
+    }
+    RowLayout {
+        spacing: 12px;
+        Text {
+            horizontal-stretch: 1;
+            text: root.text;
+            font-size: Theme.font-body;
+            color: Theme.text;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+        Rectangle {
+            cross-axis-self-alignment: center;
+            width: 48px;
+            height: 28px;
+            border-radius: 14px;
+            background: root.on ? Theme.accent : Theme.border;
+            Rectangle {
+                x: root.on ? parent.width - self.width - 3px : 3px;
+                width: 22px;
+                height: 22px;
+                border-radius: 11px;
+                background: #FFFFFF;
+                animate x { duration: 120ms; }
+            }
+        }
+    }
+    TouchArea {
+        clicked => {
+            root.on = !root.on;
+        }
+    }
+}
+
+// The selected field's properties.
+export component FieldProps inherits Flickable {
+    content-height: col.preferred-height;
+    col := VerticalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-bottom: 12px;
+        spacing: 10px;
+        Entry {
+            label: @tr("Field name");
+            text <=> AppState.prop-name;
+        }
+        Entry {
+            label: @tr("Tooltip (read aloud by screen readers)");
+            text <=> AppState.prop-tooltip;
+        }
+        if AppState.prop-kind == 1: Entry {
+            label: @tr("Options, separated by commas");
+            text <=> AppState.prop-options;
+        }
+        if AppState.prop-kind == 2: Entry {
+            label: @tr("Export value");
+            text <=> AppState.prop-export;
+        }
+        if AppState.prop-kind != 2 && AppState.prop-kind != 3: Entry {
+            label: @tr("Text size (0 fits the field)");
+            text <=> AppState.prop-font-size;
+        }
+        Toggle {
+            text: @tr("Required");
+            on <=> AppState.prop-required;
+        }
+        Toggle {
+            text: @tr("Read-only");
+            on <=> AppState.prop-read-only;
+        }
+        if AppState.prop-kind == 0: Toggle {
+            text: @tr("Several lines");
+            on <=> AppState.prop-multiline;
+        }
+        RowLayout {
+            spacing: 10px;
+            alignment: end;
+            Button {
+                text: @tr("Cancel");
+                clicked => {
+                    AppState.sheet = Sheet.none;
+                }
+            }
+            Button {
+                text: @tr("Apply");
+                primary: true;
+                clicked => {
+                    AppState.prop-apply();
+                }
+            }
+        }
+    }
+}

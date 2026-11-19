@@ -1,0 +1,111 @@
+# Forms: fill every kind of field in place (text, comb, multiline, radio buttons, check
+# box, drop-down, multi-select list), Tab between fields, undo, save, reopen and check the
+# values; reset; flatten on save; the signature field and script warnings.
+cursor on
+open "$SAMPLES/form.pdf"
+zoom 100 0
+wait 800
+click "Fill & Sign" 300
+click "Fill forms" 300
+assert fields == 11
+assert form.warnings contains email
+# The name field is empty on the rendered page.
+assert ink:1,226,163,150,14 == 0
+# Text fields, typed in place; Tab moves on.
+click annot 1 1 300
+assert field.editing == true
+type "Ada Lovelace" 500
+key tab
+type "Ada@Example.org" 400
+key tab
+type "10 December 1815" 400
+key tab
+type "42" 200
+key tab
+# A comb field takes at most six characters.
+type "SW1A2AAX" 400
+assert field.text == SW1A2A
+screenshot 09-comb.png
+# Tab reaches the radio buttons; Space turns one on.
+key tab
+key space
+assert field:size == Small
+key escape
+assert field.editing == false
+assert field:name == Ada Lovelace
+assert field:email == Ada@Example.org
+assert field:birth == 10 December 1815
+assert field:plot == 42
+assert field:postcode == SW1A2A
+assert undo contains size
+# The filled-in value is drawn on the page by the renderer.
+wait 600
+assert ink:1,226,163,150,14 > 20
+# Radio buttons and the check box toggle on a click.
+click annot 1 8 300
+assert field:size == Large
+click annot 1 12 300
+assert field:newsletter == true
+# A drop-down list.
+click annot 1 9 300
+assert field.editing == true
+click "Weekends" 300
+assert field:time == Weekends
+# A multi-select list: each click toggles an option.
+click annot 1 10 300
+click "Herbs" 300
+click "Beekeeping" 300
+assert field:interests == Herbs, Beekeeping
+screenshot 09-list.png
+key escape
+key ctrl+z
+assert field:interests == Herbs
+key ctrl+y
+assert field:interests == Herbs, Beekeeping
+# A multiline field: Enter starts a new line, Ctrl+Enter finishes.
+click annot 1 11 300
+type "Raised beds" 300
+key return
+type "near the shed" 300
+key ctrl+return
+assert field:notes contains Raised beds
+assert field:notes contains near the shed
+# The unsigned signature field is listed as such.
+scroll 400 400
+click annot 1 13 300
+assert message contains Signature: not signed yet
+assert fields.text contains Signature: not signed yet
+assert dirty == true
+screenshot 09-filled.png
+call save-as "$OUT/filled.pdf"
+assert dirty == false
+key ctrl+w
+assert tabs == 0
+# Reopen: every value was saved.
+open "$OUT/filled.pdf"
+tool forms
+assert field:name == Ada Lovelace
+assert field:postcode == SW1A2A
+assert field:size == Large
+assert field:newsletter == true
+assert field:time == Weekends
+assert field:interests == Herbs, Beekeeping
+assert field:notes contains near the shed
+wait 600
+assert ink:1,226,163,150,14 > 20
+# Reset clears the form (one undoable step).
+click "Reset to defaults" 300
+assert field:name == ""
+assert undo == Reset form
+key ctrl+z
+assert field:name == Ada Lovelace
+# Flatten on save: the values become page content and the form is gone.
+call set flatten-forms true
+call save-as "$OUT/flat.pdf"
+key ctrl+w
+open "$OUT/flat.pdf"
+tool forms
+assert fields == 0
+wait 600
+assert ink:1,226,163,150,14 > 20
+assert page.text:1 contains Ada Lovelace

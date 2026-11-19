@@ -1,0 +1,29 @@
+[package]
+name = "pagebara-compare"
+description = "Comparing two PDFs: word-level text diff with moved blocks and page alignment, visual diff, annotation, metadata and form differences, and a PDF report"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-content.workspace = true
+pagebara-render.workspace = true
+pagebara-forms.workspace = true
+pagebara-filters.workspace = true
+pagebara-typeset.workspace = true
+pagebara-stamp.workspace = true
+pagebara-i18n.workspace = true
+rayon.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+pagebara-annot.workspace = true
+pagebara-samples.workspace = true
+pagebara-edit.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

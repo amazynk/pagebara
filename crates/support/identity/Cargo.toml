@@ -1,0 +1,12 @@
+[package]
+name = "pagebara-identity"
+description = "The application's name and ID, in one place, and its per-user directories"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+directories.workspace = true
+
+[lints]
+workspace = true

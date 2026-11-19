@@ -1,0 +1,24 @@
+[package]
+name = "pagebara-png"
+description = "PNG / APNG decoder and a small encoder"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-budget.workspace = true
+pagebara-flate.workspace = true
+pagebara-thread = { workspace = true, features = ["rayon"] }
+miniz_oxide.workspace = true
+rayon.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+png = "0.18"
+zune-png = "0.5"
+zune-core = "0.5"
+miniz_oxide = "0.8"
+fdeflate = "0.3"
+
+[lints]
+workspace = true

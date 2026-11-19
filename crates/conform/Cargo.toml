@@ -1,0 +1,25 @@
+[package]
+name = "pagebara-conform"
+description = "PDF/A (1b, 2b, 2u, 3b, 3u) and PDF/UA-1: validation with structured reports, conversion and safe accessibility fix-ups"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-filters.workspace = true
+pagebara-content.workspace = true
+pagebara-font.workspace = true
+pagebara-pages.workspace = true
+pagebara-forms.workspace = true
+pagebara-optimize.workspace = true
+pagebara-i18n.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+pagebara-render.workspace = true
+pagebara-samples.workspace = true
+
+[lints]
+workspace = true

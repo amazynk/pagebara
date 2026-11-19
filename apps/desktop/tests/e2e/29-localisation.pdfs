@@ -1,0 +1,90 @@
+# The UI in other languages: German (long words: nothing may clip in the main window or
+# the key dialogs), then Arabic, which mirrors the layout (sidebar on the right, toolbar
+# reversed, arrows turned); page content stays as it is. Spell checking follows the
+# document's /Lang (English here) whatever the UI language: squiggles and the menu,
+# in German and in Arabic, in a form field and in edited page text. Back to English.
+cursor on
+open "$SAMPLES/form.pdf"
+zoom 100 0
+wait 600
+call language de
+assert ui.language == de
+assert ui.rtl == false
+assert settings.language == de
+assert mirrored == false
+wait 400
+screenshot 29-de-main.png
+call show-dialog settings
+wait 300
+screenshot 29-de-settings.png
+key escape
+call show-dialog properties
+wait 300
+screenshot 29-de-properties.png
+key escape
+call show-dialog protect
+wait 300
+screenshot 29-de-protect.png
+key escape
+click "Alle Werkzeuge" 300
+screenshot 29-de-menu.png
+key escape
+# A form field in the German UI: the English document is checked in English.
+tool forms
+wait 400
+click annot 1 1 300
+assert field.editing == true
+type "Ada recieve plans" 600
+wait 400
+assert spell.words == recieve
+assert spell.drawn == 1
+screenshot 29-de-field.png
+rclick misspelling 1 300
+assert spell.suggestions contains receive
+screenshot 29-de-spell-menu.png
+click "receive" 300
+assert field.text == Ada receive plans
+key return
+tool select
+# Arabic: mirrored.
+call language ar
+assert ui.language == ar
+assert ui.rtl == true
+wait 400
+screenshot 29-ar-main.png
+assert mirrored == true
+call show-dialog settings
+wait 300
+screenshot 29-ar-settings.png
+key escape
+call show-dialog properties
+wait 300
+screenshot 29-ar-properties.png
+key escape
+# Edited page text in the Arabic UI: the squiggle and the menu (mirrored), Ignore.
+open "$SAMPLES/flyer.pdf"
+zoom 100 0
+tool edit
+wait 600
+dblclick text 1 "Saturday" 300
+assert edit.text-editing == true
+key ctrl+right|alt+right
+type " mornnig" 500
+wait 400
+assert spell.words == mornnig
+screenshot 29-ar-page-text.png
+rclick misspelling 1 300
+assert spell.suggestions contains morning
+screenshot 29-ar-spell-menu.png
+click "تجاهل" 300
+wait 300
+assert spell.marks == 0
+key escape
+call language he
+assert ui.rtl == true
+wait 300
+screenshot 29-he-main.png
+call language system
+assert ui.language == en
+assert ui.rtl == false
+assert mirrored == false

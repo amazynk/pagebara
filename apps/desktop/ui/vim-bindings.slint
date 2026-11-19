@@ -1,0 +1,112 @@
+import { Theme } from "theme.slint";
+import { Keys } from "components/button.slint";
+
+export struct VimBinding { keys: string, action: string }
+export struct VimGroup { title: string, items: [VimBinding] }
+export struct VimTopic { title: string, icon: image, example: VimGroup, groups: [VimGroup] }
+
+export global VimGuide {
+    out property <color> ink: Theme.high-contrast ? Theme.chrome : #162b29;
+    out property <color> paper: Theme.high-contrast ? Theme.text : #f1faf5;
+    out property <color> mint: Theme.high-contrast ? Theme.focus : #a6edc8;
+    out property <color> green: Theme.high-contrast ? Theme.accent-fg : Theme.dark ? #94dfb7 : #176344;
+
+    out property <[VimTopic]> topics: [
+        { title: @tr("Move"), icon: @image-url("icons/go-forward.svg"), groups: [
+            {title: @tr("Turn pages"), items: [
+                {keys: "J", action: @tr("Next page")}, {keys: "K", action: @tr("Previous page")},
+                {keys: "gg", action: @tr("First page")}, {keys: "G", action: @tr("Last page")},
+                {keys: "12G", action: @tr("Go to page 12")},
+            ]},
+            {title: @tr("Zoom"), items: [
+                {keys: "zw", action: @tr("Fit width")}, {keys: "zp", action: @tr("Fit page")},
+                {keys: "zi", action: @tr("Zoom in")}, {keys: "zo", action: @tr("Zoom out")},
+                {keys: "z0", action: @tr("Actual size")},
+            ]},
+            {title: @tr("Scroll"), items: [
+                {keys: "Ctrl+D / Ctrl+U", action: @tr("Half a screen down / up")},
+                {keys: "Ctrl+F / Ctrl+B", action: @tr("One screen down / up")},
+                {keys: "Ctrl+E / Ctrl+Y", action: @tr("One step down / up")},
+                {keys: "H / M / L", action: @tr("Top / middle / bottom of page")},
+                {keys: "zz", action: @tr("Center page")}, {keys: "5j", action: @tr("Scroll down five steps")},
+            ]},
+            {title: @tr("Marks and jumps"), items: [
+                {keys: "ma", action: @tr("Set mark a")}, {keys: "'a", action: @tr("Jump to marked page")},
+                {keys: "`a", action: @tr("Jump to marked position")}, {keys: "''", action: @tr("Return to last jump")},
+                {keys: "Ctrl+O / Ctrl+I", action: @tr("Back / forward")},
+            ]},
+        ]},
+        {title: @tr("Find"), icon: @image-url("icons/search.svg"),
+          example: { title: @tr("Find another occurrence"), items: [
+              {keys: "/", action: @tr("Type your search")}, {keys: "Enter", action: @tr("Find match")}, {keys: "n", action: @tr("Next match")}
+          ]}, groups: [
+            {title: @tr("Search the document"), items: [
+                {keys: "/", action: @tr("Search forward")}, {keys: "?", action: @tr("Search backward")},
+                {keys: "Enter", action: @tr("Run search")}, {keys: "Esc", action: @tr("Cancel search")},
+            ]},
+            {title: @tr("Search results"), items: [
+                {keys: "n", action: @tr("Next match")}, {keys: "N", action: @tr("Previous match")},
+                {keys: "3n", action: @tr("Advance three matches")}, {keys: ":noh", action: @tr("Hide match highlights")},
+            ]},
+        ]},
+        {title: @tr("Select"), icon: @image-url("icons/select.svg"),
+          example: { title: @tr("Copy to the end of a word"), items: [
+              {keys: "v", action: @tr("Start selection")}, {keys: "e", action: @tr("End of word")}, {keys: "y", action: @tr("Copy selection")}
+          ]}, groups: [
+            {title: @tr("Visual selection"), items: [
+                {keys: "v", action: @tr("Select by character")}, {keys: "V", action: @tr("Select by line")},
+                {keys: "o", action: @tr("Swap selection ends")}, {keys: "y", action: @tr("Copy selection")},
+                {keys: "Esc", action: @tr("Clear selection")},
+            ]},
+            {title: @tr("Extend a selection"), items: [
+                {keys: "h / l", action: @tr("Previous / next character")}, {keys: "j / k", action: @tr("Line below / above")},
+                {keys: "w / b", action: @tr("Next / previous word")}, {keys: "e", action: @tr("End of word")},
+                {keys: "0 / $", action: @tr("Start / end of line")}, {keys: "gg / G", action: @tr("Start / end of page")},
+            ]},
+            {title: @tr("Annotations"), items: [
+                {keys: "]a", action: @tr("Next annotation")}, {keys: "[a", action: @tr("Previous annotation")},
+                {keys: "x", action: @tr("Delete selected annotation")}, {keys: "u / Ctrl+R", action: @tr("Undo / redo")},
+            ]},
+        ]},
+        {title: @tr("Commands"), icon: @image-url("icons/keyboard.svg"),
+          example: { title: @tr("Write a copy"), items: [
+              {keys: ":w", action: @tr("Start command")}, {keys: " FILE", action: @tr("Add space and file path")}, {keys: "Enter", action: @tr("Save the copy")}
+          ]}, groups: [
+            {title: @tr("Files"), items: [
+                {keys: ":w", action: @tr("Save")}, {keys: ":w FILE", action: @tr("Write a copy")},
+                {keys: ":e FILE", action: @tr("Open a file")}, {keys: ":q", action: @tr("Close document")},
+                {keys: ":wq", action: @tr("Save and close")},
+            ]},
+            {title: @tr("Command line"), items: [
+                {keys: ":", action: @tr("Enter a command")}, {keys: "↑ / ↓", action: @tr("Browse command history")},
+                {keys: "← / →", action: @tr("Move the caret")}, {keys: "Home / End", action: @tr("Start / end of prompt")},
+                {keys: ":help", action: @tr("Vim shortcuts")},
+            ]},
+            {title: @tr("Documents"), items: [
+                {keys: "gt / gT", action: @tr("Next / previous document")}, {keys: "2gt", action: @tr("Go to second document")},
+                {keys: ":tabn / :tabp", action: @tr("Next / previous tab")},
+            ]},
+            {title: @tr("Page and zoom"), items: [
+                {keys: ":42", action: @tr("Go to page 42")}, {keys: ":set zoom=150", action: @tr("Zoom to 150%")},
+            ]},
+        ]},
+    ];
+}
+
+export component VimKeycap inherits Rectangle {
+    in property <string> keys;
+    in property <bool> inverse;
+    width: max(self.height, glyph.preferred-width + 12px);
+    height: Theme.font-small + 10px;
+    border-radius: 4px;
+    background: root.inverse ? VimGuide.ink : Theme.canvas;
+    border-width: 1px;
+    border-color: Theme.high-contrast ? Theme.control-border : root.inverse ? #628478 : Theme.border;
+    glyph := Text {
+        text: Keys.label(root.keys, true);
+        font-family: "monospace"; font-size: Theme.font-small; font-weight: 600;
+        color: root.inverse ? VimGuide.mint : Theme.text;
+        vertical-alignment: center; horizontal-alignment: center;
+        accessible-role: none;
+    }
+}

@@ -1,0 +1,28 @@
+# Live text on a phone: a long press on a word in a screenshot reads the picture and
+# selects the word, with handles to widen the selection and Copy over it, as on real
+# text; nothing changes in the document. Needs the models in $PAGEBARA_OCR_MODELS (run.sh
+# skips this script without it).
+open "$SAMPLES/live-text.pdf"
+wait 800
+assert live.available == true
+assert live.words:1 == 0
+# A long press on "Margins" in the screenshot.
+drag page 1 100,251 page 1 100,251 1000
+await live.words:1 >= 10 20000
+await selection == true 5000
+assert selection.text == Margins
+screenshot 07-word.png
+click "Copy selection" 200
+assert clipboard == Margins
+assert selection == false
+# A long press on "Paper", then its end handle dragged to the end of "portrait".
+drag text 1 "Paper" text 1 "Paper" 1000
+assert selection.text == Paper
+drag text-end 1 "Paper" text-end 1 "portrait" 800
+assert selection.text contains Paper size
+assert selection.text contains A4 portrait
+screenshot 07-handles.png
+click "Copy selection" 200
+assert clipboard contains A4 portrait
+assert dirty == false
+assert undo == ""

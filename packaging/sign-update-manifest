@@ -1,0 +1,14 @@
+#!/bin/sh
+# Signs an update manifest with the release key, or makes a key pair:
+#
+#   packaging/sign-update-manifest --generate-key KEY_FILE     prints the public key
+#   packaging/sign-update-manifest --key KEY_FILE manifest.json update.json
+#
+# Put the printed public key in UPDATE_PUBLIC_KEY and the address of update.json in
+# UPDATE_URL (crates/support/identity/src/lib.rs; identity.sh reads them as APP_UPDATE_KEY and
+# APP_UPDATE_URL). Keep KEY_FILE secret and out of the repository. The manifest format is
+# described in crates/update/src/lib.rs.
+set -eu
+root=$(cd "$(dirname "$0")/.." && pwd)
+exec cargo run --quiet --manifest-path "$root/Cargo.toml" -p pagebara-update \
+    --bin sign-update-manifest -- "$@"

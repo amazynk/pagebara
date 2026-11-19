@@ -1,0 +1,106 @@
+[workspace]
+resolver = "3"
+members = ["crates/support/*", "crates/i18n", "tools/*", "crates/codec/*", "crates/filters", "crates/syntax", "crates/optimize", "crates/conform", "crates/pages", "crates/annot", "crates/signatures", "crates/content", "crates/tagged", "crates/app-core", "crates/font", "crates/forms", "crates/fdf", "crates/formdetect", "crates/render", "crates/sign", "crates/redact", "crates/typeset", "crates/edit", "crates/ocr", "crates/samples", "crates/ui", "crates/os", "crates/update", "crates/integration", "crates/native", "crates/shell-win", "crates/actions", "crates/stamp", "crates/flatten", "crates/compare", "crates/spell", "apps/*"]
+exclude = ["fuzz", "tools/corpora"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/amazynk/pagebara"
+homepage = "https://amazynk.com/pagebara"
+
+[workspace.dependencies]
+pagebara-budget = { path = "crates/support/budget" }
+pagebara-thread = { path = "crates/support/thread" }
+pagebara-identity = { path = "crates/support/identity" }
+pagebara-i18n = { path = "crates/i18n" }
+pagebara-flate = { path = "crates/codec/flate" }
+pagebara-ccitt = { path = "crates/codec/ccitt" }
+pagebara-jpeg = { path = "crates/codec/jpeg" }
+pagebara-jp2 = { path = "crates/codec/jp2" }
+pagebara-jbig2 = { path = "crates/codec/jbig2" }
+pagebara-filters = { path = "crates/filters" }
+pagebara-syntax = { path = "crates/syntax" }
+pagebara-pages = { path = "crates/pages" }
+pagebara-png = { path = "crates/codec/png" }
+pagebara-annot = { path = "crates/annot" }
+pagebara-signatures = { path = "crates/signatures" }
+pagebara-content = { path = "crates/content" }
+pagebara-tagged = { path = "crates/tagged" }
+pagebara-app-core = { path = "crates/app-core" }
+pagebara-font = { path = "crates/font" }
+pagebara-forms = { path = "crates/forms" }
+pagebara-fdf = { path = "crates/fdf" }
+pagebara-formdetect = { path = "crates/formdetect" }
+pagebara-render = { path = "crates/render" }
+pagebara-sign = { path = "crates/sign" }
+pagebara-redact = { path = "crates/redact" }
+pagebara-edit = { path = "crates/edit" }
+pagebara-typeset = { path = "crates/typeset" }
+pagebara-ocr = { path = "crates/ocr" }
+pagebara-samples = { path = "crates/samples" }
+pagebara-ui = { path = "crates/ui" }
+pagebara-os = { path = "crates/os" }
+pagebara-update = { path = "crates/update" }
+pagebara-integration = { path = "crates/integration" }
+pagebara-native = { path = "crates/native" }
+pagebara-actions = { path = "crates/actions" }
+pagebara-optimize = { path = "crates/optimize" }
+pagebara-conform = { path = "crates/conform" }
+pagebara-stamp = { path = "crates/stamp" }
+pagebara-flatten = { path = "crates/flatten" }
+pagebara-compare = { path = "crates/compare" }
+pagebara-spell = { path = "crates/spell" }
+imbl = "7"
+memchr = "2.8"
+regex-lite = "0.1.9"
+aes = "0.9"
+md-5 = "0.11"
+sha2 = "0.11"
+getrandom = "0.4"
+unicode-normalization = "0.1"
+unicode-bidi = "0.3"
+rayon = "1.11"
+thiserror = "2"
+parking_lot = "0.12"
+log = "0.4"
+tracing = { version = "0.1", default-features = false }
+miniz_oxide = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+directories = "6"
+slint = "1.18.1"
+slint-build = "1.18.1"
+rfd = "0.18"
+open = "5.3"
+env_logger = { version = "0.11", default-features = false, features = ["auto-color", "humantime"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+# Panics unwind: render jobs catch a decoder's panic and draw the page without that image.
+[profile.release]
+lto = "off"
+codegen-units = 1
+debug = false
+strip = "debuginfo"
+
+# Release code with line tables, for perf and other profilers.
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"
+strip = "none"
+
+[profile.bench]
+inherits = "release"

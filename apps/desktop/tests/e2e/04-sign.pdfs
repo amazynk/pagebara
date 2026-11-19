@@ -1,0 +1,44 @@
+# Signature library: import a photographed signature (background removed), live threshold
+# preview, ink colour, width; draw one by hand; rename, reorder; place by click and by
+# dragging; move and resize keeping the aspect; flatten on save. The library persists.
+cursor on
+open "$SAMPLES/lease.pdf"
+zoom 75 0
+page 3
+click "Fill & Sign" 300
+click "Sign" 400
+call import-signature "$SAMPLES/signature-photo.png"
+assert signatures == 1
+wait 800
+screenshot 04-imported.png
+call set sig-threshold 80
+call sig-action preview
+wait 600
+call sig-action settings
+wait 1500
+call set sig-ink 2
+call sig-action settings
+wait 1500
+call set sig-width 40
+call sig-action width
+screenshot 04-settings.png
+# Draw a second signature in the dialog.
+click "Draw new" 400
+assert dialog == drawsignature
+stroke "Signature canvas" -150,20 -110,-30 -60,25 -20,-20 30,30 80,-25 130,15 1200
+click "Save signature" 400
+assert signatures == 2
+# Place the selected (drawn) signature with a click, then the imported one into a box.
+click page 3 160,330 500
+assert selected == Signature
+call sig-select 0
+drag page 3 340,300 page 3 520,360 700
+assert annotations == 2
+# Move and resize the placed signature.
+drag page 3 430,330 page 3 400,320 600
+assert undo == Move
+screenshot 04-placed.png
+call set flatten true
+call save-as "$OUT/signed.pdf"
+assert dirty == false
+assert annotations == 0

@@ -1,0 +1,84 @@
+import { RowLayout } from "row.slint";
+import { Theme } from "../theme.slint";
+import { Reveal } from "button.slint";
+
+// A single-line text field. Reports Caps Lock from the letters typed (the toolkit does
+// not expose the lock state): an upper-case letter without Shift means it is on.
+export component TextField inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder;
+    in property <bool> password;
+    in property <bool> error;
+    in property <string> label;
+    out property <bool> caps-lock;
+    // Whether a letter was typed, so caps-lock means something.
+    out property <bool> caps-known;
+    out property <bool> has-focus: input.has-focus;
+    callback accepted(text: string);
+    callback edited(text: string);
+
+    public function focus-input() {
+        input.focus();
+    }
+    public function select-all() {
+        input.select-all();
+    }
+
+    forward-focus: input;
+    changed has-focus => {
+        if self.has-focus {
+            Reveal.show(self.absolute-position.x, self.absolute-position.y, self.height);
+        }
+    }
+    height: Theme.touch ? 44px : 36px;
+    border-radius: Theme.radius-small;
+    background: Theme.chrome;
+    border-width: input.has-focus || error || Theme.high-contrast ? 2px : 1px;
+    border-color: error ? Theme.danger : input.has-focus ? Theme.focus : Theme.control-border;
+
+    FocusScope {
+        focus-on-tab-navigation: false;
+        capture-key-pressed(e) => {
+            if e.text.to-uppercase() != e.text.to-lowercase() {
+                root.caps-lock = (e.text == e.text.to-uppercase()) != e.modifiers.shift;
+                root.caps-known = true;
+            }
+            reject
+        }
+
+        RowLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            input := TextInput {
+                horizontal-stretch: 1;
+                input-type: root.password ? InputType.password : InputType.text;
+                vertical-alignment: center;
+                color: Theme.text;
+                selection-background-color: Theme.accent-soft;
+                selection-foreground-color: Theme.text;
+                font-size: Theme.font-title;
+                single-line: true;
+                accessible-label: root.label;
+                accessible-placeholder-text: root.placeholder;
+                accessible-description: root.error ? @tr("Not valid") : "";
+                accepted => {
+                    root.accepted(self.text);
+                }
+                edited => {
+                    root.edited(self.text);
+                }
+            }
+            @children
+        }
+    }
+
+    if root.text == "": Text {
+        x: 11px;
+        text: root.placeholder;
+        color: Theme.faint;
+        font-size: Theme.font-title;
+        vertical-alignment: center;
+        height: parent.height;
+        accessible-role: none;
+    }
+}

@@ -1,0 +1,78 @@
+# Read aloud with the test speech engine (it records what it is asked to say), or the
+# system's (PAGEBARA_SPEECH= run.sh ..., which takes longer, hence the long waits): a tagged
+# PDF is read in its tag order, which differs from the order its content is drawn in and
+# from its layout; pause, resume, stop, skipping, speed, the selection; the reading view
+# and the screen reader text follow the same order.
+cursor off
+open "$SAMPLES/tagged.pdf"
+wait 800
+assert speech.available == true
+# What screen readers get: the structure, in tag order, with the figure's description;
+# the link is read where it is, once.
+assert a11y.page-text == Accessible sample | First paragraph comes first in tag order. | Second paragraph is drawn first in the content stream. | • Apples | • Pears | A blue square | Go to the second page | Sidebar note: tagged last, drawn at the top.
+assert a11y.links == Go to the second page -> Link to page 2
+call a11y-check
+# Read the whole document, from the first page on.
+key ctrl+shift+v
+assert speech.visible == true
+assert speech.playing == true
+wait 300
+screenshot 18-reading.png
+await speech.playing == false 60000
+assert speech.spoken == Accessible sample | First paragraph comes first in tag order. | Second paragraph is drawn first in the content stream. | • Apples | • Pears | Figure: A blue square | Go to the second page | Sidebar note: tagged last, drawn at the top. | Second page | This page has a heading and a paragraph.
+assert message == Finished reading.
+call a11y-check
+# Pause and resume: the sentence that was cut off is read again.
+call speech-clear
+page 1
+wait 400
+key ctrl+shift+v
+wait 150
+key ctrl+shift+c
+assert speech.paused == true
+assert speech.sentence !=
+wait 400
+assert speech.paused == true
+key ctrl+shift+c
+assert speech.playing == true
+await speech.playing == false 60000
+assert speech.spoken contains Sidebar note: tagged last, drawn at the top.
+assert speech.count > 10
+# Stop, and skip forward from the read-aloud bar with the arrow keys.
+call speech-clear
+page 1
+wait 400
+key ctrl+shift+v
+wait 150
+key ctrl+shift+e
+assert speech.playing == false
+assert speech.sentence ==
+call speech-clear
+key ctrl+shift+v
+key right
+key right
+await speech.playing == false 60000
+assert speech.spoken contains Second page
+# Speed: the bar's Faster button; the setting is kept.
+click "Faster" 200
+assert speech.rate == 1.25
+click "Slower" 200
+assert speech.rate == 1
+# Only the selection: Ctrl+A selects page 2's text.
+call speech-clear
+page 2
+wait 400
+key ctrl+a
+key ctrl+shift+v
+await speech.playing == false 30000
+assert speech.spoken == Second page | This page has a heading and a paragraph.
+key escape
+# The reading view follows the tags too.
+call reflow on
+wait 1200
+assert reflow.text contains Accessible sample
+assert reflow.text contains A blue square
+key escape
+# The bar closes with its button.
+click "Close read aloud" 200
+assert speech.visible == false

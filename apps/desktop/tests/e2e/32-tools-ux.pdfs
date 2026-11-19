@@ -1,0 +1,46 @@
+# Tools: each keeps its colour, text selected first is marked by Highlight, Esc keeps a
+# new text box, a tool's hint goes with it, and a new document starts with Select.
+open "$SAMPLES/lease.pdf"
+wait 1000
+zoom 90 0
+click "Annotate" 300
+click "Draw" 300
+assert colour == 5
+click "Text box" 300
+assert colour == 6
+click "Highlight" 300
+assert colour == 0
+call set colour 2
+click "Draw" 300
+assert colour == 5
+click "Highlight" 300
+assert colour == 2
+call set colour 0
+# Select, then Highlight: the selection is marked.
+click "Select" 300
+drag text 1 "Rent paid" text-end 1 "monthly amount." 400
+click "Highlight" 300
+assert annotations == 1
+assert annotation.kinds contains Highlight
+call set sidebar comments
+wait 600
+assert comments == 1
+# Esc finishes a text box and keeps it.
+click "Text box" 300
+click page 1 300,200 400
+assert editing == true
+type "Kept on Esc" 400
+key escape
+assert editing == false
+assert annotations == 2
+# A tool's hint goes when another tool is chosen.
+tool prepare
+assert message contains Prepare form
+tool redact
+assert message ==
+tool select
+# The next document starts with Select.
+tool forms
+open "$SAMPLES/report.pdf"
+wait 800
+assert tool == 0

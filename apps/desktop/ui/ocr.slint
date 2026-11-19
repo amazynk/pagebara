@@ -1,0 +1,139 @@
+// Text recognition: the offer for scanned documents, and the dialog that asks which
+// pages and script, downloads the models once, and shows progress.
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button } from "components/button.slint";
+import { Dialog } from "components/panel.slint";
+import { TextField } from "components/text-field.slint";
+import { Check } from "components/controls.slint";
+import { Heading, Body, Hint, ErrorText, Buttons, Field, Note, Progress, Choice } from "components/dialog-parts.slint";
+
+export global OcrState {
+    // A line offering recognition for a document that looks scanned; empty for none.
+    in property <string> offer;
+    in property <[string]> scripts;
+    in-out property <int> script;
+    in-out property <string> pages;
+    in-out property <bool> force;
+    // 0 choosing, 1 asking to download, 2 downloading, 3 recognising.
+    in property <int> phase;
+    in property <string> download-size;
+    in property <float> progress;
+    in property <string> progress-text;
+    in property <string> attribution;
+    callback action(what: string);
+}
+
+export component OcrBanner inherits Rectangle {
+    height: 36px;
+    background: Theme.accent-soft;
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 8px;
+        spacing: 10px;
+        Text {
+            text: OcrState.offer;
+            color: Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+            accessible-role: text;
+        }
+        Button {
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+            text: @tr("Recognize text…");
+            clicked => {
+                OcrState.action("open");
+            }
+        }
+        Button {
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+            text: @tr("Not now");
+            clicked => {
+                OcrState.action("dismiss");
+            }
+        }
+    }
+    Rectangle {
+        y: root.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+}
+
+export component OcrDialog inherits Dialog {
+    title: @tr("Recognize text");
+    card-width: 480px;
+    Heading {
+        text: OcrState.phase == 1 ? @tr("Download the text recognition models?") : @tr("Recognize text");
+    }
+    if OcrState.phase == 0: VerticalLayout {
+        spacing: 12px;
+        Body {
+            text: @tr("Finds the text in scanned pages and adds it invisibly, so you can search, select and copy it. The pages look the same.");
+        }
+        Field {
+            label: @tr("Writing system");
+            Choice {
+                model: OcrState.scripts;
+                current-index <=> OcrState.script;
+                label: @tr("Writing system");
+            }
+        }
+        Field {
+            label: @tr("Pages (empty for all), for example 1-3, 7");
+            TextField {
+                text <=> OcrState.pages;
+                placeholder: @tr("All pages");
+                label: @tr("Pages to recognize");
+            }
+        }
+        Check {
+            text: @tr("Also pages that already have text");
+            checked <=> OcrState.force;
+        }
+    }
+    if OcrState.phase == 1: VerticalLayout {
+        spacing: 12px;
+        Body {
+            text: @tr("Recognition runs on this device with models made for it. They are downloaded once ({}) from Hugging Face and kept for next time. Nothing of your document leaves this device.", OcrState.download-size);
+        }
+        Hint {
+            text: OcrState.attribution;
+        }
+    }
+    if OcrState.phase >= 2: VerticalLayout {
+        spacing: 8px;
+        Progress {
+            value: OcrState.progress;
+        }
+        Hint {
+            text: OcrState.progress-text;
+        }
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Cancel");
+            clicked => {
+                OcrState.action("cancel");
+            }
+        }
+        if OcrState.phase == 0: Button {
+            text: @tr("Recognize");
+            primary: true;
+            clicked => {
+                OcrState.action("start");
+            }
+        }
+        if OcrState.phase == 1: Button {
+            text: @tr("Download");
+            primary: true;
+            clicked => {
+                OcrState.action("download");
+            }
+        }
+    }
+}

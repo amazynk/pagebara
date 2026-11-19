@@ -1,0 +1,273 @@
+import { RowLayout } from "row.slint";
+import { Theme } from "../theme.slint";
+import { AppState } from "../state.slint";
+import { IconButton, Pressable, FocusNav, Reveal, Keys } from "button.slint";
+
+export component Divider inherits Rectangle {
+    in property <bool> vertical;
+    min-height: vertical ? 0px : 1px;
+    max-height: vertical ? 100000px : 1px;
+    min-width: vertical ? 1px : 0px;
+    max-width: vertical ? 1px : 100000px;
+    background: Theme.border;
+}
+
+// A side panel on the chrome background with a border towards the canvas.
+export component Panel inherits Rectangle {
+    in property <string> title;
+    in property <bool> closable;
+    // Which side the border is on.
+    in property <bool> border-left;
+    // The region F6 moves to (see FocusNav), when closable.
+    in property <int> region;
+    callback close;
+
+    background: Theme.chrome;
+    accessible-role: complementary;
+    accessible-label: title;
+
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if root.region > 0 && FocusNav.region == root.region && root.closable {
+            close-btn.focus-button();
+        }
+    }
+
+    VerticalLayout {
+        RowLayout {
+            padding-left: 16px;
+            padding-right: 8px;
+            height: root.title != "" ? 48px : 0px;
+            Text {
+                text: root.title;
+            horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+                accessible-role: none;
+                font-size: Theme.font-title;
+                font-weight: 600;
+                color: Theme.text;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            close-btn := IconButton {
+                visible: root.closable && root.title != "";
+                cross-axis-self-alignment: center;
+                icon: @image-url("../icons/close.svg");
+                label: @tr("Close panel");
+                icon-size: 16px;
+                clicked => {
+                    root.close();
+                }
+            }
+        }
+        @children
+    }
+
+    Rectangle {
+        x: root.border-left != Theme.rtl ? 0px : root.width - 1px;
+        width: 1px;
+        background: Theme.border;
+    }
+}
+
+// Scrolls when its content is taller than it, and keeps the keyboard focus in view; a thin
+// bar shows where it is. The content is one layout, as tall as `inner-height`.
+export component KeepInView inherits Flickable {
+    in property <length> inner-height;
+    property <bool> overflow: root.inner-height > root.height + 0.5px;
+    content-height: max(root.height, root.inner-height);
+    content-width: root.width;
+    interactive: root.overflow;
+
+    property <int> serial: Reveal.serial;
+    changed serial => {
+        if root.overflow && Reveal.x >= root.absolute-position.x && Reveal.x < root.absolute-position.x + root.width {
+            if Reveal.y < root.absolute-position.y {
+                root.content-y = min(0px, root.content-y + root.absolute-position.y - Reveal.y + 8px);
+            } else if Reveal.y + Reveal.height > root.absolute-position.y + root.height {
+                root.content-y = max(root.height - root.content-height, root.content-y - (Reveal.y + Reveal.height - root.absolute-position.y - root.height) - 8px);
+            }
+        }
+    }
+
+    @children
+
+    if root.overflow: Rectangle {
+        x: root.width - 5px - root.content-x;
+        y: 4px - root.content-y + (root.height - 8px) * (-root.content-y) / root.content-height;
+        width: 3px;
+        height: (root.height - 8px) * root.height / root.content-height;
+        border-radius: 1.5px;
+        background: Theme.faint;
+    }
+}
+
+// A modal card over a dimmed window. Clicks outside the card do nothing. Keyboard focus
+// moves into the card when it opens and stays in it; Esc cancels (`cancel`, by default the
+// app's dialog), and closing gives focus back to the pages (see AppWindow).
+export component Dialog inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+    in property <length> card-width: 420px;
+    in property <length> content-padding: 24px;
+    // Off when the dialog focuses one of its fields itself.
+    in property <bool> auto-focus: true;
+    callback cancel();
+    cancel => {
+        AppState.dialog-action("cancel", "");
+    }
+
+    // Focuses the card itself, for dialogs without a field that takes focus.
+    public function focus-card() {
+        anchor.focus();
+    }
+
+    background: Theme.scrim;
+    accessible-role: none;
+
+    TouchArea { }
+
+    // Shift+Tab from the card's start lands here: back to the start.
+    FocusScope {
+        width: 0px;
+        height: 0px;
+        changed has-focus => {
+            if self.has-focus {
+                anchor.focus();
+            }
+        }
+    }
+
+    card := Rectangle {
+        width: min(root.card-width, root.width - 32px);
+        height: min(content.preferred-height, root.height - 24px);
+        background: Theme.chrome;
+        border-radius: 12px;
+        border-width: Theme.high-contrast ? 2px : 1px;
+        border-color: Theme.high-contrast ? Theme.text : Theme.border;
+        drop-shadow-blur: 24px;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-color: #00000040;
+        accessible-role: groupbox;
+        accessible-label: root.title;
+        accessible-description: root.description;
+
+        anchor := FocusScope {
+            key-pressed(e) => {
+                if e.text == Key.Escape {
+                    root.cancel();
+                    return accept;
+                }
+                if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
+                    return accept;
+                }
+                reject
+            }
+            init => {
+                if root.auto-focus {
+                    self.focus();
+                }
+            }
+            KeepInView {
+                inner-height: content.preferred-height;
+                content := VerticalLayout {
+                    padding: root.content-padding;
+                    spacing: 12px;
+                    @children
+                }
+            }
+        }
+    }
+
+    // Tab from the card's end lands here: round to its start.
+    FocusScope {
+        width: 0px;
+        height: 0px;
+        changed has-focus => {
+            if self.has-focus {
+                anchor.focus();
+            }
+        }
+    }
+}
+
+// A row in a popup menu. Up and Down move between rows, Enter chooses, Esc closes.
+export component MenuItem inherits Pressable {
+    in property <string> text;
+    in property <image> icon;
+    in property <string> shortcut;
+    // Show the icon in its own colours (brand logos).
+    in property <bool> icon-colours;
+    // Takes the keyboard focus when the menu opens.
+    in property <bool> initial-focus;
+
+    // A moment after the row is made, not in `init`: a popup's rows are made before the
+    // popup takes the focus from the window, which would take it from the row again and
+    // give it back to the row, not to what had it, when the popup closes.
+    Timer {
+        interval: 1ms;
+        running: root.initial-focus;
+        triggered => {
+            self.running = false;
+            root.focus-row();
+        }
+    }
+
+    height: Theme.row-height;
+    border-radius: Theme.radius-small;
+    background: self.has-hover || self.has-focus ? Theme.hover : transparent;
+    label: text;
+    description: shortcut != "" ? @tr("Shortcut {}", Keys.label(shortcut, false)) : "";
+
+    RowLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 10px;
+        if root.icon.width > 0 && !root.icon-colours: Image {
+            source: root.icon;
+            width: 16px;
+            height: 16px;
+            cross-axis-self-alignment: center;
+            colorize: Theme.muted;
+            accessible-role: none;
+        }
+        if root.icon.width > 0 && root.icon-colours: Image {
+            source: root.icon;
+            width: 16px;
+            height: 16px;
+            cross-axis-self-alignment: center;
+            accessible-role: none;
+        }
+        Text {
+            text: root.text;
+            horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+            color: Theme.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+            accessible-role: none;
+        }
+        if root.shortcut != "": Text {
+            text: Keys.label(root.shortcut, false);
+            color: Theme.faint;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+}
+
+// The card of a popup menu.
+export component MenuCard inherits Rectangle {
+    background: Theme.chrome;
+    border-radius: Theme.radius;
+    border-width: Theme.high-contrast ? 2px : 1px;
+    border-color: Theme.high-contrast ? Theme.text : Theme.border;
+    drop-shadow-blur: 16px;
+    drop-shadow-offset-y: 4px;
+    drop-shadow-color: #00000030;
+
+    VerticalLayout {
+        padding: 4px;
+        @children
+    }
+}

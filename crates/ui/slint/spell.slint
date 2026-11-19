@@ -1,0 +1,176 @@
+// Spell checking in text fields, shared by the desktop and mobile apps: the misspelled
+// words Rust found and red wavy lines under them.
+//
+// Slint gives no glyph positions, so each word is measured by the text layout itself: a
+// hidden, disabled copy of the field (same text, font, size, wrapping and box) is asked to
+// put its caret at the word's start and end, and reports where it would draw it.
+
+// A misspelled word: byte offsets into the field's text.
+export struct SpellWord {
+    start: int,
+    end: int,
+    word: string,
+}
+
+export global SpellState {
+    in property <bool> enabled: true;
+    // The misspelled words of the form field, the free text box and the comment being typed.
+    in property <[SpellWord]> field;
+    in property <[SpellWord]> editor;
+    in property <[SpellWord]> comment;
+    // The word the menu is for and its corrections.
+    in property <string> word;
+    in property <[string]> suggestions;
+    // Editors: 0 page text, 1 form field, 2 free text box, 3 comment.
+    callback text-changed(editor: int, text: string);
+    // The menu for word `index` of an editor is about to open: Rust fills `word` and
+    // `suggestions`; false when there is nothing to offer.
+    callback open-menu(editor: int, index: int) -> bool;
+    // The index of the word around byte offset `caret` of an editor's text, or -1.
+    callback word-at(editor: int, caret: int) -> int;
+    // An offer to download the dictionary of the document's language; empty for none.
+    in property <string> offer;
+    // A download in progress: 0 to 1; below 0 for none.
+    in property <float> progress: -1;
+    // "pick" with a suggestion, "add" (to the dictionary), "ignore", "enabled" ("on" or
+    // "off"), "download" or "dismiss" (the offer).
+    callback action(what: string, value: string);
+}
+
+// The line under one word, placed over a field with the field's geometry.
+component Mark inherits Rectangle {
+    in property <SpellWord> w;
+    in property <string> text;
+    in property <length> font-size;
+    in property <string> font-family;
+    in property <TextWrap> wrap;
+    in property <bool> single-line;
+    in property <TextVerticalAlignment> vertical-alignment;
+    in property <TextHorizontalAlignment> horizontal-alignment;
+    callback menu(x: length, y: length);
+
+    // The caret's top left at the word's start and end.
+    property <length> sx;
+    property <length> sy;
+    property <length> ex;
+    property <length> ey;
+    property <bool> measuring-end;
+
+    probe := TextInput {
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        font-size: root.font-size;
+        font-family: root.font-family;
+        wrap: root.wrap;
+        single-line: root.single-line;
+        vertical-alignment: root.vertical-alignment;
+        horizontal-alignment: root.horizontal-alignment;
+        enabled: false;
+        read-only: true;
+        opacity: 0;
+        accessible-role: none;
+        cursor-position-changed(p) => {
+            if root.measuring-end {
+                root.ex = p.x;
+                root.ey = p.y;
+            } else {
+                root.sx = p.x;
+                root.sy = p.y;
+            }
+        }
+    }
+
+    function measure() {
+        root.measuring-end = false;
+        probe.set-selection-offsets(root.w.start, root.w.start);
+        root.measuring-end = true;
+        probe.set-selection-offsets(root.w.end, root.w.end);
+    }
+
+    // Anything that moves the word measures it again.
+    property <string> key: root.text + "/" + root.w.start + "/" + root.w.end + "/" + root.width / 1px + "/" + root.height / 1px + "/" + root.font-size / 1px;
+    changed key => {
+        root.measure();
+    }
+    init => {
+        root.measure();
+    }
+
+    property <length> line: probe.font-metrics.ascent - probe.font-metrics.descent;
+    property <length> under: probe.font-metrics.ascent - probe.font-metrics.descent * 0.2;
+    // A word the wrapping split over two lines is marked on both.
+    property <bool> split: abs(root.ey - root.sy) > 0.5px;
+
+    // The start's line (all of the word unless it was split; right to left text measures
+    // its start right of its end).
+    word := Rectangle {
+        x: root.split ? root.sx : min(root.sx, root.ex);
+        y: root.sy;
+        width: max(3px, root.split ? root.width - root.sx : abs(root.ex - root.sx));
+        height: root.line;
+        accessible-role: none;
+        Image {
+            y: root.under;
+            width: parent.width;
+            height: 3px;
+            source: @image-url("squiggle.svg");
+            horizontal-tiling: repeat;
+            accessible-role: none;
+        }
+        TouchArea {
+            pointer-event(e) => {
+                if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                    root.menu(parent.x + self.mouse-x, parent.y + self.mouse-y);
+                }
+            }
+        }
+    }
+    if root.split: Rectangle {
+        x: 0;
+        y: root.ey;
+        width: max(3px, root.ex);
+        height: root.line;
+        accessible-role: none;
+        Image {
+            y: root.under;
+            width: parent.width;
+            height: 3px;
+            source: @image-url("squiggle.svg");
+            horizontal-tiling: repeat;
+            accessible-role: none;
+        }
+    }
+}
+
+// Lines under the misspelled `words` of a field. Give it the field's position, size, text
+// and font, and put it just under the field, which right clicks pass through.
+export component SpellMarks inherits Rectangle {
+    in property <[SpellWord]> words;
+    in property <string> text;
+    in property <length> font-size;
+    in property <string> font-family;
+    in property <TextWrap> wrap: no-wrap;
+    in property <bool> single-line: true;
+    in property <TextVerticalAlignment> vertical-alignment: top;
+    in property <TextHorizontalAlignment> horizontal-alignment: left;
+    // A right click on word `index` at (x, y) in this element.
+    callback menu(index: int, x: length, y: length);
+    accessible-role: none;
+
+    for w[i] in root.words: Mark {
+        width: root.width;
+        height: root.height;
+        w: w;
+        text: root.text;
+        font-size: root.font-size;
+        font-family: root.font-family;
+        wrap: root.wrap;
+        single-line: root.single-line;
+        vertical-alignment: root.vertical-alignment;
+        horizontal-alignment: root.horizontal-alignment;
+        menu(x, y) => {
+            root.menu(i, x, y);
+        }
+    }
+}

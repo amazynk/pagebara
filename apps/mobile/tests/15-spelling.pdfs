@@ -1,0 +1,64 @@
+# Spell checking on phones: misspelled words in a form field and in page text being
+# edited get a red wavy underline; with the caret in one (a tap on it) a bar above the
+# keyboard offers its corrections, Add to dictionary and Ignore. The More menu turns it
+# off and shows the dictionaries' licences.
+open "$SAMPLES/form.pdf"
+wait 600
+tool forms
+assert spell.enabled == true
+click annot 1 1 200
+assert field.editing == true
+type "Ada recieve the plans" 400
+wait 400
+assert spell.words == recieve
+assert spell.drawn == 1
+screenshot 15-field.png
+click misspelling 1 300
+assert spell.word == recieve
+assert spell.suggestions contains receive
+screenshot 15-field-bar.png
+click "receive" 300
+wait 300
+assert spell.marks == 0
+assert spell.word ==
+click "Done" 200
+assert field:name == Ada receive the plans
+# A word added to the dictionary is not marked again.
+click annot 1 3 200
+type "Fair at Glenrothes" 400
+wait 400
+assert spell.words == Glenrothes
+click misspelling 1 300
+click "Add to dictionary" 300
+wait 300
+assert spell.marks == 0
+assert spell.dictionary contains Glenrothes
+click "Done" 200
+# Page text being edited.
+open "$SAMPLES/flyer.pdf"
+wait 600
+click "Edit" 200
+dblclick object 1 2 300
+await edit.text-editing == true 3000
+wait 300
+type " Bring your frends." 400
+wait 400
+assert spell.words == frends
+screenshot 15-page-text.png
+click misspelling 1 300
+assert spell.word == frends
+assert spell.suggestions contains friends
+screenshot 15-page-bar.png
+click "friends" 300
+assert edit.text contains Bring your friends.
+assert spell.marks == 0
+click "Done" 200
+assert page.text:1 contains Bring your friends.
+# Turned off from the More menu; the licences list the dictionary.
+click "More" 200
+click "Turn off spell checking" 200
+assert spell.enabled == false
+click "More" 200
+click "Licences" 200
+assert sheet == licences
+screenshot 15-licences.png

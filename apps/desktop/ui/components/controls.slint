@@ -1,0 +1,330 @@
+import { RowLayout } from "row.slint";
+import { Slider } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { FocusRing, Reveal } from "button.slint";
+
+export global Palette2 {
+    out property <[color]> colours: [#FACC15, #4ADE80, #60A5FA, #F472B6, #FB923C, #DC2626, #18181B];
+    out property <[string]> names: [@tr("Yellow"), @tr("Green"), @tr("Blue"), @tr("Pink"), @tr("Orange"), @tr("Red"), @tr("Black")];
+}
+
+// A row of colour swatches; one tab stop, Left and Right pick the neighbouring colour.
+export component ColourRow inherits RowLayout {
+    in property <int> selected;
+    // What the colour is of, for screen readers.
+    in property <string> name: @tr("Colour");
+    callback picked(index: int);
+    spacing: 6px;
+    alignment: start;
+    accessible-role: radio-group;
+    accessible-label: root.name;
+    accessible-value: root.selected >= 0 ? Palette2.names[root.selected] : "";
+    forward-focus: keys;
+    keys := FocusScope {
+        changed has-focus => {
+            if self.has-focus {
+                Reveal.show(root.absolute-position.x, root.absolute-position.y, root.height);
+            }
+        }
+        width: 0px;
+        key-pressed(e) => {
+            if e.text == Key.RightArrow || e.text == Key.DownArrow {
+                root.picked(mod(max(root.selected, -1) + 1, Palette2.colours.length));
+                return accept;
+            }
+            if e.text == Key.LeftArrow || e.text == Key.UpArrow {
+                root.picked(mod(max(root.selected, 0) + Palette2.colours.length - 1, Palette2.colours.length));
+                return accept;
+            }
+            reject
+        }
+    }
+    for c[i] in Palette2.colours: Rectangle {
+        width: Theme.touch ? 40px : 28px;
+        height: self.width;
+        border-radius: self.width / 2;
+        border-width: i == root.selected ? 2px : keys.has-focus && root.selected < 0 && i == 0 ? Theme.focus-width : 0px;
+        border-color: i == root.selected ? (keys.has-focus ? Theme.focus : Theme.accent-fg) : Theme.focus;
+        accessible-role: radio-button;
+        accessible-label: Palette2.names[i];
+        accessible-checkable: true;
+        accessible-checked: i == root.selected;
+        accessible-item-index: i;
+        accessible-item-count: Palette2.colours.length;
+        accessible-action-default => {
+            root.picked(i);
+        }
+        Rectangle {
+            width: parent.width - 8px;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: c;
+            border-width: 1px;
+            // A light ring in dark mode, where the black swatch would vanish into the panel.
+            border-color: Theme.high-contrast ? Theme.text : Theme.dark ? #FFFFFF59 : #00000018;
+        }
+        if keys.has-focus && i == root.selected: Rectangle {
+            x: -3px;
+            y: -3px;
+            width: parent.width + 6px;
+            height: parent.height + 6px;
+            border-radius: self.width / 2;
+            border-width: Theme.focus-width;
+            border-color: Theme.focus;
+        }
+        TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.picked(i);
+            }
+        }
+    }
+}
+
+export struct IconChoice {
+    label: string,
+    icon: image,
+}
+
+// Mutually exclusive options as icon buttons with labels; one tab stop, arrows choose.
+export component ChoiceRow inherits Rectangle {
+    in property <[IconChoice]> items;
+    in property <int> selected;
+    in property <string> label;
+    callback picked(index: int);
+    height: 54px;
+    border-radius: Theme.radius;
+    background: Theme.track;
+    border-width: Theme.high-contrast ? 1px : 0px;
+    border-color: Theme.control-border;
+    accessible-role: radio-group;
+    accessible-label: label;
+    accessible-value: root.selected >= 0 && root.selected < root.items.length ? root.items[root.selected].label : "";
+    forward-focus: keys;
+    keys := FocusScope {
+        changed has-focus => {
+            if self.has-focus {
+                Reveal.show(root.absolute-position.x, root.absolute-position.y, root.height);
+            }
+        }
+        key-pressed(e) => {
+            if (e.text == Key.RightArrow || e.text == Key.DownArrow) && root.selected < root.items.length - 1 {
+                root.picked(root.selected + 1);
+                return accept;
+            }
+            if (e.text == Key.LeftArrow || e.text == Key.UpArrow) && root.selected > 0 {
+                root.picked(root.selected - 1);
+                return accept;
+            }
+            reject
+        }
+    }
+    RowLayout {
+        padding: 3px;
+        spacing: 2px;
+        for it[i] in root.items: Rectangle {
+            horizontal-stretch: 1;
+            border-radius: Theme.radius - 2px;
+            background: i == root.selected ? Theme.raised : t.has-hover ? Theme.hover : transparent;
+            border-width: i == root.selected && Theme.high-contrast ? 2px : 0px;
+            border-color: Theme.accent-fg;
+            drop-shadow-blur: i == root.selected ? 3px : 0px;
+            drop-shadow-offset-y: 1px;
+            drop-shadow-color: i == root.selected ? #0000001f : transparent;
+            accessible-role: radio-button;
+            accessible-label: it.label;
+            accessible-checkable: true;
+            accessible-checked: i == root.selected;
+            accessible-item-index: i;
+            accessible-item-count: root.items.length;
+            accessible-action-default => {
+                root.picked(i);
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 3px;
+                // The icon sits in a plain Rectangle: a fixed-width Image directly in this
+                // layout would cap the cell's width at the icon's, and the row could not
+                // stretch the cells to share its width.
+                if it.icon.width > 0: Rectangle {
+                    height: 17px;
+                    Image {
+                        source: it.icon;
+                        width: 17px;
+                        height: 17px;
+                        x: (parent.width - self.width) / 2;
+                        colorize: i == root.selected ? Theme.text : Theme.muted;
+                        accessible-role: none;
+                    }
+                }
+                Text {
+                    text: it.label;
+                    font-size: 11px * Theme.text-scale;
+                    horizontal-alignment: center;
+                    color: i == root.selected ? Theme.text : Theme.muted;
+                    accessible-role: none;
+                }
+            }
+            t := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.picked(i);
+                }
+            }
+        }
+    }
+    FocusRing {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        radius: Theme.radius;
+        show: keys.has-focus;
+    }
+}
+
+export component SectionLabel inherits Text {
+    horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+    color: Theme.muted;
+    font-size: Theme.font-small;
+    font-weight: 500;
+}
+
+// A slider with a label and its value.
+export component LabeledSlider inherits VerticalLayout {
+    in property <string> label;
+    in property <string> value-text;
+    in-out property <float> value;
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in property <bool> enabled: true;
+    callback changed-value(value: float);
+    callback released(value: float);
+    spacing: 4px;
+    RowLayout {
+        Text {
+            text: root.label;
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: root.value-text;
+            color: Theme.text;
+            font-size: Theme.font-small;
+        }
+    }
+    Slider {
+        horizontal-stretch: 1;
+        min-width: 160px;
+        minimum: root.minimum;
+        maximum: root.maximum;
+        value <=> root.value;
+        enabled: root.enabled;
+        accessible-label: root.label;
+        changed(v) => {
+            root.changed-value(v);
+        }
+        released(v) => {
+            root.released(v);
+        }
+    }
+}
+
+component CheckBox inherits Rectangle {
+    in property <bool> checked;
+    in property <bool> enabled;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: root.checked ? Theme.accent : Theme.chrome;
+    border-width: root.checked ? 0px : 1.5px;
+    border-color: Theme.muted;
+    opacity: root.enabled ? 1 : 0.5;
+    if root.checked: Image {
+        source: @image-url("../icons/check.svg");
+        width: 13px;
+        height: 13px;
+        colorize: Theme.on-accent;
+        accessible-role: none;
+    }
+}
+
+// A check box with its label; the whole row toggles, Space too.
+export component Check inherits Rectangle {
+    in property <string> text;
+    // For screen readers when there is no visible text.
+    in property <string> label;
+    in-out property <bool> checked;
+    in property <bool> enabled: true;
+    callback toggled();
+    min-height: 28px;
+    accessible-role: checkbox;
+    accessible-label: label != "" ? label : text;
+    accessible-checkable: true;
+    accessible-checked: checked;
+    accessible-enabled: enabled;
+    accessible-action-default => {
+        root.toggle();
+    }
+    forward-focus: keys;
+    function toggle() {
+        if enabled {
+            checked = !checked;
+            toggled();
+        }
+    }
+    keys := FocusScope {
+        changed has-focus => {
+            if self.has-focus {
+                Reveal.show(root.absolute-position.x, root.absolute-position.y, root.height);
+            }
+        }
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if e.text == " " {
+                root.toggle();
+                return accept;
+            }
+            reject
+        }
+    }
+    HorizontalLayout {
+        spacing: 8px;
+        // The box leads in the reading direction.
+        if !Theme.rtl: CheckBox {
+            y: (parent.height - self.height) / 2;
+            checked: root.checked;
+            enabled: root.enabled;
+        }
+        Text {
+            text: root.text;
+            horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+            color: root.enabled ? Theme.text : Theme.faint;
+            vertical-alignment: center;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+            horizontal-stretch: 1;
+            accessible-role: none;
+        }
+        if Theme.rtl: CheckBox {
+            y: (parent.height - self.height) / 2;
+            checked: root.checked;
+            enabled: root.enabled;
+        }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => {
+            root.toggle();
+        }
+    }
+    FocusRing {
+        x: -3px;
+        y: -1px;
+        width: root.width + 6px;
+        height: root.height + 2px;
+        show: keys.has-focus;
+    }
+}

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WiX v4+ installer source. Built by build-msi.sh, which passes the variables below from
+     crates/support/identity (UpgradeCode is derived from the app ID: keep the ID stable). -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="$(var.Name)" Manufacturer="$(var.Publisher)" Version="$(var.Version)"
+           UpgradeCode="$(var.UpgradeCode)" Scope="perMachine" Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of $(var.Name) is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.Icon)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="$(var.Homepage)" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="$(var.Name)">
+        <Component Id="Exe">
+          <File Id="ExeFile" Source="$(var.Exe)" KeyPath="yes" />
+          <!-- "Open with" for .pdf; Windows lets the user pick the default handler (the
+               app's Settings button opens Default apps at this registration). A second
+               launch hands the file to the running window. -->
+          <ProgId Id="$(var.AppId).pdf" Description="PDF document" Icon="ExeFile" IconIndex="0">
+            <Extension Id="pdf" ContentType="application/pdf" Advertise="no">
+              <Verb Id="open" Command="Open" TargetFile="ExeFile" Argument="&quot;%1&quot;" />
+            </Extension>
+          </ProgId>
+          <RegistryValue Root="HKLM" Key="Software\Classes\$(var.AppId).pdf" Name="FriendlyTypeName"
+                         Value="PDF document" Type="string" />
+          <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="$(var.Name)"
+                         Value="Software\$(var.Name)\Capabilities" Type="string" />
+          <RegistryKey Root="HKLM" Key="Software\$(var.Name)\Capabilities">
+            <RegistryValue Name="ApplicationName" Value="$(var.Name)" Type="string" />
+            <RegistryValue Name="ApplicationDescription" Value="$(var.Summary)" Type="string" />
+            <RegistryValue Name="ApplicationIcon" Value="[#ExeFile],0" Type="string" />
+            <RegistryValue Key="FileAssociations" Name=".pdf" Value="$(var.AppId).pdf" Type="string" />
+            <RegistryValue Key="MimeAssociations" Name="application/pdf" Value="$(var.AppId).pdf" Type="string" />
+          </RegistryKey>
+          <RegistryValue Root="HKLM" Key="Software\Classes\.pdf\OpenWithProgids"
+                         Name="$(var.AppId).pdf" Value="" Type="string" />
+          <!-- "Open with" lists the app under its name, with its icon. -->
+          <RegistryKey Root="HKLM" Key="Software\Classes\Applications\$(var.ExeName)">
+            <RegistryValue Name="FriendlyAppName" Value="$(var.Name)" Type="string" />
+            <RegistryValue Key="SupportedTypes" Name=".pdf" Value="" Type="string" />
+            <RegistryValue Key="DefaultIcon" Value="[#ExeFile],0" Type="string" />
+            <RegistryValue Key="shell\open\command" Value="&quot;[#ExeFile]&quot; &quot;%1&quot;" Type="string" />
+          </RegistryKey>
+        </Component>
+        <!-- Explorer thumbnails, preview pane and Windows Search text. Not registered here:
+             each is turned on per user in the app's Settings > System integration, which
+             also removes exactly what it registered. -->
+        <Component Id="ShellExtension">
+          <File Id="ShellDllFile" Source="$(var.ShellDll)" Name="$(var.ShellDllName)" KeyPath="yes" />
+        </Component>
+        <Directory Id="DocFolder" Name="licences">
+          <Component Id="Notices">
+            <File Source="$(var.Root)\LICENSE-MIT" KeyPath="yes" />
+            <File Source="$(var.Root)\LICENSE-APACHE" />
+            <File Source="$(var.Root)\THIRD-PARTY.md" />
+            <File Source="$(var.Root)\THIRD-PARTY-LICENSES.md" />
+            <File Source="$(var.Root)\apps\desktop\ui\fonts\OFL.txt" Name="Inter-OFL.txt" />
+            <File Source="$(var.Root)\crates\content\LICENSE-adobe-cmap" Name="LICENSE-adobe-cmap.txt" />
+            <File Source="$(var.Root)\crates\typeset\LICENSE-hyphenation" Name="LICENSE-hyphenation.txt" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenu">
+        <Shortcut Id="StartMenuShortcut" Name="$(var.Name)" Description="$(var.Summary)"
+                  Target="[INSTALLFOLDER]$(var.ExeName)" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="Software\$(var.Name)" Name="StartMenuShortcut"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Main">
+      <ComponentRef Id="Exe" />
+      <ComponentRef Id="ShellExtension" />
+      <ComponentRef Id="Notices" />
+      <ComponentRef Id="StartMenu" />
+    </Feature>
+  </Package>
+</Wix>

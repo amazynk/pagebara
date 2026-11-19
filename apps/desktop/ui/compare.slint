@@ -1,0 +1,423 @@
+// The comparison of two documents: the list of changes with filters, and the paired pages
+// side by side (scrolling together), laid over each other, or blinking between them.
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button, IconButton } from "components/button.slint";
+import { SegmentedControl } from "components/segmented.slint";
+import { Check } from "components/controls.slint";
+
+// One line of the change list. `category`: 0 text, 1 visual, 2 annotations, 3 document.
+export struct CompareRow {
+    kind: string,
+    category: int,
+    at: string,
+    text: string,
+}
+
+// A highlight on a page, in fractions of its size; `kind` 0 removed, 1 added, 2 moved,
+// 3 looks different, 4 annotation; `current` for the selected change.
+export struct CompareMark {
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    kind: int,
+    current: bool,
+}
+
+export global CompareState {
+    in property <bool> visible;
+    in property <string> old-name;
+    in property <string> new-name;
+    in property <string> summary;
+    in property <[CompareRow]> rows;
+    in-out property <int> current: -1;
+    in-out property <bool> show-text: true;
+    in-out property <bool> show-visual: true;
+    in-out property <bool> show-annots: true;
+    in-out property <bool> show-doc: true;
+    // 0 side by side, 1 laid over, 2 blinking.
+    in-out property <int> mode;
+    in property <image> left;
+    in property <image> right;
+    in property <string> left-label;
+    in property <string> right-label;
+    in property <[CompareMark]> left-marks;
+    in property <[CompareMark]> right-marks;
+    in property <int> pair;
+    in property <int> pairs;
+    in property <bool> busy;
+    in property <float> progress;
+    in property <string> status;
+    callback action(what: string, value: string);
+}
+
+component PageImage inherits Rectangle {
+    in property <image> source;
+    in property <[CompareMark]> marks;
+    in property <string> label;
+    in property <float> image-opacity: 1;
+    in property <bool> show-marks: true;
+    property <float> aspect: root.source.height / max(1, root.source.width);
+    // Sized by the layout only, never by the picture (which is sized from it).
+    min-width: 0px;
+    min-height: 0px;
+    preferred-width: 100px;
+    preferred-height: 100px;
+    max-width: 100000px;
+    max-height: 100000px;
+    accessible-role: image;
+    accessible-label: root.label;
+    page := Rectangle {
+        width: min(parent.width - 16px, (parent.height - 16px) / max(0.1, root.aspect));
+        height: self.width * root.aspect;
+        background: root.source.width > 0 ? #FFFFFF : transparent;
+        drop-shadow-blur: root.source.width > 0 ? 6px : 0px;
+        drop-shadow-color: #00000033;
+        Image {
+            source: root.source;
+            width: parent.width;
+            height: parent.height;
+            image-fit: fill;
+            preferred-width: 0px;
+            preferred-height: 0px;
+            opacity: root.image-opacity;
+        }
+        if root.show-marks: Rectangle {
+            for m in root.marks: Rectangle {
+                x: m.x * page.width - 2px;
+                y: m.y * page.height - 2px;
+                width: m.w * page.width + 4px;
+                height: m.h * page.height + 4px;
+                border-radius: 2px;
+                property <color> c: [#DC2626, #16A34A, #2563EB, #F97316, #A855F7][m.kind];
+                background: c.with-alpha(m.current ? 0.35 : 0.2);
+                border-width: m.current ? 2px : 1px;
+                border-color: c;
+            }
+        }
+    }
+    if root.source.width == 0: Text {
+        text: @tr("No page here");
+        color: Theme.muted;
+    }
+}
+
+export component CompareView inherits FocusScope {
+    Rectangle { background: Theme.canvas; }
+    property <bool> blink-on;
+    blink := Timer {
+        interval: 700ms;
+        running: CompareState.mode == 2;
+        triggered => {
+            root.blink-on = !root.blink-on;
+        }
+    }
+    key-pressed(e) => {
+        if e.text == Key.Escape {
+            CompareState.action("close", "");
+            return accept;
+        }
+        if e.text == Key.DownArrow || e.text == "n" {
+            CompareState.action("next", "");
+            return accept;
+        }
+        if e.text == Key.UpArrow || e.text == "p" {
+            CompareState.action("previous", "");
+            return accept;
+        }
+        if e.text == Key.PageDown || e.text == Key.RightArrow {
+            CompareState.action("next-pair", "");
+            return accept;
+        }
+        if e.text == Key.PageUp || e.text == Key.LeftArrow {
+            CompareState.action("previous-pair", "");
+            return accept;
+        }
+        reject
+    }
+    init => {
+        self.focus();
+    }
+    TouchArea { }
+    VerticalLayout {
+        width: root.width;
+        height: root.height;
+        // The bar: names, mode, report, close.
+        Rectangle {
+            height: 52px;
+            background: Theme.chrome;
+            HorizontalLayout {
+                padding-left: 16px;
+                padding-right: 10px;
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: @tr("Comparing “{}” with “{}”", CompareState.old-name, CompareState.new-name);
+                        color: Theme.text;
+                        font-weight: 600;
+                        overflow: elide;
+                    }
+                    Text {
+                        text: CompareState.busy ? CompareState.status : CompareState.summary;
+                        color: Theme.muted;
+                        font-size: Theme.font-small;
+                        overflow: elide;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    SegmentedControl {
+                        name: @tr("How to show the pages");
+                        // TRANSLATORS: how to show the two versions: next to each other, on top of each other, or alternating
+                        items: [{ label: @tr("Side by side") }, { label: @tr("Overlay") }, { label: @tr("Blink") }];
+                        selected <=> CompareState.mode;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Button {
+                        text: @tr("Save report…");
+                        enabled: !CompareState.busy;
+                        clicked => {
+                            CompareState.action("report", "");
+                        }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    IconButton {
+                        icon: @image-url("icons/close.svg");
+                        label: @tr("Close the comparison");
+                        clicked => {
+                            CompareState.action("close", "");
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: Theme.border;
+            }
+        }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            // The change list.
+            Rectangle {
+                width: 340px;
+                max-height: 100000px;
+                background: Theme.chrome;
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 6px;
+                    HorizontalLayout {
+                        spacing: 4px;
+                        Check {
+                            // TRANSLATORS: filter: show differences in the text
+                            text: @tr("Text");
+                            checked <=> CompareState.show-text;
+                            toggled => {
+                                CompareState.action("filter", "");
+                            }
+                        }
+                        Check {
+                            // TRANSLATORS: filter: show differences in how pages look
+                            text: @tr("Visual");
+                            checked <=> CompareState.show-visual;
+                            toggled => {
+                                CompareState.action("filter", "");
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        Check {
+                            text: @tr("Comments");
+                            checked <=> CompareState.show-annots;
+                            toggled => {
+                                CompareState.action("filter", "");
+                            }
+                        }
+                        Check {
+                            // TRANSLATORS: filter: show differences in document properties
+                            text: @tr("Document");
+                            checked <=> CompareState.show-doc;
+                            toggled => {
+                                CompareState.action("filter", "");
+                            }
+                        }
+                    }
+                    if CompareState.busy: Rectangle {
+                        height: 4px;
+                        border-radius: 2px;
+                        background: Theme.track;
+                        Rectangle {
+                            x: 0;
+                            width: parent.width * CompareState.progress;
+                            background: Theme.accent;
+                            border-radius: 2px;
+                        }
+                    }
+                    if !CompareState.busy && CompareState.rows.length == 0: Text {
+                        text: @tr("No differences found.");
+                        color: Theme.muted;
+                    }
+                    Flickable {
+                        vertical-stretch: 1;
+                        min-height: 40px;
+                        max-height: 100000px;
+                        content-height: list.preferred-height;
+                        list := VerticalLayout {
+                            spacing: 2px;
+                            for r[i] in CompareState.rows: Rectangle {
+                                height: row.preferred-height;
+                                border-radius: Theme.radius-small;
+                                background: i == CompareState.current ? Theme.accent-soft : (ta.has-hover ? Theme.hover : transparent);
+                                accessible-role: list-item;
+                                accessible-label: r.kind + ", " + r.at + ": " + r.text;
+                                accessible-item-selectable: true;
+                                accessible-item-selected: i == CompareState.current;
+                                accessible-action-default => {
+                                    CompareState.action("select", i);
+                                }
+                                ta := TouchArea {
+                                    clicked => {
+                                        CompareState.action("select", i);
+                                        root.focus();
+                                    }
+                                }
+                                row := VerticalLayout {
+                                    padding: 6px;
+                                    spacing: 2px;
+                                    HorizontalLayout {
+                                        spacing: 6px;
+                                        Rectangle {
+                                            width: 8px;
+                                            height: 8px;
+                                            y: 4px;
+                                            border-radius: 4px;
+                                            background: [#DC2626, #F97316, #A855F7, #71717A][r.category];
+                                        }
+                                        Text {
+                                            text: r.kind;
+                                            color: Theme.text;
+                                            font-weight: 600;
+                                            font-size: Theme.font-small;
+                                        }
+                                        Text {
+                                            text: r.at;
+                                            color: Theme.muted;
+                                            font-size: Theme.font-small;
+                                            horizontal-alignment: right;
+                                            horizontal-stretch: 1;
+                                        }
+                                    }
+                                    Text {
+                                        text: r.text;
+                                        color: Theme.text;
+                                        font-size: Theme.font-small;
+                                        wrap: word-wrap;
+                                        line-height-factor: 1.15;
+                                        max-height: 48px;
+                                        overflow: elide;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Rectangle {
+                    x: parent.width - 1px;
+                    width: 1px;
+                    background: Theme.border;
+                }
+            }
+            // The pages.
+            VerticalLayout {
+                horizontal-stretch: 1;
+                padding: 12px;
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    IconButton {
+                        icon: (Theme.rtl ? @image-url("icons/chevron-right.svg") : @image-url("icons/chevron-left.svg"));
+                        label: @tr("Previous pages");
+                        enabled: CompareState.pair > 0;
+                        clicked => {
+                            CompareState.action("previous-pair", "");
+                        }
+                    }
+                    Text {
+                        text: CompareState.mode == 0 ? CompareState.left-label : CompareState.left-label + " · " + CompareState.right-label;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        horizontal-alignment: CompareState.mode == 0 ? left : center;
+                    }
+                    if CompareState.mode == 0: Text {
+                        text: CompareState.right-label;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: CompareState.pairs > 0 ? (CompareState.pair + 1) + " / " + CompareState.pairs : "";
+                        color: Theme.muted;
+                        vertical-alignment: center;
+                    }
+                    IconButton {
+                        icon: (Theme.rtl ? @image-url("icons/chevron-left.svg") : @image-url("icons/chevron-right.svg"));
+                        label: @tr("Next pages");
+                        enabled: CompareState.pair + 1 < CompareState.pairs;
+                        clicked => {
+                            CompareState.action("next-pair", "");
+                        }
+                    }
+                }
+                if CompareState.mode == 0: HorizontalLayout {
+                    vertical-stretch: 1;
+                    spacing: 12px;
+                    PageImage {
+                        horizontal-stretch: 1;
+                        source: CompareState.left;
+                        marks: CompareState.left-marks;
+                        label: @tr("Old: {}", CompareState.left-label);
+                    }
+                    PageImage {
+                        horizontal-stretch: 1;
+                        source: CompareState.right;
+                        marks: CompareState.right-marks;
+                        label: @tr("New: {}", CompareState.right-label);
+                    }
+                }
+                if CompareState.mode == 1: Rectangle {
+                    vertical-stretch: 1;
+                    PageImage {
+                        width: parent.width;
+                        height: parent.height;
+                        source: CompareState.left;
+                        marks: CompareState.left-marks;
+                        label: @tr("Old and new laid over each other");
+                    }
+                    PageImage {
+                        width: parent.width;
+                        height: parent.height;
+                        source: CompareState.right;
+                        marks: CompareState.right-marks;
+                        image-opacity: 0.5;
+                        label: "";
+                    }
+                }
+                if CompareState.mode == 2: PageImage {
+                    vertical-stretch: 1;
+                    source: root.blink-on ? CompareState.right : CompareState.left;
+                    marks: root.blink-on ? CompareState.right-marks : CompareState.left-marks;
+                    label: root.blink-on ? @tr("New: {}", CompareState.right-label) : @tr("Old: {}", CompareState.left-label);
+                }
+            }
+        }
+    }
+}

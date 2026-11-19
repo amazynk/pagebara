@@ -1,0 +1,237 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState, Thumb } from "state.slint";
+import { Keys } from "components/button.slint";
+
+component GridCell inherits Rectangle {
+    in property <Thumb> thumb;
+    in property <bool> drop-before;
+    in property <bool> drop-after;
+    in property <length> grid-x;
+    in property <length> grid-y;
+    // The keyboard cursor is on this page.
+    in property <bool> focused;
+    property <bool> dragging;
+
+    accessible-role: list-item;
+    accessible-label: thumb.selected ? @tr("Page {}, selected", thumb.label) : @tr("Page {}", thumb.label);
+    accessible-item-selectable: true;
+    accessible-item-selected: thumb.selected;
+    accessible-action-default => {
+        AppState.grid-click(thumb.index, true, false);
+    }
+
+    VerticalLayout {
+        spacing: 8px;
+        Rectangle {
+            height: 176px;
+            sheet := Rectangle {
+                property <length> avail-w: parent.width - 16px;
+                property <length> avail-h: parent.height - 12px;
+                width: min(self.avail-w, self.avail-h / max(root.thumb.aspect, 0.01));
+                height: self.width * root.thumb.aspect;
+                y: parent.height - self.height - 2px;
+                background: Theme.page;
+                border-radius: 3px;
+                drop-shadow-blur: root.dragging ? 16px : 3px;
+                drop-shadow-offset-y: root.dragging ? 8px : 1px;
+                drop-shadow-color: root.dragging ? #00000048 : Theme.shadow-near;
+                opacity: root.dragging ? 0.6 : 1;
+                Image {
+                    accessible-role: none;
+                    width: parent.width;
+                    height: parent.height;
+                    source: root.thumb.image;
+                    image-fit: fill;
+                }
+            }
+            if root.thumb.selected: Rectangle {
+                x: sheet.x - 4px;
+                y: sheet.y - 4px;
+                width: sheet.width + 8px;
+                height: sheet.height + 8px;
+                border-radius: 6px;
+                border-width: 2px;
+                border-color: Theme.accent-fg;
+            }
+            if root.focused: Rectangle {
+                x: sheet.x - 8px;
+                y: sheet.y - 8px;
+                width: sheet.width + 16px;
+                height: sheet.height + 16px;
+                border-radius: 9px;
+                border-width: Theme.focus-width;
+                border-color: Theme.focus;
+            }
+            if root.thumb.selected: Rectangle {
+                x: sheet.x + sheet.width - 12px;
+                y: sheet.y - 10px;
+                width: 22px;
+                height: 22px;
+                border-radius: 11px;
+                background: Theme.accent;
+                Image {
+                    accessible-role: none;
+                    source: @image-url("icons/check.svg");
+                    width: 13px;
+                    height: 13px;
+                    colorize: Theme.on-accent;
+                }
+            }
+            if root.drop-before: Rectangle {
+                x: -11px;
+                width: 3px;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+            if root.drop-after: Rectangle {
+                x: parent.width + 8px;
+                width: 3px;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+        }
+        Text {
+            text: root.thumb.label;
+            horizontal-alignment: center;
+            font-size: Theme.font-small;
+            font-weight: root.thumb.selected ? 600 : 400;
+            color: root.thumb.selected ? Theme.accent-fg : Theme.muted;
+            accessible-role: none;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: root.dragging ? MouseCursor.grabbing : MouseCursor.pointer;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                root.dragging = false;
+            }
+            if e.kind == PointerEventKind.up && e.button == PointerEventButton.left {
+                if root.dragging {
+                    root.dragging = false;
+                    AppState.grid-drag(root.thumb.index, (root.grid-x + self.mouse-x) / 1px, (root.grid-y + self.mouse-y) / 1px, 2);
+                } else {
+                    AppState.grid-click(root.thumb.index, e.modifiers.control, e.modifiers.shift);
+                }
+            }
+        }
+        moved => {
+            if self.pressed {
+                if !root.dragging && (abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px) {
+                    root.dragging = true;
+                    AppState.grid-drag(root.thumb.index, (root.grid-x + self.mouse-x) / 1px, (root.grid-y + self.mouse-y) / 1px, 0);
+                }
+                if root.dragging {
+                    AppState.grid-drag(root.thumb.index, (root.grid-x + self.mouse-x) / 1px, (root.grid-y + self.mouse-y) / 1px, 1);
+                }
+            }
+        }
+    }
+}
+
+// All pages in a virtualised grid. Click selects, Ctrl+click toggles, Shift+click selects
+// a range, dragging moves the selection. From the keyboard: arrows move (Shift extends the
+// selection), Space adds or removes a page, Ctrl+arrows move the selected pages.
+export component OrganizeView inherits Rectangle {
+    property <length> cell-w: 150px;
+    property <length> gap: 22px;
+    property <length> row-h: 230px;
+    property <length> left: (self.width - (AppState.grid-cols * (cell-w + gap) - gap)) / 2;
+    property <int> cursor: 0;
+
+    background: Theme.canvas;
+    accessible-role: list;
+    accessible-label: @tr("Pages");
+    accessible-value: @tr("Page {} of {}, {} selected", cursor + 1, AppState.page-count, AppState.selected-count);
+    forward-focus: grid-keys;
+
+    function go(i: int, extend: bool) {
+        cursor = max(0, min(AppState.page-count - 1, i));
+        AppState.grid-click(cursor, false, extend);
+        let top = floor(cursor / max(1, AppState.grid-cols)) * row-h;
+        if top < -grid-list.content-y {
+            grid-list.content-y = -top;
+        } else if top + row-h > -grid-list.content-y + grid-list.visible-height {
+            grid-list.content-y = -(top + row-h - grid-list.visible-height);
+        }
+    }
+
+    grid-keys := FocusScope {
+        init => {
+            self.focus();
+        }
+        key-pressed(e) => {
+            let back = e.text == Key.LeftArrow || e.text == Key.UpArrow;
+            let fwd = e.text == Key.RightArrow || e.text == Key.DownArrow;
+            if e.modifiers.control && (back || fwd) {
+                AppState.organize-action(back ? "move-back" : "move-forward");
+                return accept;
+            }
+            if e.text == Key.LeftArrow || e.text == Key.RightArrow {
+                root.go(root.cursor + (fwd ? 1 : -1), e.modifiers.shift);
+                return accept;
+            }
+            if e.text == Key.UpArrow || e.text == Key.DownArrow {
+                root.go(root.cursor + (fwd ? AppState.grid-cols : -AppState.grid-cols), e.modifiers.shift);
+                return accept;
+            }
+            if e.text == Key.Home || e.text == Key.End {
+                root.go(e.text == Key.Home ? 0 : AppState.page-count - 1, e.modifiers.shift);
+                return accept;
+            }
+            if e.text == " " {
+                AppState.grid-click(root.cursor, true, false);
+                return accept;
+            }
+            reject
+        }
+    }
+
+    changed width => {
+        AppState.grid-resized(self.width / 1px);
+    }
+    init => {
+        AppState.grid-resized(self.width / 1px);
+    }
+
+    grid-list := ListView {
+        accessible-role: none;
+        changed content-y => {
+            root.report();
+        }
+        changed visible-height => {
+            root.report();
+        }
+        for row[r] in AppState.grid: Rectangle {
+            height: root.row-h;
+            for t[c] in row.cells: GridCell {
+                x: root.left + c * (root.cell-w + root.gap);
+                y: 22px;
+                width: root.cell-w;
+                height: root.row-h - 22px;
+                thumb: t;
+                grid-x: self.x;
+                grid-y: r * root.row-h + self.y;
+                drop-before: AppState.drop-index == t.index;
+                drop-after: AppState.drop-index == t.index + 1 && c == row.cells.length - 1;
+                focused: grid-keys.has-focus && t.index == root.cursor;
+            }
+        }
+    }
+
+    function report() {
+        AppState.grid-scrolled(floor(-grid-list.content-y / root.row-h), ceil((-grid-list.content-y + grid-list.visible-height) / root.row-h));
+    }
+
+    Text {
+        x: 0px;
+        y: root.height - 30px;
+        width: root.width;
+        height: 24px;
+        horizontal-alignment: center;
+        text: Keys.label(AppState.organize-hint != "" ? AppState.organize-hint : "Click to select · Shift-click for a range · Ctrl-click to add · drag to move · drop PDFs or images to insert · arrows, Space and Ctrl+arrows from the keyboard", false);
+        color: Theme.muted;
+        font-size: Theme.font-small;
+    }
+}

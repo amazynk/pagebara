@@ -1,0 +1,190 @@
+# Reading modes: every layout with every fit, page colours (dark really is dark), the
+# reading view, presenting, bookmarks; search, selection, links, highlights and forms in
+# other layouts; layout, colours, page and bookmarks come back when the file is reopened.
+cursor on
+open "$SAMPLES/report.pdf"
+wait 600
+# Single page: one page at a time, Page Down at its end turns to the next.
+call layout single
+call fit page
+wait 500
+assert layout == single
+assert page == 1
+assert ink:1,0,0,612,792 > 200
+key pagedown
+wait 400
+assert page == 2
+screenshot 14-single.png
+# Links work here: the contents page links to Outlook.
+click text 2 "Outlook" 400
+wait 500
+assert page > 8
+key alt+left
+wait 500
+assert page == 2
+# Two pages side by side; both are drawn.
+call layout two-page
+call fit page
+wait 800
+assert layout == two-page
+assert ink:1,0,0,612,792 > 200
+assert ink:2,0,0,612,792 > 200
+screenshot 14-two-page.png
+call fit width
+wait 300
+call fit actual
+wait 300
+assert zoom == 100
+# Book: the cover alone, then spreads; search finds and shows hits.
+call layout book
+call fit page
+wait 600
+assert layout == book
+key ctrl+f
+type "outlook for the fourth" 400
+assert search.hits > 0
+key return
+wait 600
+assert page > 2
+key escape
+screenshot 14-book.png
+# Horizontal: pages in a row, Right turns the page; text selection works.
+call layout horizontal
+call fit page
+page 3
+wait 600
+assert layout == horizontal
+assert page == 3
+key right
+wait 600
+assert page == 4
+drag text 4 "Revenue grew" text-end 4 "every region" 600
+assert selection.text contains Revenue grew in every region
+key escape
+screenshot 14-horizontal.png
+call fit width
+wait 300
+assert page == 4
+# Page colours: dark is dark, sepia is warm, normal is white again.
+call layout continuous
+call fit page
+page 1
+wait 600
+assert luma:1,20,20,100,100 > 230
+call page-theme dark
+wait 1200
+assert page-theme == dark
+assert luma:1,20,20,100,100 < 60
+assert luma:1,20,20,100,100 > 10
+screenshot 14-dark.png
+call page-theme sepia
+wait 1200
+assert luma:1,20,20,100,100 < 240
+assert luma:1,20,20,100,100 > 180
+call page-theme high-contrast
+wait 1200
+assert luma:1,20,20,100,100 < 10
+screenshot 14-high-contrast.png
+call page-theme normal
+wait 1200
+assert luma:1,20,20,100,100 > 230
+# The reading view: text in one column, headings by size, adjustable size.
+call reflow on
+wait 1500
+assert reflow == true
+assert reflow.busy == false
+assert reflow.blocks > 20
+assert reflow.text contains Quarterly report
+assert reflow.text contains Revenue grew in every region
+click "Larger text" 300
+screenshot 14-reflow.png
+key escape
+assert reflow == false
+# Presenting: full screen, keys and clicks move on, B blanks, Esc stops.
+page 2
+wait 400
+key f5
+wait 800
+assert presenting == true
+assert present.page == 2
+assert present.ready == true
+key right
+assert present.page == 3
+key space
+assert present.page == 4
+click 700,450 300
+assert present.page == 5
+key left
+assert present.page == 4
+key b
+assert present.black == true
+key b
+assert present.black == false
+wait 600
+screenshot 14-present.png
+key escape
+wait 600
+assert presenting == false
+assert page == 4
+# Bookmarks: add with Ctrl+D, list, rename, delete, into the outline (undoable).
+key ctrl+d
+assert bookmarks == 1
+page 7
+wait 500
+key ctrl+d
+assert bookmarks == 2
+key ctrl+b
+assert bookmarks.visible == true
+call bookmark-rename 1 "Customers section"
+assert bookmarks.titles contains Customers section
+screenshot 14-bookmarks.png
+click "Summary (page 2)" 300
+wait 500
+assert page == 4
+call bookmarks-to-outline
+assert outline > 8
+key ctrl+z
+call bookmark-delete 0
+assert bookmarks == 1
+# A highlight drawn in the two-page layout.
+call layout two-page
+call fit width
+page 3
+wait 500
+click "Annotate" 300
+click "Highlight" 300
+drag text 3 "Revenue grew" text-end 3 "every region" 600
+assert annotations == 1
+key ctrl+z
+click "Select" 300
+call page-theme sepia
+call layout book
+page 6
+wait 600
+assert page >= 6
+# Closing and reopening brings it all back.
+key ctrl+w
+assert tabs == 0
+open "$SAMPLES/report.pdf"
+wait 800
+assert layout == book
+assert page-theme == sepia
+assert page >= 6
+assert bookmarks == 1
+assert bookmarks.titles == Customers section
+screenshot 14-restored.png
+call page-theme normal
+call layout continuous
+# Forms in the single page layout.
+open "$SAMPLES/form.pdf"
+call layout single
+call fit width
+wait 800
+click "Fill & Sign" 300
+click "Fill forms" 300
+click annot 1 1 300
+assert field.editing == true
+type "Ada" 300
+key tab
+key escape
+assert field:name == Ada

@@ -1,0 +1,27 @@
+[package]
+name = "pagebara-render"
+description = "Page renderer: anti-aliased rasteriser, colour management, transparency, images, shadings and text"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-content.workspace = true
+pagebara-font.workspace = true
+pagebara-pages.workspace = true
+pagebara-jpeg.workspace = true
+pagebara-jp2.workspace = true
+pagebara-jbig2.workspace = true
+parking_lot.workspace = true
+rayon.workspace = true
+pagebara-thread.workspace = true
+pagebara-budget.workspace = true
+
+[dev-dependencies]
+pagebara-png.workspace = true
+miniz_oxide.workspace = true
+pagebara-thread = { workspace = true, features = ["rayon"] }
+
+[lints]
+workspace = true

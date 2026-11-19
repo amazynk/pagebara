@@ -1,0 +1,80 @@
+# Digital signatures, continued: a visible signature on a page shown in landscape stays
+# upright; a name in several scripts is drawn with embedded fonts; validation info (LTV) is
+# embedded per signature; every signature is listed with the revision it covers.
+cursor on
+open "$SAMPLES/rotated.pdf"
+assert rotation:1 == 90
+await sigs.verdict == none 20000
+call sign-dialog
+click "Create a self-signed ID…" 400
+call create-id "Zoë Łukasiewicz – 東京" "pässwörd" zoe@example.org
+await dialog == signcert 20000
+call sign-place 0
+call sign-options "Approved after reading every clause of this memo carefully" "" 0 0
+call sign-ltv true
+call sign "$OUT/rotated-signed.pdf"
+await message contains Drag a box 10000
+drag page 1 80,300 page 1 440,390 900
+await title == rotated-signed.pdf 30000
+await sigs.verdict == untrusted 20000
+assert sigs.count == 1
+assert sigs.1.signer contains Zoë Łukasiewicz – 東京
+assert sigs.1.ltv == Validation data embedded (long-term validation)
+assert sigs.1.revision == Revision 2 of 3: later changes are allowed
+assert sigs.1.changes contains Validation data
+# Upright as shown: the first line starts top left, the long last line (the reason) reaches
+# the right edge, and the lower part of the box is empty.
+zoom 100 0
+page 1
+wait 1500
+assert ink:1,84,300,70,14 > 20
+assert ink:1,380,300,56,16 < 5
+assert ink:1,380,320,56,22 > 5
+assert ink:1,84,362,350,26 < 5
+screenshot 19-rotated.png
+# A second, invisible signature: both are listed, each with its revision.
+call sign-dialog
+call sign-place 1
+call sign-options "" "" 0 0
+call sign-ltv false
+call sign "$OUT/twice-signed.pdf"
+await title == twice-signed.pdf 30000
+await sigs.count == 2 20000
+assert sigs.verdicts == untrusted untrusted
+assert sigs.1.revision == Revision 2 of 4: later changes are allowed
+assert sigs.2.revision == Revision 4 of 4: the whole document as it is now
+assert sigs.1.changes contains Signing
+assert sigs.2.ltv == No validation data embedded
+call trust-signature 0
+await sigs.verdicts == valid valid 20000
+# Validation info added afterwards covers both.
+call ltv "$OUT/twice-ltv.pdf"
+await title == twice-ltv.pdf 30000
+await sigs.count == 2 20000
+assert sigs.verdicts == valid valid
+assert sigs.2.ltv == Validation data embedded (long-term validation)
+assert sigs.2.revision == Revision 4 of 5: later changes are allowed
+call signatures-panel true
+click "More details" 400
+assert sigs.text contains Revision 4 of 5
+screenshot 19-panel.png
+# A certificate of the system's key store (a stand-in made at start with
+# PAGEBARA_KEYSTORE=test): only the one fit for signing is offered, not the expired or the
+# encryption-only one, and its key signs through the store.
+open "$SAMPLES/form.pdf"
+await sigs.verdict == none 20000
+call sign-dialog
+await sign.store-loading == false 10000
+assert sign.ids == An ID file (.p12, .pfx or .pem) | Test Store Signer <store@example.org> – Test key store
+assert sign.with == 0
+call sign-with 1
+wait 300
+screenshot 19-key-store.png
+call sign-place 1
+call sign-options "From the key store" "" 0 0
+call sign "$OUT/store-signed.pdf"
+await title == store-signed.pdf 30000
+await sigs.verdict == untrusted 20000
+assert sigs.1.signer contains Test Store Signer <store@example.org>
+assert sigs.text contains issued by Test Store CA
+assert sigs.text contains From the key store

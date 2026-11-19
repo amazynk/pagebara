@@ -1,0 +1,125 @@
+// Design tokens. The colours come from Rust (pagebara_app_core::theme), where their contrast
+// is tested; light, dark and two high-contrast sets.
+
+export struct ThemeColors {
+    text: color,
+    muted: color,
+    faint: color,
+    border: color,
+    control-border: color,
+    chrome: color,
+    canvas: color,
+    track: color,
+    raised: color,
+    hover: color,
+    pressed: color,
+    accent: color,
+    accent-hover: color,
+    accent-soft: color,
+    accent-fg: color,
+    on-accent: color,
+    focus: color,
+    danger: color,
+    success: color,
+    warning: color,
+    danger-soft: color,
+    success-soft: color,
+    warning-soft: color,
+    shadow-near: color,
+    shadow-far: color,
+    scrim: color,
+}
+
+export global Theme {
+    in property <bool> dark;
+    in property <bool> high-contrast;
+    in property <ThemeColors> c: {
+        text: #18181B,
+        muted: #52525B,
+        faint: #6B6B73,
+        border: #E4E4E7,
+        control-border: #8A8A93,
+        chrome: #FFFFFF,
+        canvas: #F1F1F3,
+        track: #F1F1F3,
+        raised: #FFFFFF,
+        hover: #F4F4F5,
+        pressed: #E4E4E7,
+        accent: #2563EB,
+        accent-hover: #1D4ED8,
+        accent-soft: #EAF1FF,
+        accent-fg: #2563EB,
+        on-accent: #FFFFFF,
+        focus: #2563EB,
+        danger: #B91C1C,
+        success: #15803D,
+        warning: #B45309,
+        danger-soft: #FEF2F2,
+        success-soft: #ECFDF3,
+        warning-soft: #FFF7E6,
+        shadow-near: #18181B1C,
+        shadow-far: #18181B0C,
+        scrim: #18181B66,
+    };
+    // Size of the app's text, 1 normal.
+    in property <float> text-scale: 1;
+    // No smooth scrolling or eased transitions.
+    in property <bool> reduce-motion;
+    // Larger targets on touch platforms.
+    in-out property <bool> touch: false;
+    // Right-to-left UI (Arabic, Hebrew): rows, side panels and arrows are mirrored.
+    in property <bool> rtl;
+
+    out property <color> text: c.text;
+    out property <color> muted: c.muted;
+    out property <color> faint: c.faint;
+    out property <color> border: c.border;
+    out property <color> control-border: c.control-border;
+    out property <color> chrome: c.chrome;
+    out property <color> canvas: c.canvas;
+    out property <color> track: c.track;
+    out property <color> raised: c.raised;
+    out property <color> hover: c.hover;
+    out property <color> pressed: c.pressed;
+    out property <color> accent: c.accent;
+    out property <color> accent-soft: c.accent-soft;
+    out property <color> accent-hover: c.accent-hover;
+    out property <color> accent-fg: c.accent-fg;
+    out property <color> on-accent: c.on-accent;
+    // The edge around the accent colour of marks on the page (the Edit tool's frames,
+    // handles and caret), so they show on any page colour, the accent's own too.
+    out property <color> accent-halo: c.on-accent.with-alpha(0.9);
+    out property <color> focus: c.focus;
+    out property <color> danger: c.danger;
+    out property <color> success: c.success;
+    out property <color> warning: c.warning;
+    out property <color> danger-soft: c.danger-soft;
+    out property <color> success-soft: c.success-soft;
+    out property <color> warning-soft: c.warning-soft;
+    out property <color> page: #FFFFFF;
+    out property <color> highlight: #FACC1566;
+    out property <color> hit: #F59E0B55;
+    out property <color> hit-current: #F9731699;
+    out property <color> selection: #2563EB40;
+    // The sentence being read aloud.
+    out property <color> reading: high-contrast ? #FFD60A80 : #22C55E40;
+    out property <color> shadow-near: c.shadow-near;
+    out property <color> shadow-far: c.shadow-far;
+    out property <color> scrim: c.scrim;
+    out property <length> focus-width: high-contrast ? 3px : 2px;
+
+    out property <length> toolbar-height: max(52px, control-height + 20px);
+    out property <length> sidebar-width: 232px * min(text-scale, 1.3);
+    out property <length> panel-width: 272px * min(text-scale, 1.3);
+    // The row of tools under the toolbar.
+    out property <length> toolrow-height: max(42px, control-height + 10px);
+    out property <length> control-height: (touch ? 44px : 32px) * max(1, text-scale * 0.9 + 0.1);
+    out property <length> row-height: (touch ? 44px : 32px) * max(1, text-scale * 0.9 + 0.1);
+    out property <length> radius: 8px;
+    out property <length> radius-small: 6px;
+
+    out property <length> font-small: 12px * text-scale;
+    out property <length> font-body: 13px * text-scale;
+    out property <length> font-title: 14px * text-scale;
+    out property <length> font-heading: 17px * text-scale;
+}

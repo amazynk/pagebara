@@ -1,0 +1,13 @@
+[package]
+name = "pagebara-thread"
+description = "Named threads: the naming scheme, spawn helpers and rayon pool names"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+log.workspace = true
+rayon = { workspace = true, optional = true }
+
+[lints]
+workspace = true

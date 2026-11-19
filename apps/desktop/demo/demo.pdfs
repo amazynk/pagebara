@@ -1,0 +1,89 @@
+# The product demo: read, search, annotate, sign, organize, redact, reading modes.
+# Recorded by record.sh; every document comes from --make-samples.
+cursor on
+# The recording starts about 1.5 s in: show the welcome screen first.
+wait 2500
+open "$SAMPLES/report.pdf"
+wait 1200
+# Read: smooth scrolling and zoom.
+scroll 1400 1600
+wait 400
+scroll -1400 1200
+zoom 140 900
+wait 700
+zoom 90 900
+wait 600
+# Search.
+key ctrl+f
+wait 300
+type "revenue" 900
+key return
+wait 900
+key return
+wait 900
+key escape
+wait 500
+# Annotate a lease.
+open "$SAMPLES/lease.pdf"
+zoom 90 0
+wait 900
+click "Highlight" 600
+drag text 1 "Rent paid" text-end 1 "monthly amount." 1100
+wait 700
+click "Draw" 600
+call set colour 2
+stroke page 1 90,395 110,380 135,405 160,382 185,404 210,384 235,403 260,386 1200
+wait 600
+# Sign with a signature imported from a photo (background removed).
+page 3
+wait 600
+click "Sign" 600
+call import-signature "$SAMPLES/signature-photo.png"
+wait 1500
+drag page 3 340,300 page 3 520,360 1000
+wait 1200
+key escape
+wait 400
+# Organize pages.
+open "$SAMPLES/report.pdf"
+wait 600
+call organize
+wait 1200
+click "Page 1" 600
+click "Rotate" 500
+wait 600
+drag "Page 10" "Page 2" 1400
+wait 1000
+key ctrl+z
+wait 500
+key ctrl+z
+wait 600
+click "Done" 600
+wait 600
+# Redact personal data for good.
+open "$SAMPLES/personal.pdf"
+zoom 100 0
+wait 900
+tool redact
+call redact-find email
+wait 400
+click "Mark all" 600
+wait 600
+drag text 1 "+44" text-end 1 "0958" 900
+wait 900
+key escape
+wait 400
+# Reading modes.
+open "$SAMPLES/report.pdf"
+wait 600
+call layout two-page
+call fit page
+wait 1400
+call page-theme dark
+wait 1400
+call page-theme sepia
+wait 1400
+call page-theme normal
+call layout continuous
+call fit width
+wait 1500

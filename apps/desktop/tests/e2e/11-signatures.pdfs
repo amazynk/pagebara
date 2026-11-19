@@ -1,0 +1,82 @@
+# Digital signatures: a timestamped signature from a test CA verifies as intact but not
+# trusted until the CA is trusted; the panel shows signer, time, timestamp, chain and
+# changes; a tampered copy is invalid; changing a certified document is a disallowed change;
+# a form is signed with a self-signed ID made in the app, which is then trusted.
+cursor on
+open "$SAMPLES/signed.pdf"
+zoom 75 0
+await sigs.verdict == untrusted 20000
+assert sigs.count == 1
+assert sigs.banner contains Signed by Ann Example
+click "Signature details" 400
+assert sigs.panel == true
+click "More details" 400
+assert sigs.text contains Ann Example <ann@example.org>
+assert sigs.text contains from a timestamp
+assert sigs.text contains by pagebara Test Timestamps
+assert sigs.text contains issued by pagebara Test CA
+assert sigs.text contains I agree to the terms
+screenshot 11-untrusted.png
+click "Trust this certificate" 400
+await sigs.verdict == valid 20000
+assert sigs.text contains a certificate you trust
+assert file.exists:$OUT/profile/trusted-certificates.pem == true
+# The forms panel shows the verified status of the field.
+tool forms
+assert fields.text contains Signature: valid · by Ann Example
+tool select
+screenshot 11-valid.png
+# Clicking a signature goes to its field.
+page 1
+click "Signed by Ann Example – valid" 400
+assert page == 4
+# A copy changed after signing.
+open "$SAMPLES/signed-tampered.pdf"
+await sigs.verdict == invalid 20000
+assert sigs.banner contains INVALID
+screenshot 11-tampered.png
+# A certified document allows no changes: a drawing saved into it breaks it.
+open "$SAMPLES/certified.pdf"
+await sigs.verdict == valid 20000
+assert sigs.text contains Certification: no changes allowed
+tool draw
+stroke page 1 100,400 140,380 180,420 220,390 800
+assert annotations == 1
+call save
+await dirty == false 10000
+await sigs.verdict == invalid 20000
+assert sigs.text contains allowed=false
+screenshot 11-changed.png
+# Sign the form's empty signature field with a self-signed ID made here.
+tool select
+open "$SAMPLES/form.pdf"
+await sigs.verdict == none 20000
+call sign-dialog
+assert dialog == signcert
+click "Create a self-signed ID…" 400
+assert dialog == createid
+call create-id "Test Signer" "pässwörd 密码 🔐" test@example.org
+await dialog == signcert 20000
+assert message contains Created your ID
+call sign-options "Approved" "Berlin" 0 1
+screenshot 11-sign-dialog.png
+call sign "$OUT/form-signed.pdf"
+await title == form-signed.pdf 30000
+await sigs.verdict == untrusted 20000
+assert sigs.text contains Test Signer <test@example.org>
+assert sigs.text contains Approved
+assert sigs.text contains self-signed
+call trust-signature 0
+await sigs.verdict == valid 20000
+call trust-dialog
+assert trust.count == 2
+screenshot 11-trusted.png
+key escape
+# A wrong password is refused in the dialog.
+call sign-dialog
+call sign-id "$OUT/profile/ids/Test Signer.p12" "wrong"
+call sign-place 1
+call sign "$OUT/never.pdf"
+await dialog.error contains password 10000
+assert file.exists:$OUT/never.pdf == false
+key escape

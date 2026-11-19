@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     role="img" aria-labelledby="name description" width="512" height="512" viewBox="-28 -28 312 312">
+  <title id="name">Pagebara</title>
+  <desc id="description">A capybara with an orange on its head, peering over an ivory page it holds with both paws, on cobalt blue.</desc>
+  <defs>
+    <!-- The tile occupies 256 units, with 28 units of clear space on each side. -->
+    <clipPath id="tile">
+      <path d="M 68 0 H 188
+               C 211 0 224 2 235 10 C 245 17 251 27 254 41 C 256 50 256 58 256 68
+               V 188 C 256 211 254 224 246 235 C 239 245 229 251 215 254 C 206 256 198 256 188 256
+               H 68 C 45 256 32 254 21 246 C 11 239 5 229 2 215 C 0 206 0 198 0 188
+               V 68 C 0 45 2 32 10 21 C 17 11 27 5 41 2 C 50 0 58 0 68 0 Z"/>
+    </clipPath>
+    <radialGradient id="cobalt" gradientUnits="userSpaceOnUse" cx="34" cy="6" r="303">
+      <stop offset="0" stop-color="#245FFE"/>
+      <stop offset=".45" stop-color="#123DE1"/>
+      <stop offset="1" stop-color="#101A9A"/>
+    </radialGradient>
+    <linearGradient id="fur" gradientUnits="userSpaceOnUse" x1="100" y1="58" x2="150" y2="164">
+      <stop offset="0" stop-color="#E0A566"/>
+      <stop offset=".5" stop-color="#C98D50"/>
+      <stop offset="1" stop-color="#AC713C"/>
+    </linearGradient>
+    <linearGradient id="light-fur" gradientUnits="userSpaceOnUse" x1="50" y1="60" x2="213" y2="80">
+      <stop offset="0" stop-color="#EDB97C"/>
+      <stop offset="1" stop-color="#F3C890"/>
+    </linearGradient>
+    <linearGradient id="blush" gradientUnits="userSpaceOnUse" x1="150" y1="99" x2="170" y2="111">
+      <stop offset="0" stop-color="#E4906A"/>
+      <stop offset="1" stop-color="#D97F58"/>
+    </linearGradient>
+    <linearGradient id="dark-fur" gradientUnits="userSpaceOnUse" x1="128" y1="48" x2="128" y2="160">
+      <stop offset="0" stop-color="#93603A"/>
+      <stop offset="1" stop-color="#6B411F"/>
+    </linearGradient>
+    <linearGradient id="ink" gradientUnits="userSpaceOnUse" x1="128" y1="54" x2="128" y2="160">
+      <stop offset="0" stop-color="#3D2515"/>
+      <stop offset="1" stop-color="#22120A"/>
+    </linearGradient>
+    <linearGradient id="orange" gradientUnits="userSpaceOnUse" x1="113" y1="29" x2="136" y2="56">
+      <stop offset="0" stop-color="#FF9A3D"/>
+      <stop offset=".55" stop-color="#FF7421"/>
+      <stop offset="1" stop-color="#DD500B"/>
+    </linearGradient>
+    <linearGradient id="shine" gradientUnits="userSpaceOnUse" x1="112" y1="32" x2="122" y2="38">
+      <stop offset="0" stop-color="#FFD9AE"/>
+      <stop offset="1" stop-color="#FFB877"/>
+    </linearGradient>
+    <linearGradient id="leaf" gradientUnits="userSpaceOnUse" x1="124" y1="20" x2="144" y2="29">
+      <stop offset="0" stop-color="#6CC66B"/>
+      <stop offset="1" stop-color="#2F8F46"/>
+    </linearGradient>
+    <linearGradient id="paper" gradientUnits="userSpaceOnUse" x1="54" y1="146" x2="198" y2="232">
+      <stop offset="0" stop-color="#FFFAEB"/>
+      <stop offset=".6" stop-color="#FBF2DE"/>
+      <stop offset="1" stop-color="#EADCC2"/>
+    </linearGradient>
+    <linearGradient id="underside" gradientUnits="userSpaceOnUse" x1="192" y1="146" x2="210" y2="164">
+      <stop offset="0" stop-color="#E3D6BD"/>
+      <stop offset="1" stop-color="#B9AB90"/>
+    </linearGradient>
+    <linearGradient id="shade" gradientUnits="userSpaceOnUse" x1="128" y1="146" x2="128" y2="165">
+      <stop offset="0" stop-color="#DCCDB1"/>
+      <stop offset="1" stop-color="#EEE2CB"/>
+    </linearGradient>
+    <linearGradient id="highlighter" gradientUnits="userSpaceOnUse" x1="54" y1="186" x2="150" y2="203">
+      <stop offset="0" stop-color="#FFD49A"/>
+      <stop offset="1" stop-color="#FFC27A"/>
+    </linearGradient>
+    <linearGradient id="lines" gradientUnits="userSpaceOnUse" x1="60" y1="173" x2="188" y2="216">
+      <stop offset="0" stop-color="#A7B2CC"/>
+      <stop offset="1" stop-color="#8794B6"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-.2" y="-.2" width="1.4" height="1.5" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.6"/>
+    </filter>
+  </defs>
+
+  <g id="artwork" clip-path="url(#tile)">
+    <rect width="256" height="256" fill="url(#cobalt)"/>
+    <g transform="translate(0 4)" opacity=".34" filter="url(#soft-shadow)">
+      <use xlink:href="#orange-fruit" fill="#080D52"/>
+      <use xlink:href="#head" fill="#080D52"/>
+      <use xlink:href="#page" fill="#080D52"/>
+    </g>
+    <!-- The faces overlap in paint order: the capybara in profile, the page in front of it,
+         then the paws on the page's top edge. Their geometry also supplies the adaptive icon. -->
+    <g id="monogram">
+      <g fill="url(#fur)">
+        <path id="head" d="M 40 164 V 104 C 40 78 60 60 88 58 C 118 55 150 56 176 60
+                           C 198 63 216 74 218 94 C 219 108 218 120 214 130
+                           C 210 144 200 154 186 158 V 164 H 40 Z"/>
+      </g>
+      <!-- Light along the top of the head. -->
+      <g fill="url(#light-fur)">
+        <path id="rim" d="M 50 88 C 56 70 70 60 88 58 C 118 55 150 56 176 60
+                          C 192 62 206 68 213 80 C 203 71 190 67 176 65
+                          C 150 61 118 60.5 90 63.5 C 74 65.5 60 73 50 88 Z"/>
+      </g>
+      <g fill="url(#blush)">
+        <path id="cheek" d="M 150 105 a 10 6 0 1 0 20 0 a 10 6 0 1 0 -20 0 Z"/>
+      </g>
+      <!-- The ear and three whisker spots. -->
+      <g fill="url(#dark-fur)">
+        <path id="markings" d="M 71.2 46.8 A 12 15 -20 1 0 81.4 75 A 12 15 -20 1 0 71.2 46.8 Z
+                               M 186.4 102 a 1.7 1.7 0 1 0 3.4 0 a 1.7 1.7 0 1 0 -3.4 0 Z
+                               M 195.4 106 a 1.7 1.7 0 1 0 3.4 0 a 1.7 1.7 0 1 0 -3.4 0 Z
+                               M 184.4 111 a 1.7 1.7 0 1 0 3.4 0 a 1.7 1.7 0 1 0 -3.4 0 Z"/>
+      </g>
+      <g fill="url(#ink)">
+        <path id="inner-ear" d="M 74.2 53.4 A 6 9 -20 1 0 80.4 70.4 A 6 9 -20 1 0 74.2 53.4 Z"/>
+      </g>
+      <!-- The eye, the nostril and the mouth. The themed Android icon cuts them out of the head. -->
+      <g fill="url(#ink)">
+        <path id="face" d="M 143.5 84 a 6.5 6.5 0 1 0 13 0 a 6.5 6.5 0 1 0 -13 0 Z
+                           M 202.4 77.9 A 4.2 2.8 30 1 0 209.6 82.1 A 4.2 2.8 30 1 0 202.4 77.9 Z
+                           M 216.5 118 C 207 124 196 125.5 184 122
+                           C 195.5 128.5 208 127.5 216 122.5 Z"/>
+      </g>
+      <!-- The lowered eyelid. -->
+      <g fill="url(#dark-fur)">
+        <path id="lid" d="M 142 84.6 a 8 8 0 0 1 16 0 Z"/>
+      </g>
+      <g fill="url(#paper)">
+        <path id="glint" d="M 151 87.6 a 1.5 1.5 0 1 0 3 0 a 1.5 1.5 0 1 0 -3 0 Z"/>
+      </g>
+      <g fill="url(#orange)">
+        <path id="orange-fruit" d="M 108 42 a 16 16 0 1 0 32 0 a 16 16 0 1 0 -32 0 Z"/>
+      </g>
+      <g fill="url(#shine)">
+        <path id="orange-shine" d="M 112.5 36 a 4.5 3 0 1 0 9 0 a 4.5 3 0 1 0 -9 0 Z"/>
+      </g>
+      <g fill="url(#leaf)">
+        <path id="orange-leaf" d="M 124 27 C 129 18 140 17 145 21 C 141 30 131 31 124 27 Z"/>
+      </g>
+      <g fill="url(#paper)">
+        <path id="page" d="M 48 146 H 192 L 210 164 V 222 C 210 227.5 205.5 232 200 232 H 48
+                           C 42.5 232 38 227.5 38 222 V 156 C 38 150.5 42.5 146 48 146 Z"/>
+      </g>
+      <g fill="url(#underside)">
+        <path id="fold" d="M 192 146 V 157 C 192 160.9 195.1 164 199 164 H 210 Z"/>
+      </g>
+      <!-- One line of the text is highlighted. -->
+      <g fill="url(#highlighter)">
+        <path id="highlight" d="M 58 186 H 146 a 4 4 0 0 1 4 4 V 199 a 4 4 0 0 1 -4 4 H 58
+                                a 4 4 0 0 1 -4 -4 V 190 a 4 4 0 0 1 4 -4 Z"/>
+      </g>
+      <g fill="url(#lines)">
+        <path id="text" d="M 64 173 H 184 a 4 4 0 0 1 0 8 H 64 a 4 4 0 0 1 0 -8 Z
+                           M 64 190.5 H 184 a 4 4 0 0 1 0 8 H 64 a 4 4 0 0 1 0 -8 Z
+                           M 64 208 H 124 a 4 4 0 0 1 0 8 H 64 a 4 4 0 0 1 0 -8 Z"/>
+      </g>
+      <!-- Where the paws rest on the paper. -->
+      <g fill="url(#shade)">
+        <path id="paw-shade" d="M 59 146 H 91 V 154 a 11 11 0 0 1 -11 11 H 70 a 11 11 0 0 1 -11 -11 Z
+                                M 117 146 H 149 V 154 a 11 11 0 0 1 -11 11 H 128
+                                a 11 11 0 0 1 -11 -11 Z"/>
+      </g>
+      <g fill="url(#dark-fur)">
+        <path id="paws" d="M 71 134 H 79 a 11 11 0 0 1 11 11 V 149 a 11 11 0 0 1 -11 11 H 71
+                           a 11 11 0 0 1 -11 -11 V 145 a 11 11 0 0 1 11 -11 Z
+                           M 129 134 H 137 a 11 11 0 0 1 11 11 V 149 a 11 11 0 0 1 -11 11 H 129
+                           a 11 11 0 0 1 -11 -11 V 145 a 11 11 0 0 1 11 -11 Z"/>
+      </g>
+      <g fill="url(#ink)">
+        <path id="toes" d="M 69.1 150 h 1.8 v 9.6 h -1.8 Z M 79.1 150 h 1.8 v 9.6 h -1.8 Z
+                           M 127.1 150 h 1.8 v 9.6 h -1.8 Z M 137.1 150 h 1.8 v 9.6 h -1.8 Z"/>
+      </g>
+    </g>
+  </g>
+</svg>

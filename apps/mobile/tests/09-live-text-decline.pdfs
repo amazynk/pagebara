@@ -1,0 +1,20 @@
+# "Not now" on the offer of another script's models: it does not come back, also after
+# reopening, and live text goes on reading pictures with the Latin models. Needs
+# $PAGEBARA_OCR_MODELS.
+open "$SAMPLES/live-text-greek.pdf"
+wait 800
+drag page 1 100,251 page 1 100,251 1000
+await offer.state == offered 5000
+click "Not now" 200
+assert offer.state == none
+assert offer == ""
+await live.words:1 >= 10 20000
+assert file.exists:$OUT/profile/ocr-models/ppocrv5-greek-rec.onnx == false
+assert file.exists:$OUT/profile/ocr-models/declined.txt == true
+call back
+wait 300
+open "$SAMPLES/live-text-greek.pdf"
+wait 800
+drag page 1 100,251 page 1 100,251 1000
+await live.words:1 >= 10 20000
+assert offer.state == none

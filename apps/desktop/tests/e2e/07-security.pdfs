@@ -1,0 +1,67 @@
+# Passwords: unlock (wrong, then right; Unicode), owner password for a restricted file,
+# protect with a new password and permissions, remove protection, properties.
+cursor on
+open "$SAMPLES/lease-protected.pdf"
+assert password.visible == true
+type "wrong" 300
+key return
+wait 600
+assert password.visible == true
+key ctrl+a
+type "user" 300
+key return
+wait 800
+assert password.visible == false
+assert protection == Protected: printing not allowed
+open "$SAMPLES/lease-unicode.pdf"
+type "pässwörd 密码 🔐" 500
+key return
+wait 800
+assert title == lease-unicode.pdf
+# A restricted file: page changes need the owner password.
+open "$SAMPLES/lease-restricted.pdf"
+call organize
+call grid-select 1
+click "Remove" 300
+assert dialog == ownerpassword
+screenshot 07-owner.png
+type "owner" 300
+key return
+assert dialog == none
+click "Remove" 300
+assert pages == 3
+click "View" 300
+# Protect a plain document with Unicode passwords and reopen it.
+open "$SAMPLES/lease.pdf"
+call show-dialog protect
+assert dialog == protect
+screenshot 07-protect.png
+call protect "ünïcødé ✓" "owner 🔑"
+assert dialog == none
+assert undo == Protect
+call save-as "$OUT/protected.pdf"
+assert dirty == false
+assert encrypted == true
+key ctrl+w
+assert tabs == 3
+open "$OUT/protected.pdf"
+assert password.visible == true
+type "ünïcødé ✓" 400
+key return
+wait 800
+assert encrypted == true
+call show-dialog properties
+assert dialog == properties
+screenshot 07-properties.png
+key escape
+call dialog-action unprotect
+assert dialog == ownerpassword
+type "owner 🔑" 400
+key return
+assert dialog == none
+call dialog-action unprotect
+assert protection == ""
+assert info:Security == None
+assert info:Allowed == Everything
+call save-as "$OUT/unprotected.pdf"
+assert encrypted == false

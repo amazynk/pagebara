@@ -1,0 +1,28 @@
+[package]
+name = "pagebara-edit"
+description = "Editing page content: an object model of text, images, paths, forms and shadings, operations on it and a minimal content writer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-content.workspace = true
+pagebara-pages.workspace = true
+pagebara-annot.workspace = true
+pagebara-filters.workspace = true
+pagebara-render.workspace = true
+pagebara-png.workspace = true
+pagebara-jpeg.workspace = true
+pagebara-typeset.workspace = true
+pagebara-font.workspace = true
+thiserror.workspace = true
+unicode-normalization.workspace = true
+
+[dev-dependencies]
+pagebara-samples.workspace = true
+pagebara-flate.workspace = true
+pagebara-png.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,32 @@
+[package]
+name = "pagebara-update"
+description = "Opt-in update checks: a signed (Ed25519) JSON manifest, version comparison, verified downloads and installing them"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "sign-update-manifest"
+path = "src/bin/sign-update-manifest.rs"
+
+[dependencies]
+pagebara-i18n.workspace = true
+pagebara-identity.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+getrandom.workspace = true
+semver = "1"
+ed25519-dalek = "3"
+ureq = { version = "3.5", optional = true, default-features = false, features = ["rustls"] }
+
+[features]
+default = ["network"]
+network = ["dep:ureq"]
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+pagebara-thread.workspace = true

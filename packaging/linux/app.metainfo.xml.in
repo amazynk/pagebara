@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT OR Apache-2.0</project_license>
+  <name>@APP_NAME@</name>
+  <summary>@APP_SUMMARY@</summary>
+  <developer id="@APP_ID@">
+    <name>@APP_PUBLISHER@</name>
+  </developer>
+  <description>
+    <p>
+      A fast PDF viewer and editor that keeps your documents on your computer. Read, search,
+      annotate, fill in forms, sign and reorganise PDF files without an account or a cloud
+      service.
+    </p>
+    <ul>
+      <li>Fast rendering of large and scanned documents, with tabs and a document library</li>
+      <li>Highlight, underline, draw, add notes, text and shapes</li>
+      <li>Fill in forms and sign with a drawn or imported signature, or a digital ID</li>
+      <li>Insert, delete, rotate, split, combine and reorder pages</li>
+      <li>Redact text and areas for good, and recognise text in scanned pages</li>
+      <li>Open and protect password-protected files</li>
+      <li>Screen reader support, read aloud, keyboard navigation and high contrast</li>
+    </ul>
+    <p>No telemetry. The network is used only when you ask for it.</p>
+  </description>
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <icon type="stock">@APP_ID@</icon>
+  <url type="homepage">@APP_HOMEPAGE@</url>
+  <url type="bugtracker">@APP_REPOSITORY@/issues</url>
+  <url type="vcs-browser">@APP_REPOSITORY@</url>
+  <url type="contact">https://amazynk.com/discord/</url>
+  <categories>
+    <category>Office</category>
+    <category>Viewer</category>
+  </categories>
+  <keywords>
+    <keyword>PDF</keyword>
+    <keyword>annotate</keyword>
+    <keyword>sign</keyword>
+    <keyword>form</keyword>
+  </keywords>
+  <provides>
+    <binary>@APP_BIN@</binary>
+    <mediatype>application/pdf</mediatype>
+    <mediatype>application/x-pdf</mediatype>
+  </provides>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Reading a document</caption>
+      <image>https://raw.githubusercontent.com/amazynk/pagebara/main/docs/screenshots/document.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">640</display_length>
+  </requires>
+  <releases>
+    <release version="@APP_VERSION@" date="@APP_DATE@">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

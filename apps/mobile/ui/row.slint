@@ -1,0 +1,8 @@
+import { Theme } from "theme.slint";
+
+// A horizontal layout that runs right to left when the UI does (Theme.rtl).
+export component RowLayout inherits FlexboxLayout {
+    flex-direction: Theme.rtl ? FlexboxLayoutDirection.row-reverse : FlexboxLayoutDirection.row;
+    flex-wrap: FlexboxLayoutWrap.no-wrap;
+    alignment: stretch;
+}

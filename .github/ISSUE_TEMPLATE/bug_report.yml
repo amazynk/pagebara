@@ -1,0 +1,53 @@
+name: Bug report
+description: Something doesn't work, crashes, or a PDF opens or saves wrongly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For security problems, use [private reporting](https://github.com/amazynk/pagebara/security/advisories/new) instead. That includes a redaction that leaves content recoverable and a signature check that accepts a changed document.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before you open this
+      options:
+        - label: I searched the existing issues and this isn't one of them.
+          required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Choose …
+  - type: input
+    id: version
+    attributes:
+      label: Pagebara version
+      description: Shown in Settings > About, or by `pagebara --version`. Give the commit if you built it yourself.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Linux, Windows, macOS, Android, iOS]
+    validations:
+      required: true
+  - type: input
+    id: os-details
+    attributes:
+      label: OS version and how you installed Pagebara
+      placeholder: e.g. Ubuntu 24.04 on Wayland, AppImage · Windows 11 24H2, MSI · macOS 15.2, DMG
+  - type: textarea
+    id: file
+    attributes:
+      label: A file that shows the problem
+      description: Attach the PDF, or a small one that fails the same way. Never attach a document with personal data, and only share files you are allowed to. `pagebara --make-samples DIR` writes sample documents you can try first.

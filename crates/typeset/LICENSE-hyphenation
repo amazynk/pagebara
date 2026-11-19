@@ -1,0 +1,90 @@
+Hyphenation patterns in pagebara-typeset
+=====================================
+
+The files in crates/typeset/data/hyph are the hyph-utf8 pattern lists
+(hyph-<tag>.pat.txt) and exception lists (hyph-<tag>.hyp.txt), unmodified, from
+https://github.com/hyphenation/tex-hyphen, directory
+hyph-utf8/tex/generic/hyph-utf8/patterns/txt, revision
+5684c0f51c0b81133db2efbe60a408b4155a3ff5 (2026-02-24). They are compiled into
+the program (compressed). Each language's copyright and licence, as given in the
+header of its hyph-<tag>.tex file, follows. Where a file is offered under a
+choice of licences, pagebara uses it under the one named here.
+
+The US English patterns (crates/typeset/data/hyphen-en-us.tex) are plain TeX's
+hyphen.tex by Donald E. Knuth and Frank M. Liang; see THIRD-PARTY.md.
+
+
+British English (hyph-en-gb), MIT
+  Copyright (C) 1992, 1996, 2005, 2016 Dominik Wujastyk, Graham Toal
+
+German, reformed spelling (hyph-de-1996), MIT
+  Copyright (c) 2013-2024 Stephan Hennig, Werner Lemberg, Günter Milde,
+  Sander van Geloven, Georg Pfeiffer, Gisbert W. Selke, Tobias Wendorf,
+  Keno Wehr (Deutschsprachige Trennmustermannschaft)
+
+French (hyph-fr), MIT
+  Copyright (C) 1994-2002 Daniel Flipo, Bernard Gaulle, 2016 Arthur Reutenauer
+
+Spanish (hyph-es), MIT/X11
+  Copyright (C) 1993, 1997 Javier Bezos, 2001-2019 Javier Bezos, CervanTeX
+
+Italian (hyph-it), MIT (offered under LPPL 1.3 or later, or MIT)
+  Copyright (C) 2008-2011 Claudio Beccari
+
+Dutch (hyph-nl), MIT
+  Copyright (C) 1996 Piet Tutelaers
+
+Polish (hyph-pl), MIT (offered under MIT, or public domain on Knuth's terms)
+  Copyright (C) 1987-1995 Hanna Kołodziejska, Bogusław Jackowski, Marek Ryćko
+
+Ukrainian (hyph-uk), MIT (offered under MIT or LPPL)
+  Copyright (C) 1998-2001 Maksym Polyakov
+
+The MIT licence of the files above:
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+
+Portuguese (hyph-pt), BSD 3-clause licence
+  Copyright (C) 1987, 1994, 1996, 2015 Pedro J. de Rezende, 1996, 2015 J. Joao
+  Dias Almeida, 2024 Leonardo Araujo and Aline Benevides
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+  * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+  * Neither the name of the University of Campinas, of the University of Minho
+    nor the names of its contributors may be used to endorse or promote
+    products derived from this software without specific prior written
+    permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL PEDRO J. DE REZENDE OR J.JOAO DIAS ALMEIDA BE
+  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.

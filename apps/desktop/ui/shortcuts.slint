@@ -1,0 +1,167 @@
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState, DialogKind } from "state.slint";
+import { Button, Keys } from "components/button.slint";
+import { Dialog } from "components/panel.slint";
+import { Heading, Buttons } from "components/dialog-parts.slint";
+
+struct Shortcut {
+    keys: string,
+    what: string,
+    // Ctrl is the Control key itself, also on macOS (where the system keeps Command+Tab).
+    physical: bool,
+}
+
+struct ShortcutGroup {
+    title: string,
+    items: [Shortcut],
+}
+
+// Every keyboard shortcut, by area (F1 or Ctrl+/).
+export component ShortcutsDialog inherits Dialog {
+    title: @tr("Keyboard shortcuts");
+    card-width: 640px;
+
+    property <[ShortcutGroup]> groups: [
+        {
+            title: @tr("Moving around"),
+            items: [
+                { keys: "Tab, Shift+Tab", what: @tr("Next or previous control") },
+                { keys: "F6, Shift+F6", what: @tr("Next or previous area: toolbar, tools, sidebar, pages, panel, page number") },
+                { keys: "Up, Down, Left, Right", what: @tr("Move in lists, menus, grids and choices") },
+                { keys: "Enter, Space", what: @tr("Activate the focused control") },
+                { keys: "Esc", what: @tr("Close a dialog or menu, stop what is in progress") },
+                { keys: "F1, Ctrl+/", what: @tr("This list") },
+            ],
+        },
+        {
+            title: @tr("Documents"),
+            items: [
+                { keys: "Ctrl+O, Ctrl+T", what: @tr("Open") },
+                { keys: "Ctrl+S, Ctrl+Shift+S", what: @tr("Save, save as") },
+                { keys: "Ctrl+P", what: @tr("Print") },
+                { keys: "Ctrl+W", what: @tr("Close the document") },
+                { keys: "Ctrl+Tab, Ctrl+Shift+Tab", what: @tr("Next or previous document"), physical: true },
+                { keys: Keys.macos ? "Ctrl+Alt+Right, Ctrl+Alt+Left" : "Ctrl+PageDown, Ctrl+PageUp", what: @tr("Next or previous document") },
+                { keys: Keys.macos ? "Ctrl+Alt+Shift+Left, Ctrl+Alt+Shift+Right" : "Ctrl+Shift+PageUp, Ctrl+Shift+PageDown", what: @tr("Move the current tab earlier or later") },
+                { keys: Keys.macos ? "Ctrl+Z, Ctrl+Shift+Z" : "Ctrl+Z, Ctrl+Y", what: @tr("Undo, redo") },
+                { keys: "Ctrl+,", what: @tr("Settings") },
+                { keys: "Ctrl+K", what: @tr("All tools") },
+                { keys: "Ctrl+L", what: @tr("Library") },
+            ],
+        },
+        {
+            title: @tr("Pages"),
+            items: [
+                { keys: @tr("Arrows, Page Up, Page Down, Space"), what: @tr("Scroll or turn pages") },
+                { keys: "Home, End", what: @tr("First or last page") },
+                { keys: "Alt+Left, Alt+Right", what: @tr("Back, forward") },
+                { keys: "Ctrl+Plus, Ctrl+Minus", what: @tr("Zoom in, out") },
+                { keys: "Ctrl+0, Ctrl+1, Ctrl+2", what: @tr("Fit page, actual size, fit width") },
+                { keys: "Ctrl+F", what: @tr("Search") },
+                { keys: Keys.find-next + ", Enter", what: @tr("Next match") },
+                { keys: Keys.find-previous + ", Shift+Enter", what: @tr("Previous match") },
+                { keys: "↓", what: @tr("Browse matches from the Find field") },
+                { keys: Keys.find-case, what: @tr("Match case") },
+                { keys: Keys.find-words, what: @tr("Whole words") },
+                { keys: "Ctrl+A, Ctrl+C", what: @tr("Select the page's text, copy") },
+                { keys: "Ctrl+D, Ctrl+B", what: @tr("Bookmark this page, show bookmarks") },
+                { keys: "Ctrl+Shift+R", what: @tr("Reading view") },
+                { keys: "F5", what: @tr("Present") },
+            ],
+        },
+        {
+            title: @tr("Annotations, signatures and redaction"),
+            items: [
+                { keys: @tr("] and ["), what: @tr("Select the next or previous annotation on the page") },
+                { keys: @tr("Arrows, Shift+Arrows"), what: @tr("Move the selected annotation (by 1 or 10 points)") },
+                { keys: @tr("Ctrl+Arrows"), what: @tr("Resize the selected annotation") },
+                { keys: "Enter", what: @tr("With a tool: mark the selected text, or place a box, note or signature in the middle of the page") },
+                { keys: "Delete", what: @tr("Delete the selected annotation") },
+            ],
+        },
+        {
+            title: @tr("Editing text and images (Edit tool)"),
+            items: [
+                { keys: "Ctrl+E", what: @tr("Edit tool on or off") },
+                { keys: "Tab, Shift+Tab", what: @tr("Select the next or previous object on the page (F6 leaves the page)") },
+                { keys: @tr("Shift+click, drag a box, Ctrl+A"), what: @tr("Select several objects, all of the page") },
+                { keys: @tr("Arrows, Shift+Arrows"), what: @tr("Move the selection (by 1 or 10 points)") },
+                { keys: @tr("Shift while dragging"), what: @tr("Keep proportions, move straight, rotate in 15° steps; Alt: no snapping") },
+                { keys: "Ctrl+D, Delete", what: @tr("Duplicate, delete") },
+                { keys: "Ctrl+], Ctrl+[", what: @tr("Bring forward, send backward (with Shift: to front, to back)") },
+                { keys: @tr("Enter, double click"), what: @tr("Edit the selected text in place") },
+                { keys: Keys.macos ? "Alt+Left, Alt+Right" : "Ctrl+Left, Ctrl+Right", what: @tr("Move by one word (hold Shift to select)") },
+                { keys: Keys.macos ? "Ctrl+Left, Ctrl+Right" : "Home, End", what: @tr("Start or end of the current line") },
+                { keys: "Esc, Ctrl+Enter", what: @tr("Finish editing text") },
+            ],
+        },
+        {
+            title: @tr("Read aloud"),
+            items: [
+                { keys: "Ctrl+Shift+V", what: @tr("Read from the selection or the current page") },
+                { keys: "Ctrl+Shift+C", what: @tr("Pause or resume") },
+                { keys: "Ctrl+Shift+E", what: @tr("Stop") },
+                { keys: "Left, Right", what: @tr("Previous or next sentence (in the read-aloud bar)") },
+            ],
+        },
+    ];
+
+    Heading {
+        text: @tr("Keyboard shortcuts");
+    }
+    ScrollView {
+        height: min(460px, list.preferred-height);
+        list := VerticalLayout {
+            spacing: 14px;
+            for g in root.groups: VerticalLayout {
+                spacing: 4px;
+                Text {
+                    text: g.title;
+                    color: Theme.text;
+                    font-weight: 600;
+                    accessible-role: text;
+                }
+                for it in g.items: Rectangle {
+                    accessible-role: text;
+                    accessible-label: it.what + ": " + Keys.label(it.keys, it.physical);
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Text {
+                            width: 220px;
+                            text: Keys.label(it.keys, it.physical);
+                            color: Theme.accent-fg;
+                            font-weight: 500;
+                            wrap: word-wrap;
+                            line-height-factor: 1.15;
+                            accessible-role: none;
+                        }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: it.what;
+                            color: Theme.muted;
+                            wrap: word-wrap;
+                            line-height-factor: 1.15;
+                            accessible-role: none;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Buttons {
+        Button {
+            text: @tr("Vim shortcuts");
+            icon: @image-url("icons/keyboard.svg");
+            clicked => { AppState.show-dialog(DialogKind.vim-help-from-shortcuts); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Button {
+            text: @tr("Close");
+            primary: true;
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+    }
+}

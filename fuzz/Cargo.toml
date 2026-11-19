@@ -1,0 +1,178 @@
+[package]
+name = "pagebara-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+pagebara-syntax = { path = "../crates/syntax" }
+pagebara-filters = { path = "../crates/filters" }
+pagebara-flate = { path = "../crates/codec/flate" }
+pagebara-ccitt = { path = "../crates/codec/ccitt" }
+pagebara-jpeg = { path = "../crates/codec/jpeg" }
+pagebara-jp2 = { path = "../crates/codec/jp2" }
+pagebara-jbig2 = { path = "../crates/codec/jbig2" }
+pagebara-png = { path = "../crates/codec/png" }
+pagebara-budget = { path = "../crates/support/budget" }
+pagebara-pages = { path = "../crates/pages" }
+pagebara-content = { path = "../crates/content" }
+pagebara-render = { path = "../crates/render" }
+pagebara-font = { path = "../crates/font" }
+pagebara-annot = { path = "../crates/annot" }
+pagebara-forms = { path = "../crates/forms" }
+pagebara-fdf = { path = "../crates/fdf" }
+pagebara-optimize = { path = "../crates/optimize" }
+pagebara-spell = { path = "../crates/spell" }
+pagebara-i18n = { path = "../crates/i18n" }
+miniz_oxide = "0.8"
+
+# Kept out of the main workspace: it builds with cargo-fuzz's sanitizer flags.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "syntax_open"
+path = "fuzz_targets/syntax_open.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "syntax_unlock"
+path = "fuzz_targets/syntax_unlock.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "filters"
+path = "fuzz_targets/filters.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "flate"
+path = "fuzz_targets/flate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ccitt"
+path = "fuzz_targets/ccitt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jpeg"
+path = "fuzz_targets/jpeg.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jp2"
+path = "fuzz_targets/jp2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jbig2"
+path = "fuzz_targets/jbig2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "png"
+path = "fuzz_targets/png.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "objstm"
+path = "fuzz_targets/objstm.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "font"
+path = "fuzz_targets/font.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cmap"
+path = "fuzz_targets/cmap.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "render_pdf"
+path = "fuzz_targets/render_pdf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "render_content"
+path = "fuzz_targets/render_content.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "image"
+path = "fuzz_targets/image.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "shading"
+path = "fuzz_targets/shading.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fdf"
+path = "fuzz_targets/fdf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "spell"
+path = "fuzz_targets/spell.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "i18n"
+path = "fuzz_targets/i18n.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "optimize"
+path = "fuzz_targets/optimize.rs"
+test = false
+doc = false
+bench = false

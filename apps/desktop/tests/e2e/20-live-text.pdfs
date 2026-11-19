@@ -1,0 +1,73 @@
+# Live text: text in pictures (a screenshot on a page of real text, a title drawn as glyph
+# outlines, a scanned page) becomes selectable when the pointer rests on it, and can be
+# copied, without changing the document. Needs the models in $PAGEBARA_OCR_MODELS (run.sh
+# skips this script without it); nothing is downloaded.
+cursor on
+open "$SAMPLES/live-text.pdf"
+zoom 100 0
+assert live.available == true
+assert page.text:1 contains Exporting a document
+assert live.words:1 == 0
+# Resting the pointer on the screenshot recognises it.
+move page 1 220,270 300
+await live.words:1 >= 10 20000
+assert live.text:1 contains Export settings
+assert live.text:1 contains Include comments and highlights
+assert live.text:1 contains Exporting a document
+screenshot 20-hover.png
+# A word in it is selected with a double click and copied like real text.
+dblclick text 1 "Margins" 300
+assert selection.text == Margins
+key ctrl+c
+assert clipboard == Margins
+# A drag selects across words of the picture.
+drag text 1 "Paper" text-end 1 "portrait" 600
+assert selection.text contains Paper size
+assert selection.text contains A4 portrait
+key ctrl+c
+assert clipboard contains Paper size
+screenshot 20-selected.png
+# Select all, after clicking in the picture, takes the picture's text only.
+click page 1 200,300 300
+key ctrl+a
+assert selection.text contains Export settings
+assert selection.text contains Cancel
+key ctrl+c
+assert clipboard contains Export PDF
+key escape
+# The context menu copies the text of the picture under the pointer.
+call context-menu 1 220 270
+assert menu.picture == true
+call context-action copy-picture
+await clipboard contains Normal 25 mm 20000
+# Copy text from area: real text and the picture's text together, in reading order.
+call context-action copy-area
+drag page 1 60,120 page 1 400,395 800
+await clipboard contains Figure 1 20000
+assert clipboard contains Export settings
+assert clipboard contains Exporting a document
+screenshot 20-area.png
+# The title drawn as outlines is text too once the pointer is on it.
+move page 1 150,65 300
+await live.text:1 contains Northwind Office 20000
+dblclick text 1 "Northwind" 300
+assert selection.text == Northwind
+# A scanned page.
+page 2
+move page 2 300,150 300
+await live.words:2 >= 8 30000
+dblclick text 2 "Greenhouse" 300
+assert selection.text == Greenhouse
+key ctrl+c
+assert clipboard == Greenhouse
+screenshot 20-scan.png
+# Find takes in what was recognised, still without writing it to the file.
+key ctrl+f
+type "Greenhouse" 600
+await search.done == true 5000
+assert search.hits >= 1
+key escape
+# None of this changed the document.
+assert dirty == false
+assert undo == ""
+assert page.text:2 == ""

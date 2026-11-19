@@ -1,0 +1,47 @@
+# Organize pages: select, rotate, duplicate, remove, drag to move, insert (PDF and image),
+# extract, split, crop, page labels, undo.
+cursor on
+open "$SAMPLES/report.pdf"
+call organize
+assert mode == organize
+wait 600
+screenshot 02-grid.png
+click "Page i" 300
+assert grid.selected == 1
+click "Rotate" 300
+assert rotation:1 == 90
+click "Page 1" 300
+assert grid.selected == 1
+click "Duplicate" 300
+assert pages == 13
+click "Remove" 300
+assert pages == 12
+key ctrl+z
+assert pages == 13
+key ctrl+z
+assert pages == 12
+# Drag page 12 to the front.
+drag "Page 10" "Page 2" 900
+assert pages == 12
+assert undo == Move page
+call insert "$SAMPLES/chart.png"
+assert pages == 13
+call insert "$SAMPLES/lease.pdf"
+assert pages == 17
+call grid-select 1-2
+call extract "$OUT/extracted.pdf"
+assert file.exists:$OUT/extracted.pdf == true
+call split-to "$OUT" "1-3, 4-"
+assert file.exists:$OUT/part-2.pdf == true
+call grid-select 2
+call organize-action crop
+assert dialog == crop
+call set-crop 10 10 10 10
+call dialog-action crop
+assert page.size:2 != 612x792
+assert undo == Crop pages
+wait 1200
+screenshot 02-after.png
+# Another mode leaves Organize.
+click "View" 300
+assert mode == view

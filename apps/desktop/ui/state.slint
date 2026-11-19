@@ -1,0 +1,614 @@
+// State shared between the UI and Rust. Rust sets the `in` properties and handles the
+// callbacks; the .slint files only read and call.
+
+export enum Mode { welcome, view, organize }
+
+export enum SidebarTab { pages, outline, comments }
+
+// Which dialog is open over the window.
+export enum DialogKind { none, unsaved, protect, properties, split, crop, settings, draw-signature, open-link, message, owner-password, rename-signature, sign-cert, create-id, trusted-certs, redact-apply, redact-report, ocr, shortcuts, update, integration, optimize, pdfa, access-check, vim-help, vim-help-from-shortcuts }
+
+// A line of Settings > System integration. `check`: shown as a switch (else only the
+// button); `toggle`: the switch can be used; `group`: a heading above the line.
+export struct IntegrationRow {
+    id: string,
+    title: string,
+    explain: string,
+    status: string,
+    on: bool,
+    check: bool,
+    toggle: bool,
+    button: string,
+    group: string,
+}
+
+// A page or tile in the page view, placed relative to the anchor page (see ViewState).
+export struct PageSlot {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    visible: bool,
+    number: int,
+    preview: image,
+}
+
+export struct TileSlot {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    visible: bool,
+}
+
+// Something drawn over the pages, placed like a page slot (sizes in points).
+// kind: 0 filled box, 1 outlined box, 2 path, 3 text box, 4 image, 5 note icon,
+// 6 selection frame with handles, 7 drop target box, 9 the Edit tool's selection frame with
+// eight handles and a rotation handle (width 0 for no rotation handle), 10 a caret; frames,
+// handles and the caret are edged with a halo.
+export struct OverlayItem {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    kind: int,
+    fill: color,
+    stroke: color,
+    // Stroke width in points.
+    width: float,
+    // SVG path in points, relative to the item's top left.
+    commands: string,
+    text: string,
+    font-size: float,
+    image: image,
+    // Clockwise rotation of an image item about its centre, in degrees.
+    angle: float,
+    // In the accent colour (its own colours aside) with a contrasting edge, to show on
+    // any page: filled boxes, outlined boxes and paths.
+    halo: bool,
+}
+
+export struct FindRow {
+    page: string,
+    before: string,
+    matched: string,
+    after: string,
+}
+
+export struct Thumb {
+    index: int,
+    image: image,
+    // Height over width.
+    aspect: float,
+    current: bool,
+    selected: bool,
+    label: string,
+}
+
+export struct GridRow {
+    cells: [Thumb],
+}
+
+export struct OutlineRow {
+    title: string,
+    depth: int,
+    page: int,
+    current: bool,
+}
+
+export struct RecentFile {
+    name: string,
+    folder: string,
+}
+
+export struct TabInfo {
+    title: string,
+    folder: string,
+    dirty: bool,
+    active: bool,
+}
+
+export struct ReplyRow {
+    author: string,
+    when: string,
+    body: string,
+}
+
+export struct CommentRow {
+    index: int,
+    page: int,
+    kind: string,
+    author: string,
+    when: string,
+    body: string,
+    replies: int,
+    selected: bool,
+}
+
+export struct SignatureRow {
+    id: string,
+    name: string,
+    meta: string,
+    image: image,
+    selected: bool,
+}
+
+export struct FieldRow {
+    name: string,
+    kind: string,
+    value: string,
+    page: int,
+}
+
+// The text of a page for screen readers, placed like an overlay item; `link` indexes the
+// page's links, -1 for text.
+export struct PageTextItem {
+    di: int,
+    by: float,
+    bx: float,
+    w: float,
+    h: float,
+    page: int,
+    link: int,
+    label: string,
+    description: string,
+}
+
+export struct InfoRow {
+    label: string,
+    value: string,
+}
+
+export global ViewState {
+    // An item at (di, by, bx, w, h) is drawn at x = cx + k * bx, y = oy + 16px * di + k * by,
+    // sized k * w by k * h, snapped to device pixels.
+    in property <float> k: 1;
+    in property <float> cx;
+    in property <float> oy;
+    in property <float> dpr: 1;
+    in property <[PageSlot]> pages;
+    // Per page slot: tiles cover the page, so its paper and preview need no drawing.
+    in property <[bool]> page-covered;
+    in property <[TileSlot]> tiles;
+    in property <[image]> tile-images;
+    in property <[TileSlot]> fallback;
+    in property <[image]> fallback-images;
+    in property <[OverlayItem]> overlay;
+    in property <[PageTextItem]> page-text;
+    callback page-link(page: int, index: int);
+    // Scrollbar thumbs as fractions of the track.
+    in property <float> v-start;
+    in property <float> v-size: 1;
+    in property <float> h-start;
+    in property <float> h-size: 1;
+    // 0 default, 1 text, 2 pointer, 3 crosshair, 4 move, 5 grab, 6 grabbing, 7 nwse, 8 nesw,
+    // 9 busy (text in a picture being recognised), 10 horizontal resize, 11 vertical resize,
+    // 12 rotate.
+    in property <int> cursor;
+    // What the page's context menu offers where it was opened: copying the selection, the
+    // text of the picture there, the text of an area.
+    in property <bool> ctx-copy;
+    in property <bool> ctx-picture;
+    in property <bool> ctx-area;
+    // The Edit tool's menu: with a selection, and for text or an image.
+    in property <bool> ctx-edit;
+    in property <bool> ctx-edit-sel;
+    in property <bool> ctx-edit-text;
+    in property <bool> ctx-edit-image;
+    // The menu is for a misspelled word of the page text being edited (see SpellState).
+    in property <bool> ctx-spell;
+    // Bumped to open that menu at (spell-menu-x, spell-menu-y) in the view (Shift+F10).
+    in property <int> spell-menu-serial;
+    in property <float> spell-menu-x;
+    in property <float> spell-menu-y;
+    callback context-action(what: string);
+
+    // Editing the text of the page in place (Edit tool): a hidden field takes the keys and
+    // the input method's composition; Rust draws the text. `text-edit-at` is the caret, where
+    // the input method shows its candidates. Bumping `text-edit-serial` selects
+    // `text-edit-anchor` to `text-edit-focus` (byte offsets) in the field.
+    in property <bool> text-editing;
+    in property <OverlayItem> text-edit-at;
+    in-out property <string> text-edit-text;
+    in property <int> text-edit-serial;
+    in property <int> text-edit-anchor;
+    in property <int> text-edit-focus;
+    callback text-edit-changed(text: string, cursor: int, anchor: int, preedit: string);
+    // Keys before the field handles them; true when used.
+    callback text-edit-key(text: string, ctrl: bool, shift: bool) -> bool;
+
+    // The free text editor over the page.
+    in property <bool> editing;
+    in property <OverlayItem> editor;
+    in-out property <string> editor-text;
+
+    callback resized(width: float, height: float);
+    callback wheel(dx: float, dy: float, x: float, y: float, ctrl: bool, shift: bool);
+    // kind: 0 down, 1 drag (pressed), 2 up, 3 hover, 4 cancel. button: 0 left, 1 right, 2 middle.
+    callback pointer(kind: int, x: float, y: float, button: int, ctrl: bool, shift: bool, alt: bool);
+    callback pinch-start();
+    callback pinch(scale: float, x: float, y: float);
+    callback pinch-end();
+    callback scrollbar(vertical: bool, start: float);
+    callback editor-done(commit: bool);
+
+    // A form field being filled in over the page. kind: 0 text, 1 multiline text, 2 comb,
+    // 3 combo box, 4 list box.
+    in property <bool> field-editing;
+    in property <bool> field-shown: true;
+    in property <int> field-serial;
+    in property <OverlayItem> field-box;
+    in property <int> field-kind;
+    in property <int> field-cells;
+    in property <bool> field-password;
+    // A combo box that also takes typed text.
+    in property <bool> field-typed;
+    in-out property <string> field-text;
+    // The characters of a comb field, one per cell.
+    in property <[string]> field-chars;
+    in property <[string]> field-options;
+    in property <[bool]> field-selected;
+    callback field-done(commit: bool);
+    callback field-tab(back: bool);
+    callback field-pick(index: int);
+    callback field-edited(text: string);
+
+    // Items of the pages' layer, which sits at (ox, oy), are placed with lx and ly: then
+    // scrolling moves the layer alone, and only zooming moves its items.
+    public pure function ox() -> float {
+        return round(cx * dpr) / dpr;
+    }
+    public pure function oy-px() -> float {
+        return round(oy * dpr) / dpr;
+    }
+    public pure function lx(bx: float) -> float {
+        return round(k * bx * dpr) / dpr;
+    }
+    public pure function ly(di: int, by: float) -> float {
+        return round((16 * di + k * by) * dpr) / dpr;
+    }
+    // In the view, for items outside the layer.
+    public pure function px(bx: float) -> float {
+        return ox() + lx(bx);
+    }
+    public pure function py(di: int, by: float) -> float {
+        return oy-px() + ly(di, by);
+    }
+}
+
+export global AppState {
+    in property <Mode> mode: Mode.welcome;
+    // The product name, from pagebara_identity::NAME.
+    in property <string> app-name;
+    // Credits of the spelling dictionaries in use, for the About box.
+    in property <string> spelling-notices;
+    in property <string> window-title: app-name;
+    in property <string> title;
+    in property <string> subtitle;
+    in property <int> page-count;
+    in property <int> current-page;
+    in property <string> page-label;
+    in property <string> page-size;
+    in property <string> protection;
+    in property <string> zoom-label: "100%";
+    in property <string> message;
+    in property <bool> busy;
+    in property <bool> can-undo;
+    in property <bool> can-redo;
+    in property <string> undo-label;
+    in property <string> redo-label;
+    in property <bool> can-back;
+    in property <bool> can-forward;
+    in property <bool> dirty;
+    // Vim keys (Settings): on, the mode's name and the command line or pending keys.
+    in property <bool> vim-keys;
+    in property <string> vim-mode;
+    in property <string> vim-line;
+    in property <string> vim-before-caret;
+    callback cancel-vim-input();
+    callback set-vim-keys(on: bool);
+    in property <bool> encrypted;
+    in-out property <bool> sidebar-visible: true;
+    in-out property <SidebarTab> sidebar-tab: SidebarTab.pages;
+    in-out property <int> tool: 0;
+    in property <[TabInfo]> tabs;
+    in property <int> active-tab;
+    in property <[Thumb]> thumbs;
+    in property <[OutlineRow]> outline;
+    in property <[RecentFile]> recent;
+    in property <bool> discord-available;
+    in property <string> version;
+
+    // Organize view.
+    in property <[GridRow]> grid;
+    in property <int> grid-cols: 5;
+    in property <int> drop-index: -1;
+    in property <int> selected-count;
+    in property <string> organize-hint;
+
+    // Comments sidebar and the selected annotation.
+    in property <[CommentRow]> comments;
+    in property <bool> has-selection;
+    in property <string> sel-kind;
+    in property <string> sel-author;
+    in property <string> sel-when;
+    in property <string> sel-page;
+    in-out property <string> sel-contents;
+    in property <[ReplyRow]> sel-replies;
+    in property <int> sel-colour: -1;
+    in property <float> sel-width;
+    in property <float> sel-font-size;
+    in property <bool> sel-has-width;
+    in property <bool> sel-has-font;
+    in property <bool> sel-is-signature;
+    // A note: its comment is what there is to it, so the inspector opens for it.
+    in property <bool> sel-is-note;
+
+    // Tool options.
+    in-out property <int> markup-kind: 0;
+    in-out property <int> colour: 0;
+    in-out property <int> shape: 0;
+    in-out property <float> pen-width: 2;
+    in-out property <bool> smoothing: true;
+    in-out property <int> text-mode: 0;
+    in-out property <float> font-size: 12;
+    in property <string> text-warning;
+    in-out property <bool> flatten-signatures;
+
+    // Signature library.
+    in property <[SignatureRow]> signatures;
+    in property <int> sig-selected: -1;
+    in property <string> sig-name;
+    in property <image> sig-preview;
+    in property <bool> sig-preview-busy;
+    in property <bool> sig-imported;
+    in-out property <bool> sig-remove-bg: true;
+    in-out property <float> sig-threshold: 50;
+    in-out property <int> sig-ink: 0;
+    in-out property <float> sig-width-mm: 50;
+    in property <string> sig-error;
+    in property <string> sig-hint;
+
+    // Forms.
+    in property <[FieldRow]> fields;
+    in property <bool> can-fill;
+    // Why the form cannot be filled in, or that it is also an XFA form.
+    in property <string> form-notice;
+    // Scripts the form has that are not run.
+    in property <[string]> form-warnings;
+    in-out property <bool> flatten-forms;
+
+    // Search.
+    in-out property <bool> find-visible;
+    in-out property <string> find-text;
+    in-out property <bool> find-match-case;
+    in-out property <bool> find-whole-words;
+    in property <string> find-status;
+    // How many hits the search has found so far.
+    in property <int> find-hits;
+    in property <bool> find-busy;
+    in property <int> find-current: -1;
+    out property <bool> find-panel: mode == Mode.view && find-visible;
+    in-out property <bool> find-collapsed;
+    out property <bool> sidebar-shown: mode == Mode.view && (find-panel ? !find-collapsed : sidebar-visible);
+    public function toggle-sidebar() {
+        if find-panel { find-collapsed = !find-collapsed; }
+        else { sidebar-visible = !sidebar-visible; }
+    }
+    in-out property <int> find-first;
+    in-out property <int> find-end;
+    in property <int> find-rows-start;
+    in property <[FindRow]> find-rows;
+
+    // The password dialog.
+    in property <bool> password-visible;
+    in property <string> password-file;
+    in property <bool> password-error;
+    in property <string> keyboard-language;
+    in property <bool> unlocking;
+
+    // Other dialogs.
+    in property <DialogKind> dialog: DialogKind.none;
+    in property <string> dialog-title;
+    in property <string> dialog-text;
+    in property <string> dialog-error;
+    in property <[InfoRow]> info;
+    in-out property <string> author;
+    in-out property <int> theme-choice;
+    // The Settings languages: "Follow the system", then each language by its own name.
+    in property <[string]> languages;
+    in property <int> language-index;
+    in property <float> text-scale: 1;
+    // Reduce motion: 0 follows the system, 1 on, 2 off.
+    in property <int> motion-choice;
+    in property <bool> system-high-contrast;
+    // Protect dialog: print, copy, modify, annotate, forms, assemble.
+    in-out property <[bool]> permissions: [true, true, true, true, true, true];
+    in-out property <string> split-ranges;
+    in-out property <int> split-every: 1;
+    in-out property <int> split-mode;
+    in-out property <[float]> crop-margins: [0, 0, 0, 0];
+    in property <bool> crop-all;
+
+    // Settings > System integration (src/app/system.rs).
+    in property <[IntegrationRow]> integration-rows;
+    in property <string> integration-status;
+    in property <bool> integration-busy;
+    in property <bool> integration-from-settings;
+    in-out property <int> settings-section;
+    in property <string> integration-summary;
+    in-out property <bool> setup-card-visible;
+    // what: on, off, button (of the item `id`), open, remove-all, dismiss-card.
+    callback integration-action(id: string, what: string);
+    in property <bool> updates-available;
+    in-out property <bool> check-updates;
+    in property <string> update-status;
+    // The update dialog.
+    in property <string> update-version;
+    in property <string> update-notes;
+    in property <bool> update-can-install;
+    // The install button's text, or how to update when the app cannot install it.
+    in property <string> update-how;
+    // Where the page thumbnails list is in the window, for files dropped on it.
+    in-out property <length> pages-list-x;
+    in-out property <length> pages-list-y;
+    in-out property <length> pages-list-width;
+    in-out property <length> pages-list-height;
+    in-out property <length> pages-list-scroll;
+    out property <length> pages-row-height: 198px;
+
+    // The synthetic pointer drawn for recordings.
+    in property <bool> cursor-visible;
+    in property <float> cursor-x;
+    in property <float> cursor-y;
+    in property <bool> cursor-pressed;
+
+    callback open-file();
+    callback open-recent(index: int);
+    callback save();
+    callback save-as(compact: bool);
+    callback undo();
+    callback redo();
+    callback select-tab(index: int);
+    callback step-tab(back: bool, reorder: bool);
+    callback close-tab(index: int);
+    callback zoom-in();
+    callback zoom-out();
+    callback set-zoom(percent: float);
+    callback fit-width();
+    callback fit-page();
+    callback go-to-page(index: int);
+    callback page-entered(text: string);
+    callback back();
+    callback forward();
+    callback thumbs-scrolled(first-row: int, last-row: int);
+    callback unlock(password: string);
+    callback cancel-unlock();
+    callback organize();
+    callback organize-action(action: string);
+    callback organize-done();
+    callback grid-resized(width: float);
+    callback grid-scrolled(first-row: int, last-row: int);
+    callback grid-click(index: int, ctrl: bool, shift: bool);
+    callback grid-drag(index: int, x: float, y: float, phase: int);
+    callback tool-changed(tool: int);
+    callback option-changed(what: string);
+    callback find(text: string);
+    callback set-find-options(match-case: bool, whole-words: bool);
+    callback find-next(forward: bool);
+    callback find-close();
+    callback find-select(index: int);
+    callback find-range-changed();
+    callback comment-clicked(index: int);
+    callback selection-action(action: string);
+    callback reply(text: string);
+    callback contents-edited(text: string);
+    callback sig-select(index: int);
+    callback sig-action(action: string);
+    callback sig-move(index: int, to: int);
+    callback sig-draw(kind: int, x: float, y: float);
+    callback field-clicked(index: int);
+    callback form-action(what: string);
+    callback dialog-action(action: string, value: string);
+    callback show-dialog(kind: DialogKind);
+    callback set-theme(choice: int);
+    callback set-language(index: int);
+    callback system-theme-changed();
+    callback set-text-scale(scale: float);
+    callback set-motion(choice: int);
+    callback open-website();
+    callback open-discord();
+    callback about();
+    // check-updates, check-now, install-update, skip-update,
+    // update-later.
+    callback system-action(what: string);
+    // A tab dragged off the tab bar: open it in a window of its own.
+    callback tab-torn-off(index: int);
+    // Returns true when the key was a shortcut.
+    // `meta` is the Control key on macOS (where `ctrl` is Command), for vim keys.
+    callback shortcut(text: string, ctrl: bool, shift: bool, alt: bool, meta: bool) -> bool;
+}
+
+// How the window's chrome is arranged: which group of tools the tool row shows, and
+// whether the inspector is open. The UI's own state; Rust reads `inspector-open`.
+export global Chrome {
+    // 0 view, 1 annotate, 2 fill and sign, 3 edit. Organize is AppState.mode.
+    in-out property <int> group;
+    // The inspector stays open whatever the tool.
+    in-out property <bool> inspector-pinned;
+    // Closed by hand while a tool that opens it is chosen.
+    in-out property <bool> inspector-dismissed;
+    // Whether it shows, set by the window.
+    in-out property <bool> inspector-open;
+    in-out property <bool> palette-open;
+    // The window has no title bar of its own (macOS, when asked for): the app's top row
+    // is `titlebar-height` tall, keeps `titlebar-inset` free at its start for the window's
+    // buttons (none in full screen), moves the window when dragged and zooms it on a
+    // double click.
+    in property <bool> unified;
+    in property <length> titlebar-inset;
+    in-out property <length> titlebar-height;
+    callback drag-window();
+    callback zoom-window();
+    callback titlebar-changed();
+    // The inspector's comment field takes the keyboard focus when it next can.
+    in-out property <bool> focus-comment;
+
+    public function set-tool(tool: int) {
+        if AppState.tool != tool {
+            AppState.tool = tool;
+            AppState.tool-changed(tool);
+        }
+    }
+
+    // The group follows the tool, however it was chosen (a shortcut, a menu, the palette).
+    // Select belongs to View and Annotate: leaving a tool of the other groups goes back
+    // to View.
+    public function follow(tool: int) {
+        if tool >= 1 && tool <= 3 {
+            group = 1;
+        } else if tool == 4 || tool == 5 || tool == 8 {
+            group = 2;
+        } else if tool == 6 || tool == 7 {
+            group = 3;
+        } else if group > 1 {
+            group = 0;
+        }
+        inspector-dismissed = false;
+    }
+
+    // Chooses a group (4: Organize) and a tool that is in it.
+    public function choose(g: int) {
+        if AppState.mode == Mode.organize {
+            if g == 4 {
+                return;
+            }
+            AppState.organize-done();
+        }
+        if g == 4 {
+            AppState.organize();
+            return;
+        }
+        group = g;
+        if g == 0 || (g == 1 && AppState.tool > 3) {
+            set-tool(0);
+        } else if g == 2 && AppState.tool != 4 && AppState.tool != 5 && AppState.tool != 8 {
+            set-tool(5);
+        } else if g == 3 && AppState.tool != 6 && AppState.tool != 7 {
+            set-tool(7);
+        }
+    }
+
+    public function toggle-inspector() {
+        if inspector-open {
+            inspector-pinned = false;
+            inspector-dismissed = true;
+        } else {
+            inspector-pinned = true;
+            inspector-dismissed = false;
+        }
+    }
+}

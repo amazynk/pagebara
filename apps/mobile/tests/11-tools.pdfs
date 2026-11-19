@@ -1,0 +1,24 @@
+# Output tools from the tools sheet: page numbers, a draft watermark and flattening, each one
+# undoable step.
+open "$SAMPLES/lease.pdf"
+wait 600
+call sheet tools
+wait 300
+click "Add page numbers" 400
+assert undo == Add page numbers
+assert message contains 4 pages
+call sheet tools
+wait 300
+click "Mark as draft" 400
+assert undo == Mark as draft
+wait 400
+screenshot 11-draft.png
+call undo
+assert undo == Add page numbers
+open "$SAMPLES/form.pdf"
+wait 600
+call sheet tools
+wait 300
+click "Flatten comments and forms" 400
+assert undo == Flatten
+assert message contains 11 form fields

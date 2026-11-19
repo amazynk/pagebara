@@ -1,0 +1,78 @@
+[package]
+name = "pagebara-app"
+description = "Pagebara, the desktop PDF viewer and editor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[[bin]]
+name = "pagebara"
+path = "src/main.rs"
+
+[dependencies]
+pagebara-app-core.workspace = true
+pagebara-i18n.workspace = true
+pagebara-thread.workspace = true
+pagebara-budget.workspace = true
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-annot.workspace = true
+pagebara-signatures.workspace = true
+pagebara-forms.workspace = true
+pagebara-sign.workspace = true
+pagebara-redact.workspace = true
+pagebara-ocr.workspace = true
+pagebara-content.workspace = true
+pagebara-edit.workspace = true
+pagebara-render.workspace = true
+pagebara-png.workspace = true
+rayon.workspace = true
+pagebara-samples.workspace = true
+pagebara-ui.workspace = true
+pagebara-filters.workspace = true
+pagebara-identity.workspace = true
+pagebara-os.workspace = true
+pagebara-integration.workspace = true
+pagebara-native.workspace = true
+pagebara-actions.workspace = true
+pagebara-optimize.workspace = true
+pagebara-conform.workspace = true
+pagebara-stamp.workspace = true
+pagebara-flatten.workspace = true
+pagebara-compare.workspace = true
+pagebara-update = { workspace = true, default-features = false }
+# HTTPS for timestamps, revocation data and the OCR models, as `pagebara-ocr/download` does.
+ureq = { version = "3.5", optional = true, default-features = false, features = ["rustls"] }
+# fontique: registering the one embedded copy of Inter (src/fonts.rs).
+slint = { workspace = true, features = ["unstable-winit-030", "unstable-fontique-011"] }
+# Finding elements by accessible label or id for `--script`; already built as part of Slint.
+i-slint-backend-testing = { version = "=1.18.1", default-features = false }
+arboard = { version = "3.7", default-features = false }
+rfd.workspace = true
+open.workspace = true
+serde_json.workspace = true
+log.workspace = true
+env_logger.workspace = true
+
+[features]
+default = ["network"]
+# Timestamp servers, OCSP/CRL downloads and the OCR model download; used only on request.
+network = ["dep:ureq", "pagebara-ocr/download", "pagebara-update/network"]
+
+[build-dependencies]
+slint-build.workspace = true
+pagebara-i18n.workspace = true
+pagebara-identity.workspace = true
+# Icon and version information in the Windows executable.
+winresource = { version = "0.1.31", default-features = false }
+
+# The workspace lints, except that unsafe code is denied rather than forbidden: the code
+# Slint generates from the .slint files uses unsafe, and is allowed in `main.rs` only.
+[lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

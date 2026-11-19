@@ -1,0 +1,69 @@
+# Text recognition on a page that is only a picture of text: the scanned-document offer,
+# the dialog, recognition with progress, then search finds the words; undo takes the text
+# away again. Needs the models in $PAGEBARA_OCR_MODELS (run.sh skips this script without it);
+# nothing is downloaded.
+cursor on
+open "$SAMPLES/scan.pdf"
+zoom 75 0
+await ocr.scanned == 1 10000
+assert ocr.offer contains looks scanned
+assert page.text:1 == ""
+screenshot 13-offer.png
+click "Recognize text…" 400
+assert dialog == ocr
+assert ocr.phase == 0
+call ocr-options 0 "" false
+screenshot 13-dialog.png
+call ocr-start
+assert ocr.running == true
+wait 300
+screenshot 13-progress.png
+await ocr.running == false 180000
+assert dialog == none
+assert ocr.words > 5
+assert undo == Recognize text
+assert dirty == true
+assert ocr.offer == ""
+assert page.text:1 contains Greenhouse
+key ctrl+f
+type "Greenhouse" 400
+await search.done == true 10000
+assert search.hits >= 1
+screenshot 13-found.png
+key escape
+# The recognised text can be selected and copied.
+dblclick text 1 "Greenhouse" 300
+assert selection.text == Greenhouse
+key escape
+key ctrl+z
+await ocr.offer contains looks scanned 10000
+assert page.text:1 == ""
+# Recognising again and saving keeps the text in the file.
+call ocr-dialog
+call ocr-start
+await ocr.running == false 180000
+call save-as "$OUT/scan-ocr.pdf"
+await dirty == false 10000
+key ctrl+w
+open "$OUT/scan-ocr.pdf"
+assert page.text:1 contains Greenhouse
+# A page scanned sideways and stored that way: recognition turns it to read it, and the
+# text lies where the picture shows it, so search and selection find the words.
+key ctrl+w
+open "$SAMPLES/scan-turned.pdf"
+await ocr.scanned == 1 10000
+call ocr-dialog
+call ocr-options 0 "" false
+call ocr-start
+await ocr.running == false 180000
+assert ocr.words > 5
+assert page.text:1 contains Greenhouse
+assert page.text:1 contains Tuesday
+key ctrl+f
+type "compost" 400
+await search.done == true 10000
+assert search.hits >= 1
+screenshot 13-turned.png
+key escape
+dblclick text 1 "Greenhouse" 300
+assert selection.text == Greenhouse

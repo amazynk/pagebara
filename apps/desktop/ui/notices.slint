@@ -1,0 +1,48 @@
+// Over the bottom of the pages: the app's messages for a few seconds, and the vim keys'
+// mode and command line.
+import { VimStatus } from "vim-status.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Keys } from "components/button.slint";
+
+export component Notices inherits Rectangle {
+    // Something else sits at the bottom of the pages (the read-aloud bar).
+    in property <bool> lifted;
+    in property <bool> vim-active;
+    property <string> message: Keys.label(AppState.message, false);
+
+    property <length> bottom-inset: root.lifted ? 84px : 12px;
+
+    // Always there, so screen readers hear the messages as they change.
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - (root.bottom-inset + (root.vim-active ? status.height + 8px : 8px));
+        width: min(parent.width - 32px, msg.preferred-width + 32px);
+        height: max(34px, Theme.font-body * 2.6);
+        border-radius: self.height / 2;
+        background: Theme.high-contrast ? Theme.chrome : #18181BF2;
+        border-width: Theme.high-contrast ? 2px : Theme.dark ? 1px : 0px;
+        border-color: Theme.high-contrast ? Theme.text : #FFFFFF2E;
+        opacity: root.message != "" ? 1 : 0;
+        msg := Text {
+            width: parent.width - 32px;
+            text: root.message;
+            color: Theme.high-contrast ? Theme.text : #FFFFFF;
+            font-size: Theme.font-body;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            overflow: elide;
+            accessible-role: text;
+            accessible-label: @tr("Status: {}", root.message);
+            accessible-live-region: polite;
+        }
+    }
+
+    status := VimStatus {
+        visible: root.vim-active;
+        available-height: max(0px, root.height - root.bottom-inset - 8px);
+        available-width: max(0px, root.width - 24px);
+        x: Theme.rtl ? parent.width - self.width - 12px : 12px;
+        y: parent.height - self.height - root.bottom-inset;
+    }
+}

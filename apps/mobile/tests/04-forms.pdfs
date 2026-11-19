@@ -1,0 +1,34 @@
+# Forms: text fields are typed into above the keyboard, a check box toggles with a tap,
+# a choice field picks from a list; the values are saved.
+open "$SAMPLES/form.pdf"
+wait 600
+tool forms
+assert message contains Tap a field
+wait 300
+screenshot 04-fields.png
+click annot 1 1 200
+assert field.editing == true
+type "Ada Lovelace" 400
+wait 200
+screenshot 04-typing.png
+click "Done" 200
+assert field.editing == false
+assert field:name == Ada Lovelace
+# The newsletter check box.
+click annot 1 12 200
+assert field:newsletter == on
+# The drop-down list of times.
+click annot 1 9 200
+assert sheet == choices
+screenshot 04-choices.png
+click "Weekends" 200
+assert sheet == none
+assert field:time == Weekends
+call save
+assert dirty == false
+key back
+open "$SAMPLES/form.pdf"
+wait 400
+assert field:name == Ada Lovelace
+assert field:time == Weekends
+assert field:newsletter == on

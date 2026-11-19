@@ -1,0 +1,304 @@
+// Save as PDF/A (part, check, conversion report) and the accessibility check (PDF/UA
+// report, jump to an issue, automatic and guided fixes).
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button, Pressable } from "components/button.slint";
+import { Dialog } from "components/panel.slint";
+import { TextField } from "components/text-field.slint";
+import { Check, SectionLabel } from "components/controls.slint";
+import { Heading, Body, Hint, ErrorText, Buttons, Field, Note, Choice, Verdicts } from "components/dialog-parts.slint";
+
+// fix: 0 none, 1 automatic, 2 needs a person. page: from 1, 0 for none.
+// One problem, on the pages listed in `pages` ("p. 3", "pp. 1–12"); `page` is the first.
+export struct IssueRow {
+    rule: string,
+    message: string,
+    page: int,
+    pages: string,
+    fix: int,
+}
+
+// kind: 0 figure (alternative text), 1 heading (level), 2 table (header row).
+export struct ElementRow {
+    id: int,
+    kind: int,
+    title: string,
+    page: int,
+    alt: string,
+    level: int,
+}
+
+export global PdfaState {
+    in property <[string]> parts: [@tr("PDF/A-1b (oldest, widest support)"), @tr("PDF/A-2b (recommended)"), @tr("PDF/A-2u (searchable text)"), @tr("PDF/A-3b (with attachments)"), "PDF/A-3u"];
+    in-out property <int> part: 1;
+    // 0 choosing, 1 working, 2 result.
+    in property <int> phase;
+    in property <bool> passed;
+    in property <string> summary;
+    in property <[string]> changes;
+    in property <[IssueRow]> issues;
+    // "convert", "check", "save", "back".
+    callback action(what: string);
+}
+
+export global AccessState {
+    in property <bool> busy;
+    in property <bool> passed;
+    in property <string> summary;
+    in property <int> automatic;
+    in property <[IssueRow]> issues;
+    in property <[ElementRow]> elements;
+    // "check", "fix", "jump" (page), "alt" (id, text), "level" (id, level), "table" (id).
+    callback action(what: string, id: int, value: string);
+}
+
+component IssueList inherits Rectangle {
+    in property <[IssueRow]> issues;
+    callback jump(page: int);
+    height: min(260px, list.preferred-height);
+    sv := ScrollView {
+        content-width: self.visible-width;
+        content-height: list.preferred-height;
+        list := VerticalLayout {
+            width: sv.visible-width;
+            height: self.preferred-height;
+            spacing: 4px;
+            padding-right: 10px;
+            for i in root.issues: Pressable {
+                label: i.message;
+                description: i.pages;
+                height: row.preferred-height + 8px;
+                clicked => {
+                    if i.page > 0 {
+                        root.jump(i.page);
+                    }
+                }
+                row := HorizontalLayout {
+                    x: 6px;
+                    width: parent.width - 12px;
+                    y: 4px;
+                    spacing: 8px;
+                    Text {
+                        text: i.rule;
+                        color: Theme.muted;
+                        font-size: Theme.font-small;
+                        width: 84px;
+                    }
+                    Text {
+                        text: i.message;
+                        color: Theme.text;
+                        wrap: word-wrap;
+                        line-height-factor: 1.15;
+                        horizontal-stretch: 1;
+                        font-size: Theme.font-small;
+                    }
+                    Text {
+                        // TRANSLATORS: "p. 3" is page 3; "auto": fixed automatically, "you": for you to fix
+                        text: i.pages + (i.fix == 1 ? "  " + @tr("auto") : i.fix == 2 ? "  " + @tr("you") : "");
+                        max-width: 160px;
+                        horizontal-alignment: right;
+                        wrap: word-wrap;
+                        color: i.fix == 1 ? Verdicts.colours[0] : Theme.muted;
+                        font-size: Theme.font-small;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component PdfaDialog inherits Dialog {
+    title: @tr("Save as PDF/A");
+    card-width: 600px;
+    Heading {
+        text: PdfaState.phase == 2 ? (PdfaState.passed ? "✓ " : "") + PdfaState.summary : @tr("Save as PDF/A");
+        color: PdfaState.phase == 2 && PdfaState.passed ? Verdicts.colours[0] : Theme.text;
+    }
+    if PdfaState.phase == 0: VerticalLayout {
+        spacing: 12px;
+        Body {
+            text: @tr("PDF/A is the version of PDF made for keeping documents for the long term: fonts and colours are embedded, nothing depends on other files or scripts.");
+        }
+        Field {
+            // TRANSLATORS: the part (version) of the PDF/A standard
+            label: @tr("Part");
+            Choice {
+                model: PdfaState.parts;
+                current-index <=> PdfaState.part;
+                label: @tr("PDF/A part");
+            }
+        }
+    }
+    if PdfaState.phase == 1: Hint {
+        text: @tr("Converting and checking…");
+    }
+    if PdfaState.phase == 2 && PdfaState.changes.length > 0: SectionLabel {
+        // TRANSLATORS: heading of the list of changes made to the document
+        text: @tr("Changes");
+    }
+    if PdfaState.phase == 2: VerticalLayout {
+        spacing: 2px;
+        for c in PdfaState.changes: Hint {
+            text: "• " + c;
+        }
+    }
+    if PdfaState.phase == 2 && PdfaState.issues.length > 0: SectionLabel {
+        text: @tr("Problems left");
+    }
+    if PdfaState.phase == 2 && PdfaState.issues.length > 0: IssueList {
+        issues: PdfaState.issues;
+        jump(page) => {
+            AccessState.action("jump", page, "");
+        }
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: PdfaState.phase == 2 ? @tr("Close") : @tr("Cancel");
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+        if PdfaState.phase == 0: Button {
+            text: @tr("Check only");
+            clicked => {
+                PdfaState.action("check");
+            }
+        }
+        if PdfaState.phase == 0: Button {
+            text: @tr("Convert");
+            primary: true;
+            clicked => {
+                PdfaState.action("convert");
+            }
+        }
+        if PdfaState.phase == 2: Button {
+            // TRANSLATORS: verb, on a button that goes back to the previous step
+            text: @tr("Back");
+            clicked => {
+                PdfaState.action("back");
+            }
+        }
+        if PdfaState.phase == 2 && PdfaState.changes.length > 0: Button {
+            text: @tr("Save as…");
+            primary: true;
+            clicked => {
+                PdfaState.action("save");
+            }
+        }
+    }
+}
+
+// Alternative text for a figure: a field and a button to set it.
+component AltEditor inherits HorizontalLayout {
+    in property <ElementRow> item;
+    spacing: 8px;
+    field := TextField {
+        text: root.item.alt;
+        placeholder: @tr("Describe the figure");
+        label: @tr("Alternative text for {}", root.item.title);
+        horizontal-stretch: 1;
+        accepted(t) => {
+            AccessState.action("alt", root.item.id, t);
+        }
+    }
+    Button {
+        // TRANSLATORS: verb, on a button that applies the alternative text
+        text: @tr("Set");
+        clicked => {
+            AccessState.action("alt", root.item.id, field.text);
+        }
+    }
+}
+
+export component AccessDialog inherits Dialog {
+    title: @tr("Accessibility check");
+    card-width: 640px;
+    Heading {
+        text: AccessState.busy ? @tr("Checking accessibility…") : (AccessState.passed ? "✓ " : "") + AccessState.summary;
+        color: !AccessState.busy && AccessState.passed ? Verdicts.colours[0] : Theme.text;
+    }
+    Hint {
+        text: @tr("Checked against PDF/UA (ISO 14289-1) with the Matterhorn Protocol. Choose a problem to go to its page.");
+    }
+    if !AccessState.busy && AccessState.issues.length > 0: IssueList {
+        issues: AccessState.issues;
+        jump(page) => {
+            AccessState.action("jump", page, "");
+        }
+    }
+    if !AccessState.busy && AccessState.elements.length > 0: SectionLabel {
+        text: @tr("Figures, headings and tables");
+    }
+    if !AccessState.busy && AccessState.elements.length > 0: Rectangle {
+        height: min(220px, elist.preferred-height);
+        esv := ScrollView {
+            content-width: self.visible-width;
+            content-height: elist.preferred-height;
+            elist := VerticalLayout {
+                width: esv.visible-width;
+                height: self.preferred-height;
+                spacing: 6px;
+                padding-right: 10px;
+                for e in AccessState.elements: HorizontalLayout {
+                    spacing: 8px;
+                    min-height: 32px;
+                    Text {
+                        text: e.page > 0 ? @tr("{} (p. {})", e.title, e.page) : e.title;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        width: 170px;
+                        font-size: Theme.font-small;
+                        wrap: word-wrap;
+                        line-height-factor: 1.15;
+                    }
+                    if e.kind == 0: AltEditor {
+                        item: e;
+                        horizontal-stretch: 1;
+                    }
+                    if e.kind == 1: Choice {
+                        model: ["H1", "H2", "H3", "H4", "H5", "H6"];
+                        current-index: e.level - 1;
+                        label: @tr("Level of {}", e.title);
+                        horizontal-stretch: 1;
+                        selected(i) => {
+                            AccessState.action("level", e.id, i + 1);
+                        }
+                    }
+                    if e.kind == 2: Button {
+                        text: @tr("First row is the header");
+                        horizontal-stretch: 1;
+                        clicked => {
+                            AccessState.action("table", e.id, "");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Close");
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+        Button {
+            text: @tr("Check again");
+            enabled: !AccessState.busy;
+            clicked => {
+                AccessState.action("check", 0, "");
+            }
+        }
+        if AccessState.automatic > 0: Button {
+            text: @tr("Fix {n} automatically" | "Fix {n} automatically" % AccessState.automatic);
+            primary: true;
+            enabled: !AccessState.busy;
+            clicked => {
+                AccessState.action("fix", 0, "");
+            }
+        }
+    }
+}

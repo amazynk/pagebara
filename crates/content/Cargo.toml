@@ -1,0 +1,17 @@
+[package]
+name = "pagebara-content"
+description = "Content streams: operators, graphics state, display lists, text extraction"
+version.workspace = true
+edition.workspace = true
+# The bundled Adobe CMap data is BSD-3-Clause (LICENSE-adobe-cmap).
+license = "(MIT OR Apache-2.0) AND BSD-3-Clause"
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-font.workspace = true
+memchr.workspace = true
+pagebara-flate.workspace = true
+unicode-bidi.workspace = true
+
+[lints]
+workspace = true

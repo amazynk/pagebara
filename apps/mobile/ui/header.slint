@@ -1,0 +1,233 @@
+// The reader's header: back, title and page, Pages, Search and More; while searching, the
+// search field with the hits count and previous / next.
+
+import { RowLayout } from "row.slint";
+import { Theme } from "theme.slint";
+import { AppState, Tool, Sheet } from "state.slint";
+import { IconButton, ToolButton } from "controls.slint";
+
+export component Tools inherits RowLayout {
+    in property <bool> compact;
+    spacing: compact ? 4px : 0px;
+    alignment: compact ? end : space-around;
+
+    ToolButton {
+        icon: @image-url("icons/book.svg");
+        // TRANSLATORS: tool names in the bottom bar (Read, Highlight, Draw, Sign, Forms, Edit)
+        label: @tr("Read");
+        active: AppState.tool == Tool.read;
+        clicked => {
+            AppState.tool = Tool.read;
+            AppState.tool-changed();
+        }
+    }
+    ToolButton {
+        icon: @image-url("icons/highlight.svg");
+        label: @tr("Highlight");
+        active: AppState.tool == Tool.highlight;
+        clicked => {
+            AppState.tool = Tool.highlight;
+            AppState.tool-changed();
+        }
+    }
+    ToolButton {
+        icon: @image-url("icons/draw.svg");
+        label: @tr("Draw");
+        active: AppState.tool == Tool.draw;
+        clicked => {
+            AppState.tool = Tool.draw;
+            AppState.tool-changed();
+        }
+    }
+    ToolButton {
+        icon: @image-url("icons/sign.svg");
+        label: @tr("Sign");
+        active: AppState.tool == Tool.sign;
+        clicked => {
+            AppState.tool = Tool.sign;
+            AppState.tool-changed();
+        }
+    }
+    ToolButton {
+        icon: @image-url("icons/form.svg");
+        label: @tr("Forms");
+        active: AppState.tool == Tool.forms;
+        clicked => {
+            AppState.tool = Tool.forms;
+            AppState.tool-changed();
+        }
+    }
+    ToolButton {
+        icon: @image-url("icons/edit.svg");
+        label: @tr("Edit");
+        active: AppState.tool == Tool.edit;
+        clicked => {
+            AppState.tool = Tool.edit;
+            AppState.tool-changed();
+        }
+    }
+}
+
+export component Header inherits Rectangle {
+    in property <length> top-inset;
+    in property <bool> keyboard-visible;
+    height: Theme.header-height + top-inset + (AppState.tablet ? 8px : 0px);
+    background: Theme.chrome;
+    accessible-role: groupbox;
+
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+
+    if !AppState.searching: RowLayout {
+        y: root.top-inset;
+        height: parent.height - root.top-inset;
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 2px;
+
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: Theme.rtl ? @image-url("icons/chevron-right.svg") : @image-url("icons/chevron-left.svg");
+            label: @tr("Back");
+            clicked => {
+                AppState.back();
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: (AppState.dirty ? "• " : "") + AppState.title;
+                font-size: Theme.font-title;
+                font-weight: 600;
+                color: Theme.text;
+                overflow: elide;
+                accessible-role: none;
+            }
+            Text {
+                text: AppState.page-label;
+                font-size: Theme.font-small;
+                color: Theme.muted;
+                accessible-role: none;
+            }
+        }
+        if AppState.tablet: Tools {
+            compact: true;
+        }
+        if AppState.tablet: Rectangle {
+            width: 12px;
+        }
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/organize.svg");
+            label: @tr("Pages");
+            active: AppState.sheet == Sheet.pages;
+            clicked => {
+                AppState.sheet = AppState.sheet == Sheet.pages ? Sheet.none : Sheet.pages;
+                AppState.sheet-changed();
+            }
+        }
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/search.svg");
+            label: @tr("Search");
+            clicked => {
+                AppState.searching = true;
+            }
+        }
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/more.svg");
+            label: @tr("More");
+            active: AppState.sheet == Sheet.more;
+            clicked => {
+                AppState.sheet = Sheet.more;
+                AppState.sheet-changed();
+            }
+        }
+    }
+
+    if AppState.searching: RowLayout {
+        y: root.top-inset;
+        height: parent.height - root.top-inset;
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 2px;
+
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/close.svg");
+            label: @tr("Close search");
+            clicked => {
+                AppState.searching = false;
+                AppState.find-close();
+            }
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+            cross-axis-self-alignment: center;
+            height: 40px;
+            border-radius: 20px;
+            background: Theme.bg;
+            // The padding and match count are also part of the search field's touch target.
+            TouchArea {
+                clicked => {
+                    if field.has-focus && !root.keyboard-visible {
+                        field.clear-focus();
+                    }
+                    field.focus();
+                }
+            }
+            RowLayout {
+                padding-left: 14px;
+                padding-right: 12px;
+                spacing: 8px;
+                field := TextInput {
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                    font-size: Theme.font-body;
+                    color: Theme.text;
+                    single-line: true;
+                    input-type: text;
+                    accessible-label: @tr("Search");
+                    text <=> AppState.find-text;
+                    init => {
+                        self.focus();
+                    }
+                    edited => {
+                        AppState.find(self.text);
+                    }
+                    accepted => {
+                        AppState.find-next(true);
+                    }
+                }
+                if AppState.find-status != "": Text {
+                    horizontal-stretch: 0;
+                    text: AppState.find-status;
+                    font-size: Theme.font-small;
+                    color: Theme.muted;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/chevron-up.svg");
+            label: @tr("Previous match");
+            clicked => {
+                AppState.find-next(false);
+            }
+        }
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/chevron-down.svg");
+            label: @tr("Next match");
+            clicked => {
+                AppState.find-next(true);
+            }
+        }
+    }
+}

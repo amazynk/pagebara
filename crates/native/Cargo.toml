@@ -1,0 +1,38 @@
+[package]
+name = "pagebara-native"
+description = "The few native OS calls desktop integration needs (macOS Apple events, Dock menu, recent items and default app; Windows recent documents, jump list, taskbar progress and shell notifications), each in a small module allowed to use unsafe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+log.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+dispatch2 = { version = "0.3", default-features = false, features = ["std", "block2", "objc2"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSBundle", "NSEnumerator", "NSError", "NSGeometry", "NSObject", "NSString", "NSURL"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "block2", "objc2-uniform-type-identifiers", "NSApplication", "NSButton", "NSControl", "NSDocumentController", "NSMenu", "NSMenuItem", "NSResponder", "NSView", "NSWindow", "NSWorkspace"] }
+objc2-uniform-type-identifiers = { version = "0.3", default-features = false, features = ["std", "UTType"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Storage_EnhancedStorage",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+    "Win32_UI_Shell_PropertiesSystem",
+] }
+
+# The workspace lints, except that unsafe code is denied rather than forbidden: the
+# per-platform modules (src/macos.rs, src/windows.rs) allow it, and only there.
+[lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

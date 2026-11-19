@@ -1,0 +1,170 @@
+import { RowLayout } from "components/row.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { IconButton, FocusNav } from "components/button.slint";
+
+// Reading the document aloud with the system's speech engine, sentence by sentence in
+// reading order, from the selection or the current page.
+export global ReadAloudState {
+    // A speech engine was found.
+    in property <bool> available;
+    in property <string> engine;
+    in property <bool> visible;
+    in property <bool> playing;
+    in property <bool> paused;
+    // 1 is the normal speed.
+    in property <float> rate: 1;
+    // Where reading is, e.g. "Page 2 of 5".
+    in property <string> position;
+    // The sentence being read.
+    in property <string> sentence;
+    callback show(visible: bool);
+    // Starts, or resumes when paused.
+    callback play();
+    callback pause();
+    callback stop();
+    callback skip(forward: bool);
+    callback set-rate(rate: float);
+}
+
+// The read-aloud controls, floating over the bottom of the pages.
+export component ReadAloudBar inherits Rectangle {
+    width: row.preferred-width;
+    height: 48px;
+    border-radius: 10px;
+    background: Theme.chrome;
+    border-width: Theme.high-contrast ? 2px : 1px;
+    border-color: Theme.high-contrast ? Theme.text : Theme.border;
+    drop-shadow-blur: 14px;
+    drop-shadow-offset-y: 4px;
+    drop-shadow-color: #0000002a;
+    accessible-role: groupbox;
+    accessible-label: @tr("Read aloud");
+
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 7 {
+            play.focus-button();
+        }
+    }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if e.text == Key.Escape {
+                ReadAloudState.stop();
+                ReadAloudState.show(false);
+                return accept;
+            }
+            if e.text == Key.LeftArrow || e.text == Key.RightArrow {
+                ReadAloudState.skip(e.text == Key.RightArrow);
+                return accept;
+            }
+            if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
+                return accept;
+            }
+            reject
+        }
+
+        row := RowLayout {
+            padding: 6px;
+            padding-left: 8px;
+            spacing: 2px;
+            play := IconButton {
+                cross-axis-self-alignment: center;
+                icon: ReadAloudState.playing && !ReadAloudState.paused ? @image-url("icons/pause.svg") : @image-url("icons/play.svg");
+                label: ReadAloudState.playing && !ReadAloudState.paused ? @tr("Pause reading") : ReadAloudState.paused ? @tr("Resume reading") : @tr("Read aloud from here");
+                description: "Ctrl+Shift+C";
+                clicked => {
+                    if ReadAloudState.playing && !ReadAloudState.paused {
+                        ReadAloudState.pause();
+                    } else {
+                        ReadAloudState.play();
+                    }
+                }
+            }
+            IconButton {
+                cross-axis-self-alignment: center;
+                icon: @image-url("icons/stop.svg");
+                label: @tr("Stop reading");
+                description: "Ctrl+Shift+E";
+                enabled: ReadAloudState.playing || ReadAloudState.paused;
+                clicked => {
+                    ReadAloudState.stop();
+                }
+            }
+            IconButton {
+                cross-axis-self-alignment: center;
+                icon: (Theme.rtl ? @image-url("icons/chevron-right.svg") : @image-url("icons/chevron-left.svg"));
+                label: @tr("Previous sentence");
+                enabled: ReadAloudState.playing || ReadAloudState.paused;
+                clicked => {
+                    ReadAloudState.skip(false);
+                }
+            }
+            IconButton {
+                cross-axis-self-alignment: center;
+                icon: (Theme.rtl ? @image-url("icons/chevron-left.svg") : @image-url("icons/chevron-right.svg"));
+                label: @tr("Next sentence");
+                enabled: ReadAloudState.playing || ReadAloudState.paused;
+                clicked => {
+                    ReadAloudState.skip(true);
+                }
+            }
+            Rectangle {
+                width: 1px;
+                height: 20px;
+                cross-axis-self-alignment: center;
+                background: Theme.border;
+            }
+            IconButton {
+                cross-axis-self-alignment: center;
+                icon: @image-url("icons/minus.svg");
+                label: @tr("Slower");
+                enabled: ReadAloudState.rate > 0.55;
+                clicked => {
+                    ReadAloudState.set-rate(ReadAloudState.rate - 0.25);
+                }
+            }
+            Text {
+                width: 44px;
+                text: round(ReadAloudState.rate * 100) / 100 + "×";
+                color: Theme.text;
+                font-size: Theme.font-small;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                accessible-role: text;
+                accessible-label: @tr("Speed {} percent", round(ReadAloudState.rate * 100));
+            }
+            IconButton {
+                cross-axis-self-alignment: center;
+                icon: @image-url("icons/plus.svg");
+                label: @tr("Faster");
+                enabled: ReadAloudState.rate < 2.45;
+                clicked => {
+                    ReadAloudState.set-rate(ReadAloudState.rate + 0.25);
+                }
+            }
+            Text {
+                min-width: 90px;
+                max-width: 220px;
+                text: ReadAloudState.position;
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+                overflow: elide;
+                accessible-role: none;
+            }
+            IconButton {
+                cross-axis-self-alignment: center;
+                icon: @image-url("icons/close.svg");
+                icon-size: 15px;
+                label: @tr("Close read aloud");
+                clicked => {
+                    ReadAloudState.stop();
+                    ReadAloudState.show(false);
+                }
+            }
+        }
+    }
+}
