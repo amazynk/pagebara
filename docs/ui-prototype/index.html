@@ -1,0 +1,1933 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagebara · UI prototype</title>
+<style>
+@font-face {
+  font-family: "Inter Proto";
+  src: url("../../apps/desktop/ui/fonts/InterVariable.ttf") format("truetype");
+  font-weight: 100 900;
+}
+:root {
+  --desk: #E7E1D7;
+  /* Current: the light set of crates/app-core/src/theme.rs */
+  --c-text: #18181B; --c-muted: #52525B; --c-faint: #6B6B73; --c-border: #E4E4E7;
+  --c-control-border: #8A8A93; --c-chrome: #FFFFFF; --c-canvas: #F1F1F3; --c-track: #F1F1F3;
+  --c-raised: #FFFFFF; --c-hover: #F4F4F5; --c-pressed: #E4E4E7; --c-accent: #2563EB;
+  --c-accent-soft: #EAF1FF; --c-accent-fg: #2563EB; --c-danger: #B91C1C;
+  --c-titlebar: #E8E8EA; --c-tabbar: #EFEFF1;
+  /* Proposed */
+  --n-chrome: #F6F6F7;
+  --n-canvas: #E6E6EA;
+  --n-surface: #FFFFFF;
+  --n-line: rgba(24, 24, 27, .085);
+  --n-line-strong: rgba(24, 24, 27, .14);
+  --n-text: #18181B; --n-muted: #5F5F6A; --n-faint: #8C8C97;
+  --n-hover: rgba(24, 24, 27, .055); --n-press: rgba(24, 24, 27, .09);
+  --n-accent: #2563EB; --n-accent-fg: #2563EB; --n-accent-soft: rgba(37, 99, 235, .11);
+  --n-danger: #DC2626; --n-danger-soft: rgba(220, 38, 38, .09);
+  --n-shadow-pill: 0 0 0 .5px rgba(24, 24, 27, .12), 0 2px 4px rgba(24, 24, 27, .04), 0 8px 24px rgba(24, 24, 27, .10);
+  /* Two crisp steps, as page-view.slint draws its shadow: no blur to paint while scrolling. */
+  --n-shadow-page: 0 1px 0 1px rgba(24, 24, 27, .13), 0 3px 0 2px rgba(24, 24, 27, .05);
+  --n-shadow-pop: 0 0 0 .5px rgba(24, 24, 27, .14), 0 12px 40px rgba(24, 24, 27, .18);
+}
+html[data-theme="dark"] {
+  --desk: #2A2724;
+  --c-text: #F4F4F5; --c-muted: #A1A1AA; --c-faint: #8B8B94; --c-border: #2E2E33;
+  --c-control-border: #76767F; --c-chrome: #1E1E21; --c-canvas: #141416; --c-track: #2A2A2E;
+  --c-raised: #3A3A40; --c-hover: #2A2A2E; --c-pressed: #34343A; --c-accent: #2563EB;
+  --c-accent-soft: #1E3157; --c-accent-fg: #60A5FA; --c-danger: #F87171;
+  --c-titlebar: #2B2B2E; --c-tabbar: #19191B;
+  --n-chrome: #1B1B1E; --n-canvas: #0F0F11; --n-surface: #26262A;
+  --n-line: rgba(255, 255, 255, .075); --n-line-strong: rgba(255, 255, 255, .13);
+  --n-text: #F2F2F3; --n-muted: #A6A6B0; --n-faint: #74747E;
+  --n-hover: rgba(255, 255, 255, .06); --n-press: rgba(255, 255, 255, .1);
+  --n-accent: #3B82F6; --n-accent-fg: #7AAEFF; --n-accent-soft: rgba(59, 130, 246, .2);
+  --n-danger: #F87171; --n-danger-soft: rgba(248, 113, 113, .12);
+  --n-shadow-pill: 0 0 0 .5px rgba(255, 255, 255, .12), 0 8px 24px rgba(0, 0, 0, .45);
+  --n-shadow-page: 0 1px 0 1px rgba(0, 0, 0, .55), 0 3px 0 2px rgba(0, 0, 0, .3);
+  --n-shadow-pop: 0 0 0 .5px rgba(255, 255, 255, .12), 0 16px 48px rgba(0, 0, 0, .6);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font: 13px/1.35 "Inter Proto", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--desk); overflow: hidden; -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: default; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+button:disabled { opacity: .38; }
+input { outline: none; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.caret { width: 12px; height: 12px; margin-left: -3px; opacity: .55; stroke-width: 2.2; }
+[hidden] { display: none !important; }
+kbd { font: 500 11px/1 "Inter Proto", system-ui, sans-serif; }
+
+/* ---------- Prototype chrome (not part of the app) ---------- */
+.proto {
+  position: fixed; inset: 0 0 auto 0; height: 48px; z-index: 50;
+  display: flex; align-items: center; gap: 18px; padding: 0 20px;
+  background: #121214; color: #D4D4D8; font-size: 12px;
+}
+.proto b { color: #fff; font-weight: 650; font-size: 13px; }
+.proto .lbl { color: #71717A; }
+.proto .grp { display: flex; align-items: center; gap: 8px; }
+.proto .sp { flex: 1; }
+.proto { white-space: nowrap; }
+.proto .hint { color: #71717A; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pseg { display: flex; background: #27272A; border-radius: 8px; padding: 2px; }
+.pseg button { height: 26px; padding: 0 12px; border-radius: 6px; color: #A1A1AA; font-weight: 500; }
+.pseg button.on { background: #3F3F46; color: #fff; }
+.proto label { display: flex; align-items: center; gap: 6px; }
+.stage { position: fixed; inset: 48px 0 0 0; display: flex; gap: 20px; padding: 20px; }
+.frame { flex: 1; min-width: 0; position: relative; display: flex; align-items: center; justify-content: center; }
+.win {
+  position: relative; width: 100%; height: 100%; border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column; isolation: isolate;
+  box-shadow: 0 0 0 .5px rgba(0, 0, 0, .35), 0 24px 70px rgba(0, 0, 0, .28);
+}
+.win { container: win / inline-size; }
+.frame[data-size="1280"] .win { width: min(1280px, 100%); height: min(820px, 100%); }
+.frame[data-size="960"] .win { width: min(960px, 100%); height: min(640px, 100%); }
+.lights { display: flex; gap: 8px; flex: none; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; background: #FF5F57; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .15); }
+.lights i:nth-child(2) { background: #FEBC2E; }
+.lights i:nth-child(3) { background: #28C840; }
+
+.notes {
+  width: 344px; flex: none; overflow: auto; border-radius: 12px; padding: 18px 14px 18px 18px;
+  background: #FFFDF8; color: #18181B; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .15), 0 12px 40px rgba(0, 0, 0, .12);
+}
+html[data-theme="dark"] .notes { background: #1D1D20; color: #E4E4E7; }
+.notes h2 { font-size: 16px; font-weight: 650; margin-bottom: 4px; }
+.notes .lead { font-size: 12.5px; color: #71717A; line-height: 1.5; margin-bottom: 12px; }
+.notes h5 { font-size: 12px; font-weight: 650; margin: 16px 0 6px; color: #71717A; }
+.notes ul { font-size: 12.5px; line-height: 1.5; color: #52525B; padding-left: 16px; }
+html[data-theme="dark"] .notes ul { color: #A1A1AA; }
+.note { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 9px 8px; border-radius: 8px; }
+.note.on { background: rgba(239, 68, 68, .09); }
+.note.g.on { background: rgba(22, 163, 74, .1); }
+.note h3 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.note p { font-size: 12.5px; color: #5B5B66; line-height: 1.48; }
+html[data-theme="dark"] .note p { color: #A1A1AA; }
+.num, .pin {
+  width: 20px; height: 20px; border-radius: 50%; background: #EF4444; color: #fff;
+  font: 700 11px/20px "Inter Proto", system-ui, sans-serif; text-align: center;
+}
+.num.g, .pin.g { background: #16A34A; }
+.pins { position: absolute; inset: 0; pointer-events: none; z-index: 45; }
+.pin { position: absolute; pointer-events: auto; cursor: help; box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(0, 0, 0, .35); transition: transform .12s; }
+.pin.on { transform: scale(1.3); }
+.mark-on { outline: 2px solid #EF4444 !important; outline-offset: -2px; }
+.mark-on.g-mark { outline-color: #16A34A !important; }
+
+.tip {
+  position: fixed; z-index: 100; pointer-events: none; display: flex; gap: 8px; align-items: center;
+  background: #18181B; color: #fff; font-size: 12px; padding: 5px 8px; border-radius: 7px; white-space: nowrap;
+  box-shadow: 0 0 0 .5px rgba(255, 255, 255, .1), 0 4px 14px rgba(0, 0, 0, .25);
+}
+.tip kbd { color: #A1A1AA; }
+
+/* ---------- Current UI (a copy of the Slint UI) ---------- */
+.cur { background: var(--c-chrome); color: var(--c-text); }
+.c-titlebar { height: 28px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 12px; background: var(--c-titlebar); }
+.c-wtitle { font-weight: 600; font-size: 13px; color: var(--c-muted); }
+.c-tabs { height: 34px; flex: none; display: flex; align-items: flex-end; gap: 4px; padding: 0 8px; background: var(--c-tabbar); }
+.c-tab { width: 124px; height: 30px; display: flex; align-items: center; gap: 6px; padding: 0 4px 0 12px; border-radius: 8px 8px 0 0; color: var(--c-muted); }
+.c-tab.on { background: var(--c-chrome); color: var(--c-text); font-weight: 600; }
+.c-tab .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c-accent); flex: none; }
+.c-tab .name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.c-tab button { width: 22px; height: 22px; border-radius: 5px; }
+.c-tab button svg { width: 14px; height: 14px; }
+.c-tabs > .c-ib { width: 28px; height: 28px; margin-bottom: 1px; }
+.c-toolbar { height: 52px; flex: none; position: relative; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid var(--c-border); background: var(--c-chrome); }
+.c-start { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.c-ib { width: 32px; height: 32px; border-radius: 6px; color: var(--c-text); flex: none; }
+.c-ib:hover:not(:disabled) { background: var(--c-hover); }
+.c-ib.checked { background: var(--c-accent-soft); color: var(--c-accent-fg); }
+.c-title { min-width: 0; max-width: 240px; }
+.c-title b { display: block; font-size: 14px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-title span { display: block; font-size: 12px; color: var(--c-muted); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-seg-tools { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 2px; padding: 3px; background: var(--c-track); border-radius: 8px; }
+.c-seg-tools button { width: 36px; height: 28px; border-radius: 6px; }
+.c-seg-tools button.on { background: var(--c-raised); box-shadow: 0 1px 2px rgba(0, 0, 0, .14), 0 0 0 .5px rgba(0, 0, 0, .06); }
+.c-end { display: flex; align-items: center; gap: 2px; }
+.c-div { width: 9px; height: 20px; display: flex; justify-content: center; }
+.c-div::before { content: ""; width: 1px; background: var(--c-border); }
+.c-zoom { width: 56px; height: 32px; border-radius: 6px; font-weight: 500; }
+.c-zoom:hover { background: var(--c-hover); }
+.c-save { height: 32px; padding: 0 14px; margin-left: 6px; border-radius: 6px; background: var(--c-accent); color: #fff; font-weight: 500; }
+/* As toolbar.slint does it: labels on the tools from 1560px; below about 920px the theme button
+   goes, then read aloud, then the title, then the zoom buttons. */
+.c-seg-tools .lbl { display: none; }
+@container win (min-width: 1560px) {
+  .c-seg-tools button { width: auto; padding: 0 10px; gap: 6px; }
+  .c-seg-tools .lbl { display: inline; }
+}
+@container win (max-width: 921px) { .c-x-theme { display: none !important; } }
+@container win (max-width: 887px) { .c-x-read { display: none !important; } }
+@container win (max-width: 853px) { .c-title { display: none !important; } }
+@container win (max-width: 745px) { .c-x-zoom { display: none !important; } }
+.c-body { flex: 1; display: flex; min-height: 0; }
+.c-sidebar { width: 232px; flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--c-border); background: var(--c-chrome); }
+.c-seg { display: flex; padding: 3px; background: var(--c-track); border-radius: 8px; }
+.c-sidebar > .c-seg { margin: 12px 12px 6px; }
+.c-seg button { flex: 1; height: 28px; padding: 0 6px; border-radius: 6px; color: var(--c-muted); }
+.c-seg button.on { background: var(--c-raised); color: var(--c-text); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .14); }
+.c-seg button svg { width: 16px; height: 16px; }
+.c-sidebody { flex: 1; overflow-y: scroll; position: relative; }
+.c-thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 4px; padding: 6px 4px 12px 8px; }
+.c-thumb { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.c-thumb img { width: 88px; height: 114px; border: 1px solid var(--c-border); background: #fff; display: block; }
+.c-thumb.on img { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.c-thumb span { color: var(--c-muted); }
+.c-thumb.on span { color: var(--c-accent-fg); font-weight: 600; }
+.c-list { padding: 4px 12px; display: flex; flex-direction: column; gap: 2px; }
+.c-list button { height: 32px; justify-content: space-between; padding: 0 8px; border-radius: 6px; }
+.c-list button:hover { background: var(--c-hover); }
+.c-list .pg { color: var(--c-muted); }
+.c-card { margin: 4px 12px; padding: 10px; border: 1px solid var(--c-border); border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
+.c-card .top { display: flex; justify-content: space-between; color: var(--c-muted); font-size: 12px; }
+.c-canvas { flex: 1; min-width: 0; overflow: auto; background: var(--c-canvas); }
+.c-pages { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; min-width: fit-content; }
+.c-page, .n-page { position: relative; background: #fff; flex: none; }
+/* page-view.slint: a 1px and a 2px step, 11% and 5%. */
+.c-page { box-shadow: 0 1px 0 1px rgba(24, 24, 27, .11), 0 3px 0 2px rgba(24, 24, 27, .05); }
+.c-page img, .n-page img { width: 100%; height: 100%; display: block; user-select: none; }
+.c-tbox { position: absolute; padding: calc(3px * var(--s)) calc(5px * var(--s)); font-family: Helvetica, Arial, sans-serif; line-height: 1.05; color: #18181B; }
+.c-tbox.sel { outline: 1.5px solid var(--c-accent); }
+.c-tbox .h { position: absolute; width: 7px; height: 7px; background: #fff; border: 1.5px solid var(--c-accent); }
+.c-tbox .tl { left: -4px; top: -4px; } .c-tbox .tr { right: -4px; top: -4px; }
+.c-tbox .bl { left: -4px; bottom: -4px; } .c-tbox .br { right: -4px; bottom: -4px; }
+.c-panel { width: 300px; flex: none; border-left: 1px solid var(--c-border); background: var(--c-chrome); padding: 0 16px 16px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.c-ph { display: flex; align-items: center; justify-content: space-between; height: 46px; margin-bottom: -2px; flex: none; }
+.c-ph h2 { font-size: 17px; font-weight: 600; }
+.c-ph .c-ib svg { width: 16px; height: 16px; }
+.c-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.c-muted { color: var(--c-muted); }
+.c-swatches { display: flex; justify-content: space-between; padding: 0 2px 0 6px; }
+.c-sw { width: 22px; height: 22px; border-radius: 50%; }
+.c-sw.on { box-shadow: 0 0 0 2px var(--c-chrome), 0 0 0 4px var(--c-accent); }
+.c-slider { position: relative; height: 18px; margin: 0 0 0 6px; }
+.c-slider .tr { position: absolute; left: 0; right: 0; top: 7px; height: 4px; border-radius: 2px; background: var(--c-pressed); }
+.c-slider .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--c-accent); }
+.c-slider .kn { position: absolute; top: 0; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: var(--c-accent); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--c-border); }
+.c-hr { height: 1px; background: var(--c-border); flex: none; }
+.c-textarea { min-height: 64px; border: 1px solid var(--c-border); border-radius: 6px; padding: 7px 8px; }
+.c-input { height: 36px; border: 1px solid var(--c-control-border); border-radius: 6px; padding: 0 10px; display: flex; align-items: center; color: var(--c-faint); flex: none; }
+.c-btn { height: 32px; padding: 0 12px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-raised); flex: none; }
+.c-btn.wide { width: 100%; }
+.c-btn svg { width: 16px; height: 16px; }
+.c-hint { color: var(--c-muted); line-height: 1.5; }
+.c-check { display: flex; align-items: center; gap: 10px; }
+.c-check i { width: 18px; height: 18px; border-radius: 4px; background: var(--c-accent); display: grid; place-items: center; color: #fff; }
+.c-check i svg { width: 13px; height: 13px; stroke-width: 3; }
+.c-seg.labelled button { flex-direction: column; gap: 1px; height: 44px; font-size: 11px; padding: 0 2px; }
+.c-status { height: 30px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px; border-top: 1px solid var(--c-border); background: var(--c-chrome); }
+.c-status .c-ib { width: 24px; height: 24px; }
+.c-status .c-ib svg { width: 16px; height: 16px; }
+.c-pagefield { min-width: 28px; height: 22px; padding: 0 8px; border-radius: 5px; background: var(--c-track); display: grid; place-items: center; }
+.c-sep { width: 1px; height: 14px; background: var(--c-border); margin: 0 4px; }
+.c-menu { position: absolute; z-index: 30; width: 260px; max-height: calc(100% - 100px); overflow: auto; padding: 5px; border-radius: 8px; background: var(--c-raised); box-shadow: 0 0 0 1px var(--c-border), 0 8px 24px rgba(0, 0, 0, .16); }
+.c-mi { width: 100%; height: 32px; justify-content: flex-start; gap: 10px; padding: 0 10px; border-radius: 6px; }
+.c-mi:hover { background: var(--c-hover); }
+.c-mi svg { width: 16px; height: 16px; }
+.c-mi .k { margin-left: auto; color: var(--c-faint); font-size: 12px; }
+.c-mdiv { height: 1px; background: var(--c-border); margin: 4px 6px; }
+
+/* ---------- Proposed UI ---------- */
+.nw { background: var(--n-chrome); color: var(--n-text); }
+.n-strip { height: 40px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 10px 0 16px; }
+.n-strip .lights { margin-right: 14px; }
+.n-tabs { display: flex; gap: 4px; min-width: 0; flex: 0 1 auto; }
+.n-tab { height: 30px; width: 200px; min-width: 90px; flex: 0 1 200px; display: flex; align-items: center; gap: 8px; padding: 0 5px 0 12px; border-radius: 8px; color: var(--n-muted); }
+.n-tab:hover { background: var(--n-hover); }
+.n-tab.on { background: var(--n-surface); color: var(--n-text); box-shadow: 0 0 0 .5px var(--n-line-strong), 0 1px 2px rgba(0, 0, 0, .05); }
+.n-tab .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.n-tab .ed { width: 6px; height: 6px; border-radius: 50%; background: var(--n-faint); flex: none; }
+.n-tab .cl { width: 20px; height: 20px; border-radius: 5px; opacity: 0; flex: none; }
+.n-tab .cl svg { width: 13px; height: 13px; }
+.n-tab:hover .cl, .n-tab.on .cl, .n-tab .cl.dirty { opacity: 1; }
+/* Unsaved changes: a dot where the close button goes, as macOS does; the × on hover. */
+.n-tab .cl.dirty svg { display: none; }
+.n-tab .cl.dirty::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--n-muted); }
+.n-tab:hover .cl.dirty svg { display: block; }
+.n-tab:hover .cl.dirty::before { display: none; }
+.n-tab .cl:hover { background: var(--n-hover); }
+.n-top {
+  height: 52px; flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: 12px; padding: 0 10px 0 16px; border-bottom: 1px solid var(--n-line);
+}
+.n-strip:not([hidden]) + .n-top { height: 48px; }
+.n-left { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.n-left .lights { margin-right: 16px; }
+.n-right { display: flex; align-items: center; gap: 6px; justify-self: end; }
+.n-ib { width: 32px; height: 32px; border-radius: 8px; color: var(--n-muted); flex: none; }
+.n-ib:hover:not(:disabled) { background: var(--n-hover); color: var(--n-text); }
+.n-ib.sm { width: 28px; height: 28px; }
+.n-ib.sm svg { width: 16px; height: 16px; }
+.n-doc { height: 32px; padding: 0 6px 0 8px; border-radius: 8px; gap: 6px; min-width: 0; }
+.n-doc:hover { background: var(--n-hover); }
+.n-doc .nm { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.n-doc .ed { color: var(--n-faint); white-space: nowrap; }
+.n-doc .ed::before { content: "— "; }
+.n-doc svg { width: 14px; height: 14px; color: var(--n-faint); }
+.n-modes { display: flex; padding: 3px; gap: 2px; background: var(--n-hover); border-radius: 10px; }
+.n-modes button { height: 28px; padding: 0 13px; border-radius: 7px; color: var(--n-muted); font-weight: 500; white-space: nowrap; }
+.n-modes button:hover { color: var(--n-text); }
+.n-modes button.on { background: var(--n-surface); color: var(--n-text); box-shadow: 0 0 0 .5px var(--n-line-strong), 0 1px 3px rgba(0, 0, 0, .07); }
+.n-search { height: 32px; width: 208px; display: flex; align-items: center; gap: 6px; padding: 0 5px 0 9px; border-radius: 8px; background: var(--n-hover); color: var(--n-faint); transition: width .15s; }
+.n-search svg { width: 16px; height: 16px; }
+.n-search:focus-within, .n-search.has { width: 260px; background: var(--n-surface); box-shadow: 0 0 0 1px var(--n-accent), 0 0 0 4px var(--n-accent-soft); }
+.n-search input { flex: 1; min-width: 0; border: 0; background: none; color: var(--n-text); }
+.n-search input::placeholder { color: var(--n-faint); }
+.n-search kbd { color: var(--n-faint); padding: 3px 5px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--n-line-strong); }
+.n-search .hits { font-size: 12px; color: var(--n-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.n-search .ar { width: 22px; height: 22px; border-radius: 5px; color: var(--n-muted); }
+.n-search .ar:hover { background: var(--n-hover); }
+.n-search .ar svg { width: 14px; height: 14px; }
+.n-mid { display: flex; justify-content: center; }
+.n-modesel { display: none; height: 32px; padding: 0 8px 0 12px; border-radius: 8px; background: var(--n-hover); font-weight: 600; gap: 4px; white-space: nowrap; }
+.n-modesel svg { width: 14px; height: 14px; color: var(--n-faint); }
+.n-modesel:hover { background: var(--n-press); }
+/* Narrow windows: the modes become a menu, then search becomes a button that opens the field. */
+@container win (max-width: 1140px) {
+  .n-modes { display: none; }
+  .n-modesel { display: inline-flex; }
+}
+@container win (max-width: 900px) {
+  .n-x-zoom { display: none !important; }
+  .n-top { position: relative; }
+  .n-search { width: 32px; padding: 0; justify-content: center; background: none; cursor: default; }
+  .n-search:hover { background: var(--n-hover); }
+  .n-search input { flex: 0 0 0; width: 0; opacity: 0; }
+  .n-search kbd { display: none; }
+  .n-search:focus-within, .n-search.has { position: absolute; right: 148px; width: 250px; padding: 0 5px 0 9px; justify-content: flex-start; z-index: 3; }
+  .n-search:focus-within input, .n-search.has input { flex: 1; width: auto; opacity: 1; }
+}
+.n-save { height: 32px; padding: 0 14px; border-radius: 8px; font-weight: 600; background: var(--n-accent); color: #fff; }
+.n-save:hover { filter: brightness(1.08); }
+.n-save.clean { background: transparent; color: var(--n-muted); box-shadow: inset 0 0 0 1px var(--n-line-strong); font-weight: 500; }
+.n-body { flex: 1; display: flex; min-height: 0; }
+.n-side { width: 216px; flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--n-line); transition: margin .2s ease; }
+.n-side.closed { margin-left: -217px; }
+.n-sidetabs { display: flex; gap: 2px; padding: 10px 10px 4px; }
+.n-sidetabs button { flex: 1; height: 30px; border-radius: 7px; color: var(--n-faint); position: relative; }
+.n-sidetabs button svg { width: 17px; height: 17px; }
+.n-sidetabs button:hover { background: var(--n-hover); color: var(--n-text); }
+.n-sidetabs button.on { background: var(--n-press); color: var(--n-text); }
+.n-sidetabs .badge { position: absolute; top: 2px; right: 6px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; background: var(--n-accent); color: #fff; font-size: 10px; font-weight: 700; line-height: 15px; }
+.n-sidehead { display: flex; justify-content: space-between; padding: 8px 16px 4px; font-size: 12px; font-weight: 600; color: var(--n-muted); }
+.n-sidehead span + span { font-weight: 500; color: var(--n-faint); font-variant-numeric: tabular-nums; }
+.n-sidebody { flex: 1; overflow: auto; position: relative; padding-bottom: 16px; }
+.n-thumbs { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; }
+.n-thumb { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 8px 14px 6px; border-radius: 10px; }
+.n-thumb:hover { background: var(--n-hover); }
+.n-thumb .im { width: 112px; background: #fff; border-radius: 2px; box-shadow: 0 0 0 .5px var(--n-line-strong), 0 1px 3px rgba(0, 0, 0, .08); overflow: hidden; display: block; }
+.n-thumb .im img { width: 100%; display: block; }
+.n-thumb.on .im { box-shadow: 0 0 0 2px var(--n-chrome), 0 0 0 4px var(--n-accent); }
+.n-thumb .lb { font-size: 11.5px; color: var(--n-muted); padding: 1px 7px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.n-thumb.on .lb { background: var(--n-accent); color: #fff; font-weight: 600; }
+.n-thumb .hitc { position: absolute; top: 4px; right: 8px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #F59E0B; color: #fff; font-size: 10.5px; font-weight: 700; line-height: 18px; box-shadow: 0 0 0 2px var(--n-chrome); }
+.n-tree { display: flex; flex-direction: column; padding: 2px 8px; }
+.n-tree button { height: 30px; justify-content: space-between; padding: 0 10px; border-radius: 7px; text-align: left; }
+.n-tree button.sub { padding-left: 22px; }
+.n-tree button:hover { background: var(--n-hover); }
+.n-tree button.on { background: var(--n-accent-soft); color: var(--n-accent-fg); font-weight: 500; }
+.n-tree .pg { color: var(--n-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.n-tree button span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.n-ccard { margin: 4px 8px; padding: 10px 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 4px; text-align: left; align-items: stretch; }
+.n-ccard:hover { background: var(--n-hover); }
+.n-ccard.on { background: var(--n-accent-soft); }
+.n-ccard .top { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--n-muted); }
+.n-ccard .top svg { width: 14px; height: 14px; }
+.n-ccard .top .pg { margin-left: auto; color: var(--n-faint); }
+.n-ccard .body { font-size: 13px; color: var(--n-text); }
+.n-empty { padding: 32px 22px; text-align: center; color: var(--n-muted); display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12.5px; line-height: 1.5; }
+.n-empty svg { width: 28px; height: 28px; color: var(--n-faint); stroke-width: 1.4; }
+.n-empty b { color: var(--n-text); font-weight: 600; font-size: 13px; }
+.n-canvas { flex: 1; min-width: 0; position: relative; background: var(--n-canvas); }
+.n-scroll, .n-org { position: absolute; inset: 0; overflow: auto; }
+.n-pages { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px 40px 48px; min-width: fit-content; }
+.n-pages.two { flex-direction: row; flex-wrap: wrap; justify-content: center; align-content: flex-start; margin: 0 auto; gap: 28px 12px; }
+.n-page { box-shadow: var(--n-shadow-page); border-radius: 1px; }
+.n-pages.pc-dark .n-page { background: #1C1C1E; }
+.n-pages.pc-dark .n-page img { filter: invert(.9) hue-rotate(180deg); }
+.n-pages.pc-sepia .n-page img { filter: sepia(.45) saturate(.9) brightness(.97); }
+.n-page .ov { position: absolute; inset: 0; }
+.n-tbox { position: absolute; padding: calc(2px * var(--s)) calc(4px * var(--s)); font-family: Helvetica, Arial, sans-serif; line-height: 1.08; white-space: nowrap; border-radius: 2px; }
+.n-tbox:hover { box-shadow: 0 0 0 1px var(--n-accent); }
+.n-sel { position: absolute; inset: -2px; border: 1.5px solid var(--n-accent); border-radius: 3px; pointer-events: none; }
+.n-sel i { position: absolute; width: 8px; height: 8px; background: #fff; border: 1.5px solid var(--n-accent); border-radius: 2px; }
+.n-sel .tl { left: -5px; top: -5px; } .n-sel .tc { left: calc(50% - 4px); top: -5px; } .n-sel .tr { right: -5px; top: -5px; }
+.n-sel .ml { left: -5px; top: calc(50% - 4px); } .n-sel .mr { right: -5px; top: calc(50% - 4px); }
+.n-sel .bl { left: -5px; bottom: -5px; } .n-sel .bc { left: calc(50% - 4px); bottom: -5px; } .n-sel .br { right: -5px; bottom: -5px; }
+/* The tool row: docked under the bar, so nothing lies over the pages. */
+.n-toolrow { height: 42px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid var(--n-line); white-space: nowrap; }
+.n-tr-side { display: flex; align-items: center; gap: 2px; flex: none; }
+.n-tr-mid { flex: 1; min-width: 0; display: flex; justify-content: center; overflow: hidden; }
+.n-tools { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+.n-tb { height: 32px; min-width: 32px; padding: 0 8px; border-radius: 8px; color: var(--n-muted); gap: 6px; }
+.n-tb:hover:not(:disabled) { background: var(--n-hover); color: var(--n-text); }
+.n-tb.on { background: var(--n-accent-soft); color: var(--n-accent-fg); }
+.n-tb .lbl { font-weight: 550; font-size: 12.5px; }
+/* Every tool is named while the row has room; without it only the chosen tool keeps its name. */
+.n-toolrow.tight .n-tb[data-tool]:not(.on) .lbl { display: none; }
+.n-toolrow.nohint .n-hint, .n-toolrow.nohint .n-psep:has(+ .n-hint) { display: none; }
+.n-tb.tog.on { background: var(--n-press); color: var(--n-text); }
+.n-tb.apply { background: var(--n-danger); color: #fff; padding: 0 12px; font-weight: 600; }
+.n-tb.apply:hover:not(:disabled) { background: var(--n-danger); color: #fff; filter: brightness(1.08); }
+.n-tb.back { color: var(--n-accent-fg); font-weight: 550; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.n-tb.back svg { width: 15px; height: 15px; }
+.n-tb.danger:hover { color: var(--n-danger); background: var(--n-danger-soft); }
+.n-psep { width: 1px; height: 20px; background: var(--n-line-strong); margin: 0 4px; flex: none; }
+.n-colorbtn .dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+.n-sizebtn { color: var(--n-text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.n-count { padding: 0 8px; color: var(--n-muted); font-size: 12.5px; }
+.n-pagebox { display: flex; align-items: center; gap: 6px; padding: 0 4px; color: var(--n-muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.n-pagebox input { width: 40px; height: 26px; border-radius: 6px; border: 0; text-align: center; background: var(--n-hover); color: var(--n-text); font-weight: 600; }
+.n-pagebox input:focus { background: var(--n-surface); box-shadow: 0 0 0 2px var(--n-accent); }
+.n-zoomlbl { min-width: 54px; color: var(--n-text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.n-selbar { position: absolute; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; background: var(--n-surface); box-shadow: var(--n-shadow-pill); white-space: nowrap; z-index: 3; color: var(--n-text); font-family: "Inter Proto", system-ui, sans-serif; font-size: 13px; }
+.n-selbar .n-tb { height: 30px; min-width: 30px; }
+.n-org { padding: 28px 40px 40px; }
+.n-org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 22px 16px; max-width: 1100px; margin: 0 auto; }
+.n-ot { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 10px 10px; border-radius: 12px; }
+.n-ot:hover { background: var(--n-hover); }
+.n-ot .im { width: 124px; background: #fff; box-shadow: var(--n-shadow-page); transition: transform .2s ease; display: block; }
+.n-ot .im img { width: 100%; display: block; }
+.n-ot .lb { font-size: 12px; color: var(--n-muted); font-variant-numeric: tabular-nums; }
+.n-ot.sel { background: var(--n-accent-soft); }
+.n-ot.sel .im { box-shadow: 0 0 0 2px var(--n-accent), var(--n-shadow-page); }
+.n-ot.sel .lb { color: var(--n-accent-fg); font-weight: 600; }
+.n-insp { width: 288px; flex: none; border-left: 1px solid var(--n-line); display: flex; flex-direction: column; overflow: auto; transition: margin .2s ease; }
+.n-insp.closed { margin-right: -289px; }
+.n-ihead { display: flex; align-items: center; gap: 10px; padding: 14px 10px 14px 16px; }
+.n-ihead .ico { width: 34px; height: 34px; border-radius: 9px; background: var(--n-accent-soft); color: var(--n-accent-fg); display: grid; place-items: center; flex: none; }
+.n-ihead .ico.doc { background: var(--n-hover); color: var(--n-muted); }
+.n-ihead .tt { flex: 1; min-width: 0; }
+.n-ihead h3 { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.n-ihead .meta { font-size: 12px; color: var(--n-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.n-sec { padding: 14px 16px 16px; border-top: 1px solid var(--n-line); display: flex; flex-direction: column; gap: 12px; }
+.n-sec h4 { font-size: 12px; font-weight: 600; color: var(--n-muted); display: flex; justify-content: space-between; }
+.n-sec h4 .cnt { color: var(--n-faint); font-weight: 500; }
+.n-field { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 8px; }
+.n-field > label { color: var(--n-muted); font-size: 12.5px; }
+.n-swatches { display: flex; gap: 6px; }
+.n-sw { width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); flex: none; }
+.n-sw:hover { transform: scale(1.1); }
+.n-sw.on { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 2px var(--n-surface), 0 0 0 3.5px var(--n-accent); }
+.n-insp .n-sw.on { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 2px var(--n-chrome), 0 0 0 3.5px var(--n-accent); }
+.n-stepper { display: flex; align-items: center; height: 30px; width: 124px; border-radius: 8px; background: var(--n-surface); box-shadow: inset 0 0 0 1px var(--n-line-strong); }
+.n-stepper input { width: 100%; min-width: 0; border: 0; background: none; padding-left: 10px; color: var(--n-text); font-variant-numeric: tabular-nums; }
+.n-stepper .u { color: var(--n-faint); padding-right: 2px; }
+.n-stepper button { width: 26px; height: 28px; color: var(--n-muted); border-radius: 6px; }
+.n-stepper button:hover { color: var(--n-text); background: var(--n-hover); }
+.n-stepper button svg { width: 14px; height: 14px; }
+.n-cin { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 3px 0 8px; border-radius: 9px; background: var(--n-surface); box-shadow: inset 0 0 0 1px var(--n-line-strong); }
+.n-cin:focus-within { box-shadow: 0 0 0 1px var(--n-accent), 0 0 0 4px var(--n-accent-soft); }
+.n-cin input { flex: 1; min-width: 0; border: 0; background: none; color: var(--n-text); }
+.n-cin input::placeholder { color: var(--n-faint); }
+.n-avatar { width: 22px; height: 22px; border-radius: 50%; background: #7C3AED; color: #fff; font-size: 10.5px; font-weight: 700; display: grid; place-items: center; flex: none; }
+.n-cmt { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.n-cmt .who { font-size: 12px; color: var(--n-muted); }
+.n-cmt .who b { color: var(--n-text); font-weight: 600; }
+.n-hintline { font-size: 12.5px; color: var(--n-faint); }
+.n-kv { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; font-size: 12.5px; }
+.n-kv dt { color: var(--n-muted); }
+.n-kv dd { text-align: right; font-variant-numeric: tabular-nums; }
+.n-ifoot { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--n-line); display: flex; gap: 8px; align-items: center; }
+.n-ifoot .sp { flex: 1; }
+.n-btn { height: 30px; padding: 0 12px; border-radius: 8px; font-weight: 500; background: var(--n-surface); box-shadow: inset 0 0 0 1px var(--n-line-strong); }
+.n-btn:hover { background: var(--n-hover); }
+.n-btn svg { width: 15px; height: 15px; }
+.n-btn.danger { color: var(--n-danger); background: none; box-shadow: none; }
+.n-btn.danger:hover { background: var(--n-danger-soft); }
+.n-toast {
+  position: absolute; left: 50%; bottom: 22px; z-index: 20; display: flex; align-items: center; gap: 10px; padding: 7px 7px 7px 14px;
+  border-radius: 10px; background: #18181B; color: #fff; font-size: 12.5px; box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+  opacity: 0; transform: translate(-50%, 8px); transition: opacity .18s, transform .18s; pointer-events: none; white-space: nowrap;
+}
+.n-toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.n-toast button { color: #93C5FD; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
+.n-toast button:hover { background: rgba(255, 255, 255, .1); }
+.n-toast:not(:has(button)) { padding-right: 14px; }
+.pop { position: absolute; z-index: 30; background: var(--n-surface); border-radius: 12px; box-shadow: var(--n-shadow-pop); padding: 5px; min-width: 190px; color: var(--n-text); }
+.pop .mi { width: 100%; height: 30px; padding: 0 10px 0 8px; border-radius: 7px; justify-content: flex-start; gap: 10px; white-space: nowrap; }
+.pop .mi:hover { background: var(--n-hover); }
+.pop .mi svg { width: 16px; height: 16px; color: var(--n-muted); }
+.pop .mi .ck { width: 16px; display: inline-flex; color: var(--n-accent-fg); }
+.pop .mi .ck svg { color: var(--n-accent-fg); stroke-width: 2.4; width: 14px; height: 14px; }
+.pop .mi .k { margin-left: auto; padding-left: 18px; color: var(--n-faint); font-size: 12px; }
+.pop .sep { height: 1px; background: var(--n-line); margin: 5px 8px; }
+.pop .hd { font-size: 11.5px; font-weight: 600; color: var(--n-faint); padding: 7px 10px 3px; }
+.pop.sw { display: flex; gap: 8px; padding: 10px 12px; min-width: 0; }
+.n-scrim { position: absolute; inset: 0; z-index: 35; background: rgba(0, 0, 0, .16); display: flex; justify-content: center; align-items: flex-start; padding-top: 84px; }
+html[data-theme="dark"] .n-scrim { background: rgba(0, 0, 0, .4); }
+.n-pal { width: min(600px, calc(100% - 48px)); max-height: min(540px, calc(100% - 130px)); display: flex; flex-direction: column; background: var(--n-surface); border-radius: 14px; box-shadow: var(--n-shadow-pop); overflow: hidden; color: var(--n-text); }
+.n-pal .q { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--n-line); color: var(--n-faint); flex: none; }
+.n-pal .q input { flex: 1; border: 0; background: none; font-size: 15px; color: var(--n-text); }
+.n-pal kbd { color: var(--n-faint); padding: 3px 5px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--n-line-strong); }
+.n-pal .list { overflow: auto; padding: 4px 6px 8px; }
+.n-pal .grp { font-size: 11.5px; font-weight: 600; color: var(--n-faint); padding: 10px 10px 4px; }
+.n-pal .it { width: 100%; height: 36px; justify-content: flex-start; gap: 12px; padding: 0 10px; border-radius: 8px; }
+.n-pal .it svg { color: var(--n-muted); }
+.n-pal .it.act { background: var(--n-accent-soft); }
+.n-pal .it.act svg { color: var(--n-accent-fg); }
+.n-pal .it .d { color: var(--n-faint); font-size: 12px; }
+.n-pal .it kbd { margin-left: auto; }
+.n-pal .none { padding: 24px; text-align: center; color: var(--n-faint); }
+.n-pal .foot { border-top: 1px solid var(--n-line); padding: 8px 14px; font-size: 11.5px; color: var(--n-faint); display: flex; gap: 14px; flex: none; }
+/* Objects of the Edit mode, placed signatures, the vim line, the system title bar. */
+.n-eobj { position: absolute; border-radius: 2px; }
+.n-eobj:hover { box-shadow: 0 0 0 1px var(--n-accent); }
+.n-stamp { position: absolute; white-space: nowrap; line-height: 1; color: #1E3A8A; transform: translate(-50%, -50%); pointer-events: none; }
+.n-stamp.k-sig, .n-sig .ink { font-family: "Snell Roundhand", "Savoye LET", "Brush Script MT", cursive; font-weight: 700; }
+.n-stamp.k-date, .n-stamp.k-check { font-family: Helvetica, Arial, sans-serif; color: #18181B; }
+.n-pages.stamping .n-page { cursor: crosshair; }
+.n-vim { position: absolute; left: 12px; bottom: 12px; z-index: 5; display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px 0 4px; border-radius: 7px; background: var(--n-surface); box-shadow: var(--n-shadow-pill); font: 500 12px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--n-text); }
+.n-vim .md { padding: 4px 6px; border-radius: 4px; background: var(--n-hover); color: var(--n-muted); font-weight: 700; }
+.n-vim .md.cmd { background: var(--n-accent-soft); color: var(--n-accent-fg); }
+.n-ostitle { height: 30px; flex: none; display: flex; align-items: center; padding-left: 12px; font-size: 12px; color: var(--n-muted); background: var(--n-chrome); border-bottom: 1px solid var(--n-line); }
+.n-ostitle .wb { margin-left: auto; display: flex; }
+.n-ostitle .wb span { width: 44px; height: 30px; display: grid; place-items: center; }
+.n-ostitle .wb svg { width: 13px; height: 13px; stroke-width: 1.4; }
+.nw[data-os="win"] .lights { display: none; }
+.n-doc .lk { display: inline-flex; color: var(--n-muted); }
+.n-doc .lk svg { width: 13px; height: 13px; color: var(--n-muted); }
+/* Inspector panels of the tools that keep a list. */
+.n-seg { display: flex; padding: 2px; gap: 2px; border-radius: 8px; background: var(--n-hover); }
+.n-seg button { flex: 1; height: 26px; padding: 0 8px; border-radius: 6px; color: var(--n-muted); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.n-seg button.on { background: var(--n-surface); color: var(--n-text); box-shadow: 0 0 0 .5px var(--n-line-strong), 0 1px 2px rgba(0, 0, 0, .06); }
+.n-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; justify-content: flex-start; text-align: left; }
+.n-check .bx { width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 0 0 1.5px var(--n-faint); display: grid; place-items: center; flex: none; }
+.n-check.on .bx { background: var(--n-accent); box-shadow: none; color: #fff; }
+.n-check .bx svg { width: 11px; height: 11px; stroke-width: 3; visibility: hidden; }
+.n-check.on .bx svg { visibility: visible; }
+.n-input { height: 30px; width: 100%; padding: 0 10px; border: 0; border-radius: 8px; background: var(--n-surface); box-shadow: inset 0 0 0 1px var(--n-line-strong); color: var(--n-text); }
+.n-input:focus { box-shadow: 0 0 0 1px var(--n-accent), 0 0 0 4px var(--n-accent-soft); }
+.n-input::placeholder { color: var(--n-faint); }
+.n-rowx { display: flex; gap: 8px; align-items: center; }
+.n-rowx .sp { flex: 1; }
+.n-sig { height: 62px; border-radius: 10px; background: var(--n-surface); box-shadow: inset 0 0 0 1px var(--n-line-strong); position: relative; }
+.n-sig .ink { font-size: 26px; color: #1E3A8A; }
+.n-sig.on { box-shadow: inset 0 0 0 2px var(--n-accent); }
+.n-sig .nm { position: absolute; left: 9px; bottom: 5px; font-size: 10.5px; color: var(--n-faint); }
+.n-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.n-grid2 .n-btn { justify-content: flex-start; gap: 8px; padding: 0 9px; font-size: 12.5px; }
+.n-grid2 .n-btn svg { color: var(--n-muted); }
+.n-btn.on { box-shadow: inset 0 0 0 1.5px var(--n-accent); color: var(--n-accent-fg); }
+.n-btn.primary { background: var(--n-danger); color: #fff; box-shadow: none; font-weight: 600; flex: 1; }
+.n-btn.primary:hover { background: var(--n-danger); filter: brightness(1.08); }
+.n-found { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--n-muted); }
+.n-found .sp { flex: 1; }
+.n-arr { display: flex; gap: 4px; }
+.n-arr .n-btn { flex: 1; padding: 0; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="proto">
+  <b>Pagebara</b><span class="lbl">UI prototype</span>
+  <div class="pseg" id="p-ver"><button data-v="cur">Current</button><button data-v="new">Proposed</button></div>
+  <label><input type="checkbox" id="p-notes"> Notes</label>
+  <div class="grp"><span class="lbl">Theme</span><div class="pseg" id="p-theme"><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+  <div class="grp"><span class="lbl">Window</span><div class="pseg" id="p-size"><button data-v="fill">Fill</button><button data-v="1280">1280×820</button><button data-v="960">960×640</button></div></div>
+  <div class="grp" id="p-osgrp"><span class="lbl">System</span><div class="pseg" id="p-os"><button data-v="mac">macOS</button><button data-v="win">Windows · Linux</button></div></div>
+  <span class="sp"></span>
+  <span class="hint" id="p-hint"></span>
+</div>
+
+<div class="stage">
+  <div class="frame" id="frame">
+
+    <!-- ======================= CURRENT ======================= -->
+    <div class="win cur" id="cur" hidden>
+      <div class="c-titlebar"><div class="lights"><i></i><i></i><i></i></div><span class="c-wtitle">• report.pdf — Pagebara</span></div>
+      <div class="c-tabs">
+        <div class="c-tab on"><span class="dot"></span><span class="name">report.pdf</span><button><i data-i="x"></i></button></div>
+        <button class="c-ib"><i data-i="plus"></i></button>
+      </div>
+      <div class="c-toolbar">
+        <div class="c-start">
+          <button class="c-ib checked" id="c-side" data-tip="Show sidebar"><i data-i="sidebar"></i></button>
+          <div class="c-title"><b>report.pdf</b><span>12 pages · Unsaved changes</span></div>
+        </div>
+        <div class="c-seg-tools" id="c-tools"></div>
+        <div class="c-end">
+          <button class="c-ib" data-tip="Undo Add text box"><i data-i="undo"></i></button>
+          <button class="c-ib" data-tip="Redo" disabled><i data-i="redo"></i></button>
+          <span class="c-div"></span>
+          <button class="c-ib c-x-zoom" id="c-zout" data-tip="Zoom out"><i data-i="minus"></i></button>
+          <button class="c-zoom" id="c-zlbl">88%</button>
+          <button class="c-ib c-x-zoom" id="c-zin" data-tip="Zoom in"><i data-i="plus"></i></button>
+          <span class="c-div"></span>
+          <button class="c-ib" data-tip="Search"><i data-i="search"></i></button>
+          <button class="c-ib c-x-read" data-tip="Read aloud" data-k="⇧⌘V"><i data-i="speaker"></i></button>
+          <button class="c-ib" data-tip="Reading options"><i data-i="book"></i></button>
+          <button class="c-ib c-x-theme" id="c-theme" data-tip="Switch to dark mode"><i data-i="moon"></i></button>
+          <button class="c-ib" id="c-more" data-tip="More"><i data-i="more"></i></button>
+          <button class="c-save">Save</button>
+        </div>
+      </div>
+      <div class="c-body">
+        <aside class="c-sidebar" id="c-sidebar">
+          <div class="c-seg" id="c-sidetabs"><button class="on" data-t="pages">Pages</button><button data-t="outline">Outline</button><button data-t="comments">Comments</button></div>
+          <div class="c-sidebody" id="c-sidebody"></div>
+        </aside>
+        <div class="c-canvas" id="c-canvas"><div class="c-pages" id="c-pages"></div></div>
+        <aside class="c-panel" id="c-panel"></aside>
+      </div>
+      <div class="c-status">
+        <button class="c-ib" data-tip="Back"><i data-i="chevL"></i></button>
+        <button class="c-ib" data-tip="Forward"><i data-i="chevR"></i></button>
+        <span>Page</span><span class="c-pagefield" id="c-pagefield">i</span><span id="c-pageof">(1 of 12)</span>
+        <span class="c-sep"></span><span class="c-pagesize">Letter · 216 × 279 mm</span>
+      </div>
+      <div class="c-menu" id="c-menu" hidden></div>
+      <div class="pins"></div>
+    </div>
+
+    <!-- ======================= PROPOSED ======================= -->
+    <div class="win nw" id="nw">
+      <div class="n-ostitle" id="n-ostitle" hidden><span id="n-ostext">report.pdf — Pagebara</span><div class="wb"><span><i data-i="minus"></i></span><span><i data-i="rect"></i></span><span><i data-i="x"></i></span></div></div>
+      <div class="n-strip" id="n-strip" hidden>
+        <div class="lights"><i></i><i></i><i></i></div>
+        <div class="n-tabs" id="n-tabs"></div>
+        <button class="n-ib sm" data-act="open" data-tip="Open" data-k="⌘O"><i data-i="plus"></i></button>
+      </div>
+      <header class="n-top">
+        <div class="n-left">
+          <div class="lights" id="n-lights"><i></i><i></i><i></i></div>
+          <button class="n-ib" data-act="side" data-tip="Sidebar" data-k="⌘\"><i data-i="sidebar"></i></button>
+          <button class="n-doc" id="n-doc" data-act="docmenu"><span class="nm">report.pdf</span><span class="lk" hidden><i data-i="lock"></i></span><span class="ed">Edited</span><i data-i="chevD"></i></button>
+        </div>
+        <div class="n-mid"><nav class="n-modes" id="n-modes"></nav><button class="n-modesel" id="n-modesel" data-act="modemenu"></button></div>
+        <div class="n-right">
+          <label class="n-search" id="n-search"><i data-i="search"></i><input id="n-q" placeholder="Search" spellcheck="false" autocomplete="off"><span class="hits" id="n-hits"></span><button class="ar" id="n-prev" data-act="hitprev" hidden><i data-i="chevU"></i></button><button class="ar" id="n-next" data-act="hitnext" hidden><i data-i="chevD"></i></button><kbd id="n-qk">⌘F</kbd></label>
+          <button class="n-ib" id="n-all" data-act="palette" data-tip="All tools" data-k="⌘K"><i data-i="grid"></i></button>
+          <button class="n-save" id="n-save" data-act="save">Save</button>
+          <button class="n-ib" data-act="insp" data-tip="Inspector" data-k="⌥⌘I"><i data-i="panelright"></i></button>
+        </div>
+      </header>
+      <div class="n-toolrow" id="n-toolrow">
+        <div class="n-tr-side" id="n-hist"></div>
+        <div class="n-tr-mid" id="n-trmid"><div class="n-tools" id="n-toolpill"></div></div>
+        <div class="n-tr-side" id="n-navpill">
+          <button class="n-tb back" data-act="back" id="n-back" hidden></button>
+          <button class="n-tb" data-act="pprev" id="n-pprev" data-tip="Previous page"><i data-i="chevL"></i></button>
+          <div class="n-pagebox"><input id="n-pin" value="i" spellcheck="false" aria-label="Page"><span id="n-pof">1 of 12</span></div>
+          <button class="n-tb" data-act="pnext" id="n-pnext" data-tip="Next page"><i data-i="chevR"></i></button>
+          <span class="n-psep"></span>
+          <button class="n-tb n-x-zoom" data-act="zout" data-tip="Zoom out" data-k="⌘−"><i data-i="minus"></i></button>
+          <button class="n-tb n-zoomlbl" id="n-zlbl" data-act="zmenu">88%</button>
+          <button class="n-tb n-x-zoom" data-act="zin" data-tip="Zoom in" data-k="⌘+"><i data-i="plus"></i></button>
+          <button class="n-tb" data-act="viewmenu" data-tip="Layout and page colour"><i data-i="layout"></i></button>
+        </div>
+      </div>
+      <div class="n-body">
+        <aside class="n-side" id="n-side">
+          <div class="n-sidetabs" id="n-sidetabs"></div>
+          <div class="n-sidebody" id="n-sidebody"></div>
+        </aside>
+        <main class="n-canvas" id="n-canvas">
+          <div class="n-scroll" id="n-scroll"><div class="n-pages" id="n-pages"></div></div>
+          <div class="n-org" id="n-org" hidden><div class="n-org-grid" id="n-org-grid"></div></div>
+          <div class="n-vim" id="n-vim" hidden></div>
+          <div class="n-toast" id="n-toast"></div>
+        </main>
+        <aside class="n-insp" id="n-insp"></aside>
+      </div>
+      <div class="pins"></div>
+    </div>
+
+  </div>
+  <aside class="notes" id="notes"></aside>
+</div>
+
+<script src="pages/text.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const PT = 96 / 72;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ------------------------------------------------------------------ icons */
+const ICONS = {
+  sidebar: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/>',
+  panelright: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M14.5 4v16"/>',
+  select: '<path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.13 1.58a2 2 0 0 0-1.43 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/>',
+  highlight: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
+  squiggle: '<path d="M3 16c2.5-5 4.5-9 6.5-9S11 16 13.5 16 17 8 21 7"/>',
+  pen: '<path d="M21.17 6.81a2.82 2.82 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/>',
+  text: '<path d="M5 7V5h14v2"/><path d="M9 19h6"/><path d="M12 5v14"/>',
+  signature: '<path d="M3 16c3.5 0 4-11 6.5-11S9 17 12 17c1.6 0 2-3 3.5-3s1.2 2 2.5 2 1.5-1 3-1"/><path d="M3 20.5h18"/>',
+  form: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  edit: '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12.4 14.6 8 16l1.4-4.4z"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  minus: '<path d="M5 12h14"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  speaker: '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+  book: '<path d="M12 7v14"/><path d="M3 18V4h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6v14h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  more: '<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  chevL: '<path d="m15 18-6-6 6-6"/>',
+  chevR: '<path d="m9 18 6-6-6-6"/>',
+  chevD: '<path d="m6 9 6 6 6-6"/>',
+  chevU: '<path d="m18 15-6-6-6 6"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/>',
+  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/>',
+  strike: '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><path d="M4 12h16"/>',
+  rect: '<rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/>',
+  ellipse: '<ellipse cx="12" cy="12" rx="9" ry="7"/>',
+  line: '<path d="M5 19 19 5"/>',
+  arrow: '<path d="M5 19 19 5"/><path d="M10 5h9v9"/>',
+  note: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  eyeoff: '<path d="M10.7 5.1A10 10 0 0 1 22 12a13 13 0 0 1-1.7 2.6"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10 10 0 0 1 2 12a13 13 0 0 1 4.5-5.5"/><path d="m2 2 20 20"/>',
+  redact: '<rect x="3" y="5" width="18" height="6" rx="1.5" fill="currentColor"/><path d="M3 15.5h18M3 19.5h12"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  shieldcheck: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h8M7 12h10M7 16h6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  printer: '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',
+  save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/>',
+  rotl: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  rotr: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  outline: '<path d="M8 6h13M12 12h9M12 18h9"/><path d="M3 6h1M7 12h1M7 18h1"/>',
+  comment: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  pages: '<rect x="7" y="3" width="13" height="16" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h10"/>',
+  present: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  initials: '<path d="M3 18 7 6l4 12M4.4 14h5.2"/><path d="M14 6h3.5a3 3 0 0 1 0 6H14zM14 12h4a3 3 0 0 1 0 6h-4z"/>',
+  seal: '<circle cx="12" cy="9" r="6"/><path d="m9 14.5-1.5 7L12 19l4.5 2.5-1.5-7"/>',
+  fileplus: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>',
+  fileout: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 15h7M12.5 12l3 3-3 3"/>',
+  file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+  compare: '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/><path d="M12 2v20"/>',
+  access: '<circle cx="12" cy="4.5" r="1.8"/><path d="m5 8.5 7 1.5 7-1.5M12 10v5l-3 6M12 15l3 6"/>',
+  compress: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
+  archive: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>',
+  stamp: '<path d="M5 21h14"/><path d="M19 13.5a2.5 2.5 0 0 0-2.5-2.5h-9A2.5 2.5 0 0 0 5 13.5V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/><path d="M14 11V8.5c0-1.5 1-1.5 1-3.5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V11"/>',
+  header: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18M3 16h18"/>',
+  hash: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+  layers: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  keyboard: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 16h8M10 13h4"/>',
+  folder: '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>',
+  library: '<path d="m16 6 4 14M12 6v14M8 8v12M4 4v16"/>',
+  combine: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M7 11v4a2 2 0 0 0 2 2h4M17 13V9a2 2 0 0 0-2-2h-4"/>',
+  properties: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  organize: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+  textcursor: '<path d="M17 22h-1a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4h1M7 22h1a4 4 0 0 0 4-4v-1M7 2h1a4 4 0 0 1 4 4v1"/>',
+  textadd: '<path d="M4 7V5h11v2M9.5 5v14M7 19h5"/><path d="M18 13v8M14 17h8"/>',
+  fit: '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  formadd: '<rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="10" height="6" rx="1.5"/><path d="M18 14v6M15 17h6"/>',
+  layout: '<rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  wand: '<path d="m21.6 2.4-1.2-1.2a1.2 1.2 0 0 0-1.7 0L1.2 18.7a1.2 1.2 0 0 0 0 1.7l1.2 1.2a1.2 1.2 0 0 0 1.7 0L21.6 4.1a1.2 1.2 0 0 0 0-1.7M14 7l3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9"/>',
+};
+const ic = (n, cls = "") => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ""}</svg>`;
+function hydrate(root = document) {
+  $$("i[data-i]", root).forEach(e => { e.outerHTML = ic(e.dataset.i, e.className); });
+}
+
+/* ------------------------------------------------------------------ data */
+const SW = ["#FACC15", "#4ADE80", "#60A5FA", "#F472B6", "#FB923C", "#DC2626", "#18181B"];
+const SWN = ["Yellow", "Green", "Blue", "Pink", "Orange", "Red", "Black"];
+const pad = n => String(n).padStart(2, "0");
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const DOCS = {
+  report: {
+    name: "report.pdf", w: 612, h: 792, size: "Letter · 8.5 × 11 in", bytes: "18 KB", edited: true,
+    labels: ["i", "ii", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    src: i => `pages/page-${pad(i + 1)}.png`,
+    outline: [["Quarterly report", 0, 0], ["Contents", 1, 0], ["Summary", 2, 0], ["Revenue", 4, 0], ["Costs", 6, 0], ["Customers", 8, 0], ["Outlook", 10, 0], ["Appendix: tables", 11, 0]],
+  },
+  lease: {
+    name: "lease.pdf", w: 595, h: 842, size: "A4 · 210 × 297 mm", bytes: "8 KB", edited: false,
+    labels: ["1", "2", "3", "4"],
+    src: i => `pages/lease-${i + 1}.png`,
+    outline: [["Residential lease agreement", 0, 0], ["1. Parties", 0, 1], ["2. Term", 0, 1], ["3. Rent", 0, 1], ["4. Deposit", 1, 1], ["Signatures", 2, 0], ["Schedule A: payment details", 3, 0]],
+  },
+};
+const TEXT = window.PAGE_TEXT || {};
+
+/* ------------------------------------------------------------------ prototype shell */
+const P = { ver: "cur", notes: true, theme: "light", size: "fill", os: "mac" };
+(function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  for (const k of Object.keys(P)) if (h.has(k)) P[k] = k === "notes" ? h.get(k) !== "0" : h.get(k);
+})();
+function writeHash() {
+  history.replaceState(null, "", "#" + new URLSearchParams({ ver: P.ver, notes: P.notes ? 1 : 0, theme: P.theme, size: P.size, os: P.os }));
+}
+function segOn(sel, v) { $$(sel + " button").forEach(b => b.classList.toggle("on", b.dataset.v === v)); }
+function applyProto() {
+  document.documentElement.dataset.theme = P.theme;
+  $("#cur").hidden = P.ver !== "cur";
+  $("#nw").hidden = P.ver !== "new";
+  $("#frame").dataset.size = P.size;
+  segOn("#p-ver", P.ver); segOn("#p-theme", P.theme); segOn("#p-size", P.size); segOn("#p-os", P.os);
+  // The system switch is about the proposal: where the window buttons and the menu bar go.
+  $("#p-osgrp").hidden = P.ver !== "new";
+  $("#nw").dataset.os = P.os;
+  $("#n-ostitle").hidden = P.os === "mac";
+  $("#p-notes").checked = P.notes;
+  $("#notes").hidden = !P.notes;
+  $("#p-hint").textContent = P.ver !== "new" ? "The Slint UI as it is today, rebuilt in HTML"
+    : nw.vim ? "Vim keys on · :3 goes to a page · /text searches · j k scroll · n next hit"
+    : "⌘K all tools · ⌘F search · V H P T N tools · ⌘\\ sidebar · ⌫ deletes";
+  curThemeIcon();
+  renderNotes();
+  writeHash();
+  if (P.size !== lastSize) { lastSize = P.size; nwRender(); }
+  requestAnimationFrame(() => { curPlaceTools(); autoFit(); fitRow(); schedulePins(); });
+}
+let lastSize = null;
+$("#p-ver").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { P.ver = b.dataset.v; closePop(); applyProto(); } });
+$("#p-theme").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { P.theme = b.dataset.v; applyProto(); } });
+$("#p-size").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { P.size = b.dataset.v; applyProto(); } });
+$("#p-os").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { P.os = b.dataset.v; applyProto(); } });
+$("#p-notes").addEventListener("change", e => { P.notes = e.target.checked; applyProto(); });
+
+/* ------------------------------------------------------------------ review notes */
+const NOTES_CUR = [
+  { sel: ".c-tabs", at: "tl", dx: 190, dy: 17, t: "Three bars before the page", d: "A title bar, a tab strip holding a single tab and the toolbar stack 114px above the page. With the status bar, a sixth of an 820px window is chrome." },
+  { sel: ".c-title", at: "tr", dx: 14, dy: 10, t: "The file name, three times", d: "Window title, tab and toolbar all say report.pdf. “Unsaved changes” is small grey text under the third copy." },
+  { sel: "#c-tools", at: "tl", dx: -16, dy: 17, t: "Tools are icons that look alike", d: "Highlight, Draw and Sign are all pen strokes; Fill forms and Edit read as “document” and “resize”. Names show only on hover." },
+  { sel: "#c-tools button:last-child", at: "tr", dx: 18, dy: 6, t: "The tool set is split", d: "Edit is a tool here and an item in ⋯. Redact and Prepare form are tools that live only in ⋯. Nothing shows what the app can do." },
+  { sel: ".c-end", at: "bl", dx: 10, dy: 10, t: "Eleven buttons, equal weight", d: "Undo, redo, zoom, search, read aloud, reading options, theme, ⋯ and Save share one row. Theme and read aloud are rare, yet always on screen." },
+  { sel: "#c-more", at: "bc", dx: 0, dy: 10, t: "⋯ is a junk drawer", d: "24 items mixing app (Settings, About, Discord), file (Open, recents, Print, Close), document (Protect, Properties) and tools, plus an “Output tools ›” page. On macOS none of it is in the menu bar." },
+  { sel: "#c-panel", at: "tl", dx: 168, dy: 23, t: "Picking a tool opens a panel", d: "Highlight or Draw opens a 300px panel for a row of colours and a sentence of help. The page area shrinks when you leave Select (the panel keeps one width between tools), and the options are far from the pointer." },
+  { sel: ".c-slider", at: "tc", dx: 0, dy: -14, t: "Flat hierarchy in Properties", d: "“Properties”, “Text box”, the author line and every label share size and weight. Font size is a slider pinned at its 48 pt maximum, the knob hanging off the edge." },
+  { sel: ".c-textarea", at: "tr", dx: -16, dy: 16, t: "The box's text, again, as a comment", d: "The text box's own text shows up in a Comment field, followed by a reply thread for your own box. Delete is a neutral, full-width button at the bottom." },
+  { sel: "#c-sidebody", at: "tr", dx: -18, dy: 14, t: "Small thumbnails", d: "Two columns of 88px thumbnails with wide gaps: pages of text look alike at this size. The current page is ringed and kept in view, which works." },
+  { sel: "#c-pagefield", at: "tc", dx: 0, dy: -14, t: "Labels and numbers mixed", d: "“Page [i] (1 of 12)” here, “Page i” in the panel, while the thumbnail labelled “1” is the third page." },
+  { sel: ".c-pagesize", at: "tr", dx: 16, dy: 9, t: "Navigation and zoom far apart", d: "Zoom is in the toolbar, page navigation in the status bar, whose remaining space holds the page size in millimetres." },
+  { sel: ".c-page", at: "tl", dx: 0, dy: 240, t: "The page doesn't stand out", d: "A white page on #F1F1F3, 16px under the toolbar. Its shadow is two faint steps (11% and 5%), kept cheap for the software renderer, so the edge is hard to find." },
+  { sel: ".c-tbox", at: "br", dx: -18, dy: -18, t: "The selection doesn't fit", d: "The text box frame is twice the size of its text, with four small corner handles." },
+  { sel: "#c-side", at: "bc", dx: 0, dy: 10, t: "Mixed greys and states", d: "Four greys (title bar, tab strip, toolbar, canvas) and borders everywhere. The sidebar toggle's “on” uses the accent tint, like a chosen tool." },
+];
+const NOTES_NEW = [
+  { sel: "#n-doc", at: "bc", dx: 0, dy: 10, t: "One bar for the window", d: "Title bar and toolbar are one 52px row, with “— Edited” next to the name as macOS does. Tabs appear only with two or more documents: try Open another… in the title menu. Windows and Linux keep their title bar: see the System switch above." },
+  { sel: ".n-mid", at: "tl", dx: -14, dy: 16, t: "Modes group the features", d: "View, Annotate, Edit, Fill & Sign and Organize. Redact, Prepare form and Organize are no longer menu items." },
+  { sel: "#n-toolpill", at: "tl", dx: -14, dy: 16, t: "A tool row with names", d: "The mode's tools sit in a 42px row under the bar, each with its name; in a narrow window only the chosen tool keeps it. Colour and size are next to the tool, and the tool's hint is here too. Nothing lies over the pages." },
+  { sel: "#n-navpill", at: "tl", dx: -14, dy: 16, t: "Page and zoom together", d: "Undo on the left, page and zoom on the right, in every mode. The status bar is gone, and each thing it did has a place: messages are toasts, Back appears here after a jump, a lock sits by the name of a protected file, the vim line shows at the bottom left of the pages (turn vim keys on in ⌘K)." },
+  { sel: "#n-all", at: "bc", dx: 0, dy: 10, t: "All tools, ⌘K", d: "Every command of the old ⋯ menu, grouped and searchable, recent files and About included. On macOS the same commands are also in the menu bar; on Windows and Linux this list is where they live." },
+  { sel: '.n-right [data-act="insp"]', at: "bc", dx: 0, dy: 10, t: "The inspector stays closed until needed", d: "With it closed the page is wider than today, and a selection gets a small bar beside it instead. It opens by itself only for the tools that keep a list (signatures, redaction marks, form fields) and closes when you leave them. This button pins it open." },
+  { sel: "#n-insp .n-sec", at: "tr", dx: -18, dy: 22, t: "Clear hierarchy", d: "Type icon, name and meta on top; sections with small headings; a size stepper that takes typed values; comments kept apart from the box's text; Delete in red. Sign, Redact, Prepare form and a selected object of the Edit mode use the same layout." },
+  { sel: ".n-thumbs", at: "tc", dx: 72, dy: 14, t: "Larger thumbnails", d: "One column at 112px: easier to tell pages apart, at the cost of four on screen instead of eight. The ring and keeping the current page in view are as today. New: hit counts while searching, and a count on Comments." },
+  { sel: ".n-page", at: "tl", dx: 0, dy: 320, t: "The page stands out", d: "A darker canvas does the work; the shadow stays two crisp steps, as cheap to draw as today's. The selection hugs its content, with eight handles." },
+  { sel: "#n-search", at: "tl", dx: -14, dy: 16, t: "Search in the bar", d: "⌘F focuses it. The match count and arrows appear inline, and thumbnails show how many hits each page has. Try “revenue”." },
+  { sel: "#n-save", at: "bc", dx: 0, dy: 10, t: "Save says what it means", d: "Accent only with unsaved changes; quiet otherwise. As today." },
+];
+function noteList() { return P.ver === "cur" ? NOTES_CUR : NOTES_NEW; }
+function noteNum(i) { return P.ver === "cur" ? String(i + 1) : String.fromCharCode(65 + i); }
+function renderNotes() {
+  const cur = P.ver === "cur";
+  const g = cur ? "" : " g";
+  $("#notes").innerHTML =
+    `<h2>${cur ? "Review of the current UI" : "The proposed UI"}</h2>` +
+    `<p class="lead">${cur
+      ? "Numbers match the red pins; hover a note to find its spot. The mock follows the Slint sources and was checked against the app at 1280×820 with this document; it uses real page renders. Tools, ⋯, the sidebar tabs and zoom work."
+      : "Letters match the green pins. Live: modes, tools, colour and size, selecting and deleting the text box, placing a signature, finding text to redact, selecting the title in Edit, thumbnails, zoom, search, ⌘K, and Organize."}</p>` +
+    noteList().map((n, i) => `<div class="note${g}" data-n="${i}"><span class="num${g}">${noteNum(i)}</span><div><h3>${n.t}</h3><p>${n.d}</p></div></div>`).join("") +
+    (cur ? "" : `<h5>What it costs</h5><ul>
+      <li>Chrome above and below the page: 94px instead of 144px (title bar, tab strip, toolbar, status bar). With two documents the tab strip returns: 130px.</li>
+      <li>One more click for a tool in another mode; the letter keys go straight to it.</li>
+      <li>The inspector still moves the page when Sign, Redact or Prepare form opens it, as the panel does today.</li></ul>
+      <h5>In Slint</h5><ul>
+      <li>One bar: new work. The window-attributes hook that <code>os.rs</code> uses for background runs can pass winit's <code>with_titlebar_transparent</code> and <code>with_fullsize_content_view</code>. winit 0.30 cannot centre the window buttons in a taller bar, so that needs a few lines of AppKit, and dragging the window by the bar has to be tried.</li>
+      <li>Menu bar: Slint's <code>MenuBar</code>, native on macOS. The app has none today.</li>
+      <li>Tool row, inspector and popovers: layouts and <code>PopupWindow</code>, as now. No blur and nothing floating over the scrolling pages.</li></ul>
+      <h5>Not covered</h5><ul><li>Right-to-left, high contrast and larger text. Phones and tablets have their own UI in <code>apps/mobile</code>.</li></ul>`);
+}
+$("#notes").addEventListener("mouseover", e => { const n = e.target.closest(".note"); markNote(n ? +n.dataset.n : -1); });
+$("#notes").addEventListener("mouseleave", () => markNote(-1));
+let marked = -1;
+function markNote(i) {
+  if (i === marked) return;
+  marked = i;
+  $$(".mark-on").forEach(el => el.classList.remove("mark-on", "g-mark"));
+  $$(".note").forEach(n => n.classList.toggle("on", +n.dataset.n === i));
+  $$(".pin").forEach(p => p.classList.toggle("on", +p.dataset.n === i));
+  if (i < 0) return;
+  const win = P.ver === "cur" ? $("#cur") : $("#nw");
+  const el = $(noteList()[i].sel, win);
+  if (el) el.classList.add("mark-on", ...(P.ver === "cur" ? [] : ["g-mark"]));
+}
+let pinRaf = 0;
+function schedulePins() { cancelAnimationFrame(pinRaf); pinRaf = requestAnimationFrame(placePins); }
+function placePins() {
+  $$(".pins").forEach(p => { p.innerHTML = ""; });
+  if (!P.notes) return;
+  const win = P.ver === "cur" ? $("#cur") : $("#nw");
+  const wr = win.getBoundingClientRect();
+  const layer = $(".pins", win);
+  noteList().forEach((n, i) => {
+    const el = $(n.sel, win);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height || r.left >= wr.right - 4 || r.right <= wr.left + 4) return;
+    // Clip to the visible part of the element's scroll box.
+    const box = el.closest(".c-canvas, .n-scroll, .c-sidebody, .n-sidebody");
+    const br = box && !box.contains(el) ? null : box ? box.getBoundingClientRect() : wr;
+    // The pin's centre: a corner or edge of the element ("tl", "tr", "bl", "br", "tc", "bc"), moved by dx, dy.
+    const at = n.at || "tl";
+    const ax = at.endsWith("l") ? r.left : at.endsWith("r") ? r.right : r.left + r.width / 2;
+    const ay = at.startsWith("t") ? r.top : r.bottom;
+    let x = ax - wr.left + n.dx - 10, y = ay - wr.top + n.dy - 10;
+    const minY = (br ? br.top : wr.top) - wr.top, maxY = (br ? br.bottom : wr.bottom) - wr.top;
+    if (y + 10 < minY - 2 || y + 10 > maxY + 2) return;
+    x = clamp(x, 4, wr.width - 24); y = clamp(y, 4, wr.height - 24);
+    const pin = document.createElement("span");
+    pin.className = "pin" + (P.ver === "cur" ? "" : " g");
+    pin.textContent = noteNum(i);
+    pin.dataset.n = i;
+    pin.style.left = x + "px"; pin.style.top = y + "px";
+    pin.addEventListener("mouseenter", () => { markNote(i); const n2 = $(`.note[data-n="${i}"]`); if (n2) n2.scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+    pin.addEventListener("mouseleave", () => markNote(-1));
+    layer.appendChild(pin);
+  });
+}
+addEventListener("resize", schedulePins);
+document.addEventListener("scroll", schedulePins, true);
+
+/* ------------------------------------------------------------------ tooltips */
+const tip = document.createElement("div");
+tip.className = "tip"; tip.hidden = true;
+document.body.appendChild(tip);
+let tipT = 0;
+document.addEventListener("mouseover", e => {
+  const t = e.target.closest('[data-tip]:not([data-tip=""])');
+  clearTimeout(tipT);
+  if (!t) { tip.hidden = true; return; }
+  tipT = setTimeout(() => {
+    tip.innerHTML = `<span>${t.dataset.tip}</span>${t.dataset.k ? `<kbd>${t.dataset.k}</kbd>` : ""}`;
+    tip.hidden = false;
+    const r = t.getBoundingClientRect(), tr = tip.getBoundingClientRect();
+    const above = !!t.closest(".n-selbar");
+    tip.style.left = clamp(r.left + r.width / 2 - tr.width / 2, 8, innerWidth - tr.width - 8) + "px";
+    tip.style.top = (above ? r.top - tr.height - 8 : r.bottom + 8) + "px";
+  }, 350);
+});
+document.addEventListener("mousedown", () => { clearTimeout(tipT); tip.hidden = true; });
+
+/* ------------------------------------------------------------------ popovers */
+let openPop = null;
+function closePop() { if (openPop) { openPop.el.remove(); openPop = null; } }
+function pop(anchor, html, { place = "below", cls = "", onPick } = {}) {
+  closePop();
+  const win = anchor.closest(".win");
+  const p = document.createElement("div");
+  p.className = "pop " + cls;
+  p.innerHTML = html;
+  win.appendChild(p);
+  const wr = win.getBoundingClientRect(), ar = anchor.getBoundingClientRect(), pr = p.getBoundingClientRect();
+  let x = ar.left - wr.left + ar.width / 2 - pr.width / 2;
+  if (place.endsWith("start")) x = ar.left - wr.left;
+  if (place.endsWith("end")) x = ar.right - wr.left - pr.width;
+  let y = place.startsWith("above") ? ar.top - wr.top - pr.height - 8 : ar.bottom - wr.top + 8;
+  p.style.left = clamp(x, 8, wr.width - pr.width - 8) + "px";
+  p.style.top = clamp(y, 8, wr.height - pr.height - 8) + "px";
+  p.addEventListener("click", e => {
+    const b = e.target.closest("[data-v]");
+    if (b && onPick) { onPick(b.dataset.v, b); }
+  });
+  openPop = { el: p, anchor };
+  return p;
+}
+function togglePop(anchor, ...a) { if (openPop && openPop.anchor === anchor) { closePop(); return null; } return pop(anchor, ...a); }
+document.addEventListener("mousedown", e => {
+  if (openPop && !openPop.el.contains(e.target) && !openPop.anchor.contains(e.target)) closePop();
+}, true);
+const mi = (v, label, { icon, k, check } = {}) =>
+  `<button class="mi" data-v="${v}">${check !== undefined ? `<span class="ck">${check ? ic("check") : ""}</span>` : icon ? ic(icon) : ""}<span>${label}</span>${k ? `<span class="k">${k}</span>` : ""}</button>`;
+
+/* ================================================================== CURRENT */
+const cur = { tool: 0, sel: true, dismissed: false, zoom: 88, side: true, tab: "pages", tbox: true, out: false };
+const CUR_TOOLS = [["select", "Select"], ["highlight", "Highlight"], ["squiggle", "Draw"], ["text", "Text"], ["signature", "Sign"], ["form", "Fill forms"], ["edit", "Edit"]];
+const ZOOMS = [25, 50, 67, 75, 88, 100, 110, 125, 150, 200, 300, 400];
+const R = DOCS.report;
+
+function curThemeIcon() {
+  const b = $("#c-theme");
+  const dark = P.theme === "dark";
+  b.innerHTML = ic(dark ? "sun" : "moon");
+  b.dataset.tip = dark ? "Switch to light mode" : "Switch to dark mode";
+}
+function curPages() {
+  const s = cur.zoom / 100 * PT;
+  const c = $("#c-pages");
+  c.style.setProperty("--s", s);
+  c.innerHTML = R.labels.map((l, i) =>
+    `<div class="c-page" data-p="${i}" style="width:${R.w * s}px;height:${R.h * s}px"><img src="${R.src(i)}" alt="" draggable="false">${i === 0 ? '<div class="c-ov"></div>' : ""}</div>`).join("");
+  curOverlay();
+  $("#c-zlbl").textContent = cur.zoom + "%";
+}
+function curOverlay() {
+  const o = $("#c-pages .c-ov");
+  if (!o) return;
+  o.innerHTML = !cur.tbox ? "" :
+    `<div class="c-tbox ${cur.sel ? "sel" : ""}" style="left:calc(82px * var(--s));top:calc(45px * var(--s));width:calc(251px * var(--s));height:calc(95px * var(--s));font-size:calc(48px * var(--s))">Text${cur.sel ? '<i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i>' : ""}</div>`;
+}
+function curSide() {
+  $("#c-sidebar").hidden = !cur.side;
+  $("#c-side").classList.toggle("checked", cur.side);
+  $$("#c-sidetabs button").forEach(b => b.classList.toggle("on", b.dataset.t === cur.tab));
+  const b = $("#c-sidebody");
+  if (cur.tab === "pages") {
+    b.innerHTML = `<div class="c-thumbs">${R.labels.map((l, i) => `<div class="c-thumb ${i === 0 ? "on" : ""}"><img src="${R.src(i)}" alt=""><span>${l}</span></div>`).join("")}</div>`;
+  } else if (cur.tab === "outline") {
+    b.innerHTML = `<div class="c-list">${R.outline.map(([t, p]) => `<button><span>${t}</span><span class="pg">${R.labels[p]}</span></button>`).join("")}</div>`;
+  } else {
+    b.innerHTML = cur.tbox ? `<div class="c-card"><div class="top"><span>Text box · ouz</span><span>p. i</span></div><div>Text</div></div>` : `<div class="c-card"><b>No comments yet</b><span class="c-muted">Highlights, notes and drawings in this document will be listed here.</span></div>`;
+  }
+}
+const swatchRow = sel => `<div class="c-swatches">${SW.map((c, i) => `<button class="c-sw ${i === sel ? "on" : ""}" style="background:${c}" data-tip="${SWN[i]}"></button>`).join("")}</div>`;
+function curPanel() {
+  const p = $("#c-panel");
+  const show = !cur.dismissed && ((cur.sel && cur.tbox) || cur.tool !== 0);
+  p.hidden = !show;
+  if (!show) return;
+  const head = t => `<div class="c-ph"><h2>${t}</h2><button class="c-ib" data-cact="close" data-tip="Close">${ic("x")}</button></div>`;
+  const hint = t => `<div class="c-hint">${t}</div>`;
+  const seg = items => `<div class="c-seg labelled">${items.map(([icn, l], i) => `<button class="${i ? "" : "on"}">${ic(icn)}<span>${l}</span></button>`).join("")}</div>`;
+  const slider = (label, val, frac) => `<div class="c-row"><span>${label}</span><span>${val}</span></div><div class="c-slider"><div class="tr"><div class="fill" style="width:${frac * 100}%"></div></div><div class="kn" style="left:${frac * 100}%"></div></div>`;
+  let h = "";
+  if (cur.sel && cur.tbox) {
+    h = head("Properties") +
+      `<div class="c-row"><b>Text box</b><span class="c-muted">Page i</span></div><div class="c-muted" style="margin-top:-6px">ouz · 2026-11-17 14:02</div>` +
+      `<div>Colour</div>${swatchRow(6)}` + slider("Font size", "48 pt", 1) +
+      `<div class="c-hr"></div><div>Comment</div><div class="c-textarea">Text</div><div class="c-input">Write a reply</div>` +
+      `<div style="display:flex;justify-content:flex-end"><button class="c-btn c-muted">Reply</button></div><div class="c-hr"></div>` +
+      `<button class="c-btn wide" data-cact="delete">${ic("trash")}Delete</button>`;
+  } else {
+    switch (cur.tool) {
+      case 1: h = head("Highlight") + seg([["highlight", "Highlight"], ["underline", "Underline"], ["strike", "Strike"]]) + `<div>Colour</div>${swatchRow(0)}` + hint("Drag across text to mark it. Double-click marks a word."); break;
+      case 2: h = head("Draw") + seg([["pen", "Pen"], ["rect", "Box"], ["ellipse", "Ellipse"], ["line", "Line"], ["arrow", "Arrow"]]) + `<div>Colour</div>${swatchRow(5)}` + slider("Width", "2 pt", .12) + `<div class="c-check"><i>${ic("check")}</i>Smooth strokes</div>` + hint("Draw on the page with the mouse or a pen."); break;
+      case 3: h = head("Text") + seg([["text", "Text box"], ["note", "Note"]]) + slider("Font size", "14 pt", .2) + `<div>Colour</div>${swatchRow(6)}` + hint("Click on the page to add a text box, or drag to size it. Esc, ⌘↩ or a click elsewhere finishes."); break;
+      case 4: h = head("Sign") + `<div class="c-row"><b>My signatures</b><span class="c-muted">On this device</span></div>` + hint("No signatures yet. Import a photo or scan of your signature, or draw one.") + `<div style="display:flex;gap:8px"><button class="c-btn">Import image…</button><button class="c-btn">Draw new</button></div>`; break;
+      case 5: h = head("Fill forms") + hint("Click a field to fill it in. Tab and ⇧Tab move between fields; Enter or a click elsewhere finishes, Esc cancels.") + `<button class="c-btn">Prepare form</button><div class="c-check"><i>${ic("check")}</i>Flatten fields when saving</div>` + hint("This document has no form fields."); break;
+      case 6: h = head("Edit") + hint("Click text, a picture or a drawing on the page to select it. ⇧-click or drag a box selects several; Tab moves between them.") + `<div style="display:flex;gap:8px"><button class="c-btn">Add text</button><button class="c-btn">Add image…</button></div>`; break;
+    }
+  }
+  p.innerHTML = h;
+}
+function curMenu(open) {
+  const m = $("#c-menu");
+  if (open === undefined) open = m.hidden;
+  m.hidden = !open;
+  if (!open) return;
+  const row = (icn, l, k) => `<button class="c-mi">${icn ? ic(icn) : '<span style="width:16px"></span>'}<span>${l}</span>${k ? `<span class="k">${k}</span>` : ""}</button>`;
+  const div = '<div class="c-mdiv"></div>';
+  m.innerHTML = !cur.out
+    ? row("folder", "Open…", "⌘O") + row("file", "report.pdf") + row("file", "lease.pdf") + row("file", "form.pdf") + row("file", "scan.pdf") + row("library", "Library", "⌘L") + div +
+      row("printer", "Print…", "⌘P") + row("save", "Save as…", "⇧⌘S") + row("compress", "Save a smaller copy…") + row("organize", "Organize pages") + row("shield", "Protect…") +
+      row("edit", "Edit text and images", "⌘E") + row("form", "Prepare form") + row("eyeoff", "Redact") + row("text", "Recognize text…") +
+      `<button class="c-mi" data-cact="out">${ic("combine")}<span>Output tools</span><span class="k">›</span></button>` +
+      row("signature", "Signatures") + row("seal", "Sign with a certificate…") + row("properties", "Document properties") + row("x", "Close document", "⌘W") + row("speaker", "Read aloud", "⇧⌘V") + div +
+      row("keyboard", "Keyboard shortcuts", "F1") + row("gear", "Settings") + row("chat", "Join the community on Discord") + row("info", "About Pagebara")
+    : `<button class="c-mi" data-cact="back">${ic("chevL")}<span>Output tools</span></button>` + div + row("", "Optimize…") + row("", "Save as PDF/A…") + row("", "Accessibility check") + div +
+      row("", "Watermark…") + row("", "Header and footer…") + row("", "Bates numbering…") + row("", "Flatten…") + row("", "Compare…");
+  const win = $("#cur").getBoundingClientRect(), b = $("#c-more").getBoundingClientRect();
+  m.style.left = (b.right - win.left - 260) + "px";
+  m.style.top = (b.bottom - win.top + 6) + "px";
+}
+function curRender() {
+  $$("#c-tools button").forEach((b, i) => b.classList.toggle("on", i === cur.tool));
+  curOverlay(); curSide(); curPanel(); curPlaceTools(); schedulePins();
+}
+// toolbar.slint: the tools sit in the middle when there is room, else as near it as fits
+// between the two groups of buttons.
+function curPlaceTools() {
+  const bar = $(".c-toolbar"), tools = $("#c-tools");
+  if (!bar.clientWidth) return;
+  const br = bar.getBoundingClientRect(), e = $(".c-end").getBoundingClientRect();
+  // The title's room, by toolbar.slint's sums: what is left beside the tools, less the zoom,
+  // read aloud and theme buttons while they show.
+  const W = br.width, spare = W - 656;
+  $(".c-title").style.maxWidth = Math.max(0, Math.min(240, spare - 90 - (W > 887 ? 34 : 0) - (W > 921 ? 34 : 0) - 8)) + "px";
+  const w = tools.offsetWidth;
+  const sr = $(".c-start").getBoundingClientRect();
+  const x = Math.max(sr.right - br.left + 12, Math.min((br.width - w) / 2, e.left - br.left - 12 - w));
+  tools.style.left = x + "px";
+  tools.style.transform = "translateY(-50%)";
+}
+addEventListener("resize", () => { curPlaceTools(); autoFit(); });
+function curInit() {
+  $("#c-tools").innerHTML = CUR_TOOLS.map(([icn, l]) => `<button data-tip="${l}">${ic(icn)}<span class="lbl">${l}</span></button>`).join("");
+  curPages(); curRender();
+  requestAnimationFrame(schedulePins);
+  $("#cur").addEventListener("click", e => {
+    const t = e.target;
+    let b;
+    if ((b = t.closest("#c-tools button"))) { cur.tool = [...b.parentNode.children].indexOf(b); cur.sel = false; cur.dismissed = false; return curRender(); }
+    if ((b = t.closest("[data-cact]"))) {
+      const a = b.dataset.cact;
+      if (a === "close") cur.dismissed = true;
+      if (a === "delete") { cur.tbox = false; cur.sel = false; }
+      if (a === "out" || a === "back") { cur.out = a === "out"; curMenu(true); return; }
+      return curRender();
+    }
+    if (t.closest("#c-more")) { cur.out = false; curMenu(); return; }
+    if (t.closest(".c-mi")) { curMenu(false); return; }
+    if (t.closest("#c-side")) { cur.side = !cur.side; return curRender(); }
+    if ((b = t.closest("#c-sidetabs button"))) { cur.tab = b.dataset.t; return curRender(); }
+    if (t.closest("#c-zin") || t.closest("#c-zout")) {
+      const i = ZOOMS.indexOf(cur.zoom);
+      cur.zoom = ZOOMS[clamp(i + (t.closest("#c-zin") ? 1 : -1), 0, ZOOMS.length - 1)];
+      curPages(); return schedulePins();
+    }
+    if (t.closest("#c-theme")) { P.theme = P.theme === "dark" ? "light" : "dark"; return applyProto(); }
+    if (t.closest(".c-tbox")) { if (cur.tool === 0) { cur.sel = true; cur.dismissed = false; curRender(); } return; }
+    if (t.closest(".c-page")) { if (cur.sel) { cur.sel = false; curRender(); } }
+  });
+  document.addEventListener("mousedown", e => {
+    if (!$("#c-menu").hidden && !e.target.closest("#c-menu") && !e.target.closest("#c-more")) curMenu(false);
+  });
+}
+
+/* ================================================================== PROPOSED */
+const MODES = {
+  view: {
+    label: "View", tools: [
+      { id: "reading", icon: "book", label: "Reading view", act: true },
+      { id: "aloud", icon: "speaker", label: "Read aloud", act: true, key: "⇧⌘V" },
+      { id: "present", icon: "present", label: "Present", act: true, key: "⌘↩" },
+      { id: "bm", icon: "bookmark", label: "Bookmark", act: true, key: "⌘D" },
+    ],
+  },
+  annotate: {
+    label: "Annotate", first: "select", tools: [
+      { id: "select", icon: "select", label: "Select", key: "V" },
+      { id: "highlight", label: "Highlight", key: "H", variants: [["highlight", "Highlight", "highlight"], ["underline", "Underline", "underline"], ["strike", "Strikethrough", "strike"]] },
+      { id: "draw", label: "Draw", key: "P", variants: [["pen", "Pen", "pen"], ["rect", "Rectangle", "rect"], ["ellipse", "Ellipse", "ellipse"], ["line", "Line", "line"], ["arrow", "Arrow", "arrow"]] },
+      { id: "text", icon: "text", label: "Text box", key: "T" },
+      { id: "note", icon: "note", label: "Note", key: "N" },
+    ],
+  },
+  edit: {
+    label: "Edit", first: "eselect", tools: [
+      { id: "eselect", icon: "select", label: "Select", key: "V" },
+      { id: "etext", icon: "textcursor", label: "Edit text", key: "E" },
+      { id: "addtext", icon: "textadd", label: "Add text" },
+      { id: "addimg", icon: "image", label: "Add image" },
+      { id: "link", icon: "link", label: "Link", key: "L" },
+      { sep: true },
+      { id: "redact", icon: "redact", label: "Redact", key: "R" },
+    ],
+  },
+  sign: {
+    label: "Fill & Sign", first: "fill", tools: [
+      { id: "fill", icon: "form", label: "Fill fields" },
+      { id: "sig", icon: "signature", label: "Signature" },
+      { id: "initials", icon: "initials", label: "Initials" },
+      { id: "date", icon: "calendar", label: "Date" },
+      { id: "check", icon: "check", label: "Checkmark" },
+      { sep: true },
+      { id: "prepare", icon: "formadd", label: "Prepare form" },
+      { id: "certify", icon: "seal", label: "Certificate" },
+    ],
+  },
+  organize: {
+    label: "Organize", tools: [
+      { id: "insert", icon: "fileplus", label: "Insert", act: true },
+      { id: "rotl", icon: "rotl", label: "Rotate left" },
+      { id: "rotr", icon: "rotr", label: "Rotate right" },
+      { id: "extract", icon: "fileout", label: "Extract" },
+      { id: "del", icon: "trash", label: "Delete" },
+    ],
+  },
+};
+const nw = {
+  doc: "report", docs: ["report"], mode: "annotate", tool: "select", zoom: 88, side: true, sideBeforeOrg: true, pin: false, dismiss: false,
+  esel: false, etext: { font: "Helvetica", size: 28, bold: true, ital: false, color: 6 }, sig: 0, stamps: [], red: 0, rq: "", rfound: null,
+  chk: {}, seg: {}, vim: false, vimline: null, back: [], shrunk: null,
+  tab: "pages", page: 0, sel: true, tbox: { on: true, color: 6, size: 48 }, comments: [],
+  opts: { highlight: { v: "highlight", color: 0 }, draw: { v: "pen", color: 5, width: 2 }, text: { color: 6, size: 14 }, note: { color: 0 } },
+  layout: "continuous", pagecolor: "normal", hist: [], fut: [], orgSel: new Set(), rot: {}, deleted: new Set(), hits: [], hit: 0, q: "",
+};
+const D = () => DOCS[nw.doc];
+const hasBox = () => nw.doc === "report" && nw.tbox.on;
+// The inspector is closed unless pinned. The tools that keep a list open it while they are chosen.
+const PANEL_TOOLS = new Set(["sig", "initials", "prepare", "redact"]);
+const inspOpen = () => nw.pin || (PANEL_TOOLS.has(nw.tool) && !nw.dismiss);
+const SIGS = [["Alex Morgan", "Signature"], ["A. M.", "Initials"]];
+const INKS = ["#1E3A8A", "#18181B", "#1E3A8A"];
+// What a click on the page places in Fill & Sign: class, text, size in points.
+const STAMPS = { sig: ["k-sig", () => SIGS[nw.sig][0], 26], initials: ["k-sig", () => SIGS[nw.sig][0], 26], date: ["k-date", () => "17 Nov 2026", 11], check: ["k-check", () => "✓", 16] };
+// The title of report.pdf's first page, in points: the object the Edit mode selects.
+const EOBJ = { x: 70, y: 266, w: 218, h: 35 };
+const HINTS = {
+  fill: "No form fields in this document", sig: "Click the page to place it", initials: "Click the page to place them", date: "Click the page to place today's date",
+  check: "Click the page to place a checkmark", prepare: "Pick a field type, then click the page", eselect: "Click text, a picture or a drawing",
+  addtext: "Click where the text goes", link: "Drag a box over what should link",
+};
+
+function nwBuildPages() {
+  const d = D(), s = nw.zoom / 100 * PT;
+  const c = $("#n-pages");
+  c.style.setProperty("--s", s);
+  c.className = `n-pages ${nw.layout} pc-${nw.pagecolor}`;
+  c.style.width = nw.layout === "two" ? (2 * d.w * s + 12 + 80) + "px" : "";
+  c.innerHTML = d.labels.map((l, i) => nw.deleted.has(i) ? "" :
+    `<div class="n-page" data-p="${i}" style="width:${d.w * s}px;height:${d.h * s}px"><img src="${d.src(i)}" alt="Page ${l}" draggable="false"><div class="ov"></div></div>`).join("");
+  nwOverlay();
+  $("#n-zlbl").textContent = nw.zoom + "%";
+}
+function etextCtl() {
+  const e = nw.etext, caret = ic("chevD", "caret");
+  return `<button class="n-tb n-sizebtn" data-opt="efont" data-tip="Font">${e.font}${caret}</button>
+    <button class="n-tb n-sizebtn" data-opt="esize" data-tip="Font size">${e.size} pt${caret}</button>
+    <button class="n-tb tog ${e.bold ? "on" : ""}" data-act="ebold" data-tip="Bold" data-k="⌘B"><b>B</b></button>
+    <button class="n-tb tog ${e.ital ? "on" : ""}" data-act="eital" data-tip="Italic" data-k="⌘I"><em style="font-family:Georgia,serif">I</em></button>
+    <button class="n-tb n-colorbtn" data-opt="ecolor" data-tip="Text colour"><span class="dot" style="background:${SW[e.color]}"></span></button>`;
+}
+function nwOverlay() {
+  $$("#n-pages .ov").forEach(o => { o.innerHTML = ""; });
+  $("#n-pages").classList.toggle("stamping", nw.mode === "sign" && !!STAMPS[nw.tool]);
+  nw.stamps.forEach(st => {
+    const o = st.doc === nw.doc && $(`#n-pages .n-page[data-p="${st.p}"] .ov`);
+    if (o) o.insertAdjacentHTML("beforeend", `<span class="n-stamp ${st.cls}" style="left:calc(${st.x}px * var(--s));top:calc(${st.y}px * var(--s));font-size:calc(${st.size}px * var(--s));color:${st.color}">${st.text}</span>`);
+  });
+  const o = $('#n-pages .n-page[data-p="0"] .ov');
+  if (!o || nw.doc !== "report") return;
+  const handles = `<span class="n-sel">${["tl", "tc", "tr", "ml", "mr", "bl", "bc", "br"].map(h => `<i class="${h}"></i>`).join("")}</span>`;
+  // With the inspector closed, a small bar beside the selection stands in for it.
+  const bar = (x, y, inner) => inspOpen() ? "" : `<div class="n-selbar" style="left:calc(${x}px * var(--s));top:calc(${y}px * var(--s) - 46px)">${inner}
+      <button class="n-tb" data-act="insp" data-tip="Inspector" data-k="⌥⌘I">${ic("panelright")}</button></div>`;
+  let h = "";
+  if (nw.mode === "edit")
+    h += `<div class="n-eobj" style="left:calc(${EOBJ.x}px * var(--s));top:calc(${EOBJ.y}px * var(--s));width:calc(${EOBJ.w}px * var(--s));height:calc(${EOBJ.h}px * var(--s))">${nw.esel ? handles : ""}</div>` +
+      (nw.esel ? bar(EOBJ.x, EOBJ.y, etextCtl() + `<span class="n-psep"></span><button class="n-tb danger" data-act="edelete" data-tip="Delete" data-k="⌫">${ic("trash")}</button>`) : "");
+  if (hasBox())
+    h += `<div class="n-tbox" style="left:calc(80px * var(--s));top:calc(44px * var(--s));font-size:calc(${nw.tbox.size}px * var(--s));color:${SW[nw.tbox.color]}">Text${nw.sel ? handles : ""}</div>` +
+      (nw.sel ? bar(80, 44, `<button class="n-tb n-colorbtn" data-opt="tcolor" data-tip="Colour"><span class="dot" style="background:${SW[nw.tbox.color]}"></span></button>
+      <button class="n-tb n-sizebtn" data-opt="tsize" data-tip="Font size">${nw.tbox.size} pt${ic("chevD", "caret")}</button><span class="n-psep"></span>
+      <button class="n-tb" data-act="comment" data-tip="Comment">${ic("comment")}</button>
+      <button class="n-tb danger" data-act="delete" data-tip="Delete" data-k="⌫">${ic("trash")}</button>`) : "");
+  o.insertAdjacentHTML("beforeend", h);
+}
+function nwTop() {
+  const multi = nw.docs.length > 1;
+  $("#n-strip").hidden = !multi;
+  $("#n-lights").hidden = multi;
+  $("#n-doc").hidden = multi;
+  $("#n-doc .nm").textContent = D().name;
+  $("#n-doc .ed").hidden = !D().edited;
+  $("#n-doc .lk").hidden = !D().prot;
+  $("#n-ostext").textContent = `${D().edited ? "• " : ""}${D().name} — Pagebara`;
+  $("#n-save").classList.toggle("clean", !D().edited);
+  $("#n-modes").innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="${nw.mode === k ? "on" : ""}" data-mode="${k}">${m.label}</button>`).join("");
+  $("#n-modesel").innerHTML = MODES[nw.mode].label + ic("chevD");
+  if (multi) {
+    $("#n-tabs").innerHTML = nw.docs.map(id => `<div class="n-tab ${id === nw.doc ? "on" : ""}" data-doc="${id}"><span class="nm">${DOCS[id].name}</span><button class="cl ${DOCS[id].edited ? "dirty" : ""}" data-close="${id}" data-tip="${DOCS[id].edited ? "Close (edited)" : "Close"}" data-k="⌘W">${ic("x")}</button></div>`).join("");
+  }
+}
+function nwSide() {
+  const d = D();
+  $("#n-side").classList.toggle("closed", !nw.side);
+  const ncom = (hasBox() ? 1 : 0) + nw.comments.length;
+  $("#n-sidetabs").innerHTML = [["pages", "pages", "Pages"], ["outline", "outline", "Outline"], ["comments", "comment", "Comments", ncom], ["bookmarks", "bookmark", "Bookmarks"]]
+    .map(([id, icn, l, n]) => `<button data-t="${id}" class="${nw.tab === id ? "on" : ""}" data-tip="${l}">${ic(icn)}${n ? `<span class="badge">${n}</span>` : ""}</button>`).join("");
+  const b = $("#n-sidebody");
+  if (nw.tab === "pages") {
+    const counts = {};
+    nw.hits.forEach(p => { counts[p] = (counts[p] || 0) + 1; });
+    b.innerHTML = `<div class="n-sidehead"><span>Pages</span><span>${d.labels.length - nw.deleted.size}</span></div><div class="n-thumbs">` +
+      d.labels.map((l, i) => nw.deleted.has(i) ? "" : `<button class="n-thumb ${i === nw.page ? "on" : ""}" data-p="${i}"><span class="im" style="aspect-ratio:${d.w}/${d.h}"><img src="${d.src(i)}" alt="" draggable="false"></span><span class="lb">${l}</span>${counts[i] ? `<span class="hitc">${counts[i]}</span>` : ""}</button>`).join("") + "</div>";
+    requestAnimationFrame(nwThumbInView);
+  } else if (nw.tab === "outline") {
+    let on = -1;
+    d.outline.forEach(([, p], i) => { if (p <= nw.page) on = i; });
+    b.innerHTML = `<div class="n-sidehead"><span>Outline</span></div><div class="n-tree">` +
+      d.outline.map(([t, p, lvl], i) => `<button class="${lvl ? "sub" : ""} ${i === on ? "on" : ""}" data-goto="${p}"><span>${t}</span><span class="pg">${d.labels[p]}</span></button>`).join("") + "</div>";
+  } else if (nw.tab === "comments") {
+    const items = [];
+    if (hasBox()) items.push(`<button class="n-ccard ${nw.sel ? "on" : ""}" data-selbox="1"><span class="top">${ic("text")}<span>Text box · ouz</span><span class="pg">Page i</span></span><span class="body">Text</span></button>`);
+    nw.comments.forEach(c => items.push(`<button class="n-ccard" data-selbox="1"><span class="top">${ic("comment")}<span>Comment · ouz</span><span class="pg">Page i</span></span><span class="body">${c}</span></button>`));
+    b.innerHTML = `<div class="n-sidehead"><span>Comments</span><span>${items.length}</span></div>` + (items.join("") ||
+      `<div class="n-empty">${ic("comment")}<b>No comments yet</b>Highlights, notes and drawings in this document show up here.</div>`);
+  } else {
+    b.innerHTML = `<div class="n-sidehead"><span>Bookmarks</span></div><div class="n-empty">${ic("bookmark")}<b>No bookmarks</b>Press ⌘D to bookmark the page you're on.</div>`;
+  }
+}
+function nwThumbInView() {
+  const box = $("#n-sidebody"), el = $(".n-thumb.on", box);
+  if (!el) return;
+  if (el.offsetTop < box.scrollTop + 8) box.scrollTop = el.offsetTop - 30;
+  else if (el.offsetTop + el.offsetHeight > box.scrollTop + box.clientHeight - 8) box.scrollTop = el.offsetTop + el.offsetHeight - box.clientHeight + 16;
+}
+function nwPill() {
+  const p = $("#n-toolpill"), m = MODES[nw.mode];
+  const sep = '<span class="n-psep"></span>';
+  let h = "";
+  for (const t of m.tools) {
+    if (t.sep) { h += sep; continue; }
+    const on = nw.tool === t.id && !t.act && nw.mode !== "organize";
+    let icn = t.icon, lbl = t.label;
+    if (t.variants) { const v = t.variants.find(x => x[0] === nw.opts[t.id].v); icn = v[2]; lbl = v[1]; }
+    const dis = nw.mode === "organize" && !t.act && !nw.orgSel.size;
+    h += `<button class="n-tb ${on ? "on" : ""}" data-tool="${t.id}" data-tip="${lbl}${on && t.variants ? " — click again for more" : ""}" data-k="${t.key || ""}" ${dis ? "disabled" : ""}>${ic(icn)}<span class="lbl">${lbl}</span>${t.variants ? ic("chevD", "caret") : ""}</button>`;
+  }
+  // The chosen tool's options and its hint follow the tools.
+  const o = nw.mode === "annotate" ? nw.opts[nw.tool] : null;
+  if (o) {
+    h += sep + `<button class="n-tb n-colorbtn" data-opt="color" data-tip="Colour"><span class="dot" style="background:${SW[o.color]}"></span></button>`;
+    if (o.width != null) h += `<button class="n-tb n-sizebtn" data-opt="width" data-tip="Line width">${o.width} pt${ic("chevD", "caret")}</button>`;
+    if (o.size != null) h += `<button class="n-tb n-sizebtn" data-opt="size" data-tip="Font size">${o.size} pt${ic("chevD", "caret")}</button>`;
+  }
+  if (nw.mode === "edit" && (nw.tool === "etext" || nw.tool === "addtext")) h += sep + etextCtl();
+  if (nw.tool === "redact") h += sep + `<span class="n-count">${nw.red ? nw.red + " marked" : "Nothing marked"}</span><button class="n-tb apply" data-act="redapply" ${nw.red ? "" : "disabled"}>Apply…</button>`;
+  if (nw.mode === "organize") h += sep + `<span class="n-count">${nw.orgSel.size ? nw.orgSel.size + " selected" : "Click pages to select them"}</span>`;
+  if (HINTS[nw.tool] && !(nw.tool === "eselect" && nw.esel)) h += sep + `<span class="n-count n-hint">${HINTS[nw.tool]}</span>`;
+  p.innerHTML = h;
+  $("#n-hist").innerHTML =
+    `<button class="n-tb" data-act="undo" data-tip="${nw.hist.length ? "Undo " + nw.hist[nw.hist.length - 1].label : "Undo"}" data-k="⌘Z" ${nw.hist.length ? "" : "disabled"}>${ic("undo")}</button>` +
+    `<button class="n-tb" data-act="redo" data-tip="Redo" data-k="⇧⌘Z" ${nw.fut.length ? "" : "disabled"}>${ic("redo")}</button>`;
+  fitRow();
+}
+// Names on every tool while they fit. Short of room the hint goes first, then the names of
+// all but the chosen tool.
+function fitRow() {
+  const row = $("#n-toolrow"), mid = $("#n-trmid");
+  const over = () => mid.clientWidth && $("#n-toolpill").offsetWidth > mid.clientWidth;
+  row.classList.remove("nohint", "tight");
+  if (over()) row.classList.add("nohint");
+  if (over()) row.classList.add("tight");
+}
+addEventListener("resize", fitRow);
+if (document.fonts) document.fonts.ready.then(fitRow);
+function nwVim() {
+  const el = $("#n-vim"), cmd = nw.vimline != null;
+  el.hidden = !nw.vim || nw.mode === "organize";
+  el.innerHTML = `<span class="md ${cmd ? "cmd" : ""}">${cmd ? (nw.vimline[0] === ":" ? "COMMAND" : "SEARCH") : "NORMAL"}</span>${cmd ? `<span>${esc(nw.vimline)}▏</span>` : ""}`;
+}
+function nwNav() {
+  const d = D();
+  const l = d.labels[nw.page];
+  if (document.activeElement !== $("#n-pin")) $("#n-pin").value = l;
+  $("#n-pof").textContent = l !== String(nw.page + 1) ? `${nw.page + 1} of ${d.labels.length}` : `of ${d.labels.length}`;
+  $("#n-pprev").disabled = nw.page === 0;
+  $("#n-pnext").disabled = nw.page === d.labels.length - 1;
+  $("#n-navpill").hidden = nw.mode === "organize";
+  // After a jump (thumbnail, outline, page number), the way back.
+  const b = $("#n-back");
+  b.hidden = !nw.back.length;
+  if (nw.back.length) { const bl = d.labels[nw.back[nw.back.length - 1]]; b.innerHTML = ic("back") + bl; b.dataset.tip = "Back to page " + bl; b.dataset.k = "⌘["; }
+}
+const ihead = (icn, title, meta, doc) => `<div class="n-ihead"><span class="ico ${doc ? "doc" : ""}">${ic(icn)}</span><div class="tt"><h3>${title}</h3><div class="meta">${meta}</div></div></div>`;
+const hintline = t => `<div class="n-hintline" style="line-height:1.5">${t}</div>`;
+const chk = (id, label) => `<button class="n-check ${nw.chk[id] ? "on" : ""}" data-chk="${id}"><span class="bx">${ic("check")}</span>${label}</button>`;
+const seg = (id, items) => `<div class="n-seg">${items.map((l, i) => `<button class="${i === (nw.seg[id] || 0) ? "on" : ""}" data-seg="${id}" data-v="${i}">${l}</button>`).join("")}</div>`;
+const stepper = (id, v, unit) => `<div class="n-stepper"><button data-act="${id}-" data-tip="Smaller">${ic("minus")}</button><input id="n-${id}" value="${v}"><span class="u">${unit}</span><button data-act="${id}+" data-tip="Larger">${ic("plus")}</button></div>`;
+function boxPanel() {
+  const cmts = nw.comments.map(c => `<div class="n-cmt"><span class="n-avatar">O</span><div><div class="who"><b>ouz</b> · now</div><div>${esc(c)}</div></div></div>`).join("");
+  return `<div class="n-ihead"><span class="ico">${ic("text")}</span><div class="tt"><h3>Text box</h3><div class="meta">ouz · Today at 14:02 · Page i</div></div><button class="n-ib sm" data-act="boxmenu" data-tip="More">${ic("more")}</button></div>` +
+    `<section class="n-sec"><h4>Text</h4>
+      <div class="n-field"><label>Size</label>${stepper("size", nw.tbox.size, "pt")}</div>
+      <div class="n-field"><label>Colour</label><div class="n-swatches">${SW.map((c, i) => `<button class="n-sw ${i === nw.tbox.color ? "on" : ""}" data-sw="${i}" style="background:${c}" data-tip="${SWN[i]}"></button>`).join("")}</div></div></section>` +
+    `<section class="n-sec"><h4>Comments <span class="cnt">${nw.comments.length || ""}</span></h4>${cmts || '<div class="n-hintline">No comments yet.</div>'}
+      <div class="n-cin"><span class="n-avatar">O</span><input id="n-cin" placeholder="Add a comment…"><button class="n-ib sm" data-act="send" data-tip="Send" data-k="↩">${ic("send")}</button></div></section>` +
+    `<div class="n-ifoot"><button class="n-btn" data-act="flatten" data-tip="Merge it into the page">Flatten</button><span class="sp"></span><button class="n-btn danger" data-act="delete" data-k="⌫">${ic("trash")}Delete</button></div>`;
+}
+// A selected object of the Edit mode: what edit.slint's panel holds, in the inspector's layout.
+function editPanel() {
+  const e = nw.etext;
+  return ihead("text", "Text", `${e.font}${e.bold ? " Bold" : ""}${e.ital ? " Italic" : ""} · ${e.size} pt · Page i`) +
+    `<section class="n-sec"><h4>Text</h4>
+      <div class="n-field"><label>Font</label><button class="n-btn" data-opt="efont" style="justify-content:space-between">${e.font}${ic("chevD", "caret")}</button></div>
+      <div class="n-field"><label>Size</label>${stepper("esize", e.size, "pt")}</div>
+      <div class="n-field"><label>Style</label><div class="n-rowx"><button class="n-btn ${e.bold ? "on" : ""}" data-act="ebold"><b>B</b></button><button class="n-btn ${e.ital ? "on" : ""}" data-act="eital"><em style="font-family:Georgia,serif">I</em></button></div></div>
+      <div class="n-field"><label>Colour</label><div class="n-swatches">${SW.map((c, i) => `<button class="n-sw ${i === e.color ? "on" : ""}" data-esw="${i}" style="background:${c}" data-tip="${SWN[i]}"></button>`).join("")}</div></div></section>` +
+    `<section class="n-sec"><h4>Arrange</h4><div class="n-arr"><button class="n-btn">To front</button><button class="n-btn">Forward</button><button class="n-btn">Backward</button><button class="n-btn">To back</button></div></section>` +
+    `<div class="n-ifoot"><button class="n-btn" data-act="edup">Duplicate</button><span class="sp"></span><button class="n-btn danger" data-act="edelete" data-k="⌫">${ic("trash")}Delete</button></div>`;
+}
+// sign-panel.slint: the saved signatures, new ones, ink and width.
+function signPanel() {
+  return ihead("signature", "Signatures", "Kept on this device") +
+    `<section class="n-sec"><h4>My signatures</h4>${SIGS.map(([t, n], i) => `<button class="n-sig ${i === nw.sig ? "on" : ""}" data-sig="${i}"><span class="ink" style="color:${INKS[nw.seg.ink || 0]}">${t}</span><span class="nm">${n}</span></button>`).join("")}
+      <div class="n-rowx"><button class="n-btn" data-act="signew">Draw new</button><button class="n-btn" data-act="signew">Import image…</button></div></section>` +
+    `<section class="n-sec"><h4>Ink</h4>${seg("ink", ["Original", "Black", "Dark blue"])}
+      <div class="n-field"><label>Width</label>${stepper("sigw", 45, "mm")}</div></section>` +
+    `<section class="n-sec">${chk("flatsig", "Flatten signatures when saving")}${hintline("Click on the page to place it, or drag to choose its size. Placed copies keep their own size.")}</section>`;
+}
+// redaction.slint: marking by hand, find and mark, the style of the marks, applying.
+function redactPanel() {
+  const f = nw.rfound, n = nw.red;
+  return ihead("redact", "Redact", "Removes what is under the marks") +
+    `<section class="n-sec"><h4>Mark by hand</h4>${seg("rkind", ["Mark text", "Draw box"])}${hintline(nw.seg.rkind ? "Drag on the page: text, images and drawings under the box will be removed." : "Drag across text to mark it. Double-click marks a word.")}</section>` +
+    `<section class="n-sec"><h4>Find and mark</h4><div class="n-rowx"><input class="n-input" id="n-rq" placeholder="Text to find" value="${esc(nw.rq)}" spellcheck="false"><button class="n-btn" data-act="rfind">Find</button></div>
+      ${chk("rcase", "Match case")}${chk("rword", "Whole words")}${chk("rregex", "Regular expression")}
+      ${f ? `<div class="n-found"><span>${f.n ? `${f.n} found on ${f.pages} page${f.pages > 1 ? "s" : ""}` : "Nothing found"}</span><span class="sp"></span>${f.n ? '<button class="n-btn" data-act="rmark">Mark all</button>' : ""}</div>` : ""}</section>` +
+    `<section class="n-sec"><h4>Marks <span class="cnt">${n || ""}</span></h4>${hintline(n ? `${n} area${n > 1 ? "s are" : " is"} marked. Marks can be undone until they are applied.` : "Nothing is marked yet. Marks can be undone until they are applied.")}
+      <div class="n-field"><label>Fill</label>${seg("rfill", ["Black", "White", "None"])}</div>
+      <div class="n-field"><label>Label</label><input class="n-input" placeholder="e.g. Redacted"></div></section>` +
+    `<div class="n-ifoot"><button class="n-btn primary" data-act="redapply" ${n ? "" : "disabled"}>${n ? `Apply ${n} redaction${n > 1 ? "s" : ""}…` : "Apply redactions…"}</button></div>`;
+}
+// prepare.slint: field types, detection, the list of fields, form data.
+const FIELD_TYPES = [["text", "Text"], ["calendar", "Date"], ["check", "Check box"], ["ellipse", "Radio button"], ["chevD", "Drop-down"], ["outline", "List box"], ["rect", "Button"], ["signature", "Signature"]];
+function preparePanel() {
+  return ihead("formadd", "Prepare form", "No fields yet") +
+    `<section class="n-sec"><h4>Add a field</h4><div class="n-grid2">${FIELD_TYPES.map(([icn, l], i) => `<button class="n-btn ${nw.seg.ptype === i ? "on" : ""}" data-seg="ptype" data-v="${i}">${ic(icn)}${l}</button>`).join("")}</div>${hintline("Click the page to place the field, or drag to draw it.")}</section>` +
+    `<section class="n-sec"><h4>Find fields</h4><div class="n-rowx"><button class="n-btn" data-act="detect">Detect fields</button></div>${hintline("From the lines, underscores and boxes of a printed form.")}</section>` +
+    `<section class="n-sec"><h4>Fields <span class="cnt">0</span></h4>${hintline("Fields are listed here in tab order. A selected field shows its name, tooltip and format here.")}</section>` +
+    `<section class="n-sec"><h4>Form data</h4><div class="n-rowx"><button class="n-btn">Import…</button><button class="n-btn">Export…</button></div></section>`;
+}
+function fillPanel() {
+  return ihead("form", "Fill fields", "No form fields in this document") +
+    `<section class="n-sec"><h4>Fields <span class="cnt">0</span></h4>${hintline("Fields are listed here. Click one to fill it in; Tab moves to the next.")}<div class="n-rowx"><button class="n-btn" data-act="toprepare">Prepare form</button></div></section>` +
+    `<section class="n-sec">${chk("flatform", "Flatten fields when saving")}</section>`;
+}
+function nwInsp() {
+  const el = $("#n-insp");
+  el.classList.toggle("closed", !inspOpen());
+  const d = D();
+  if (nw.sel && hasBox()) el.innerHTML = boxPanel();
+  else if (nw.esel) el.innerHTML = editPanel();
+  else if (nw.mode === "organize") {
+    const n = nw.orgSel.size;
+    el.innerHTML = ihead("organize", n ? n + (n > 1 ? " pages" : " page") + " selected" : "Pages", `${d.labels.length - nw.deleted.size} pages · ${d.size}`, true) +
+      `<section class="n-sec"><h4>Organize</h4>${hintline("Click to select, ⌘-click to add, ⇧-click for a range. Drag to reorder, or drop PDFs and images to insert them.")}</section>`;
+  }
+  else if (nw.tool === "sig" || nw.tool === "initials") el.innerHTML = signPanel();
+  else if (nw.tool === "redact") el.innerHTML = redactPanel();
+  else if (nw.tool === "prepare") el.innerHTML = preparePanel();
+  else if (nw.tool === "fill") el.innerHTML = fillPanel();
+  else {
+    el.innerHTML = ihead("file", d.name, d.edited ? "Edited · not saved" : "Saved", true) +
+      `<section class="n-sec"><h4>Document</h4><dl class="n-kv"><dt>Pages</dt><dd>${d.labels.length}</dd><dt>Page size</dt><dd>${d.size}</dd><dt>File size</dt><dd>${d.bytes}</dd><dt>Security</dt><dd>${d.prot ? "Password to open" : "None"}</dd><dt>Signatures</dt><dd>None</dd><dt>Form fields</dt><dd>None</dd></dl></section>` +
+      `<section class="n-sec"><h4>This page</h4><dl class="n-kv"><dt>Page</dt><dd>${d.labels[nw.page]}${d.labels[nw.page] !== String(nw.page + 1) ? ` (${nw.page + 1} of ${d.labels.length})` : ""}</dd><dt>Annotations</dt><dd>${nw.page === 0 && hasBox() ? 1 : 0}</dd></dl></section>` +
+      `<div class="n-ifoot"><button class="n-btn" data-act="props">All properties…</button></div>`;
+  }
+}
+function nwOrg() {
+  const on = nw.mode === "organize";
+  $("#n-org").hidden = !on;
+  $("#n-scroll").hidden = on;
+  if (!on) return;
+  const d = D();
+  $("#n-org-grid").innerHTML = d.labels.map((l, i) => nw.deleted.has(i) ? "" :
+    `<button class="n-ot ${nw.orgSel.has(i) ? "sel" : ""}" data-p="${i}"><span class="im" style="aspect-ratio:${d.w}/${d.h};transform:rotate(${nw.rot[i] || 0}deg)"><img src="${d.src(i)}" alt="" draggable="false"></span><span class="lb">${l}</span></button>`).join("");
+}
+function nwRender() {
+  nwTop(); nwSide(); nwPill(); nwNav(); nwInsp(); nwOrg(); nwOverlay(); nwVim(); schedulePins();
+}
+
+function setMode(m) {
+  if (m === nw.mode) return;
+  closePop();
+  nw.esel = false; nw.dismiss = false;
+  if (m === "organize") { nw.sideBeforeOrg = nw.side; nw.side = false; nw.sel = false; nw.orgSel.clear(); }
+  else if (nw.mode === "organize") nw.side = nw.sideBeforeOrg;
+  nw.mode = m;
+  nw.tool = MODES[m].first || null;
+  nwRender();
+  afterSlide();
+}
+function setTool(id) {
+  nw.tool = id;
+  nw.dismiss = false;
+  if (id !== "select" && id !== "eselect") { nw.sel = false; nw.esel = false; }
+  if (id === "sig") nw.sig = 0;
+  if (id === "initials") nw.sig = 1;
+  nwRender();
+  afterSlide();
+}
+// A jump remembers where it came from, for Back.
+function jump(i) {
+  if (i !== nw.page) nw.back.push(nw.page);
+  goPage(i);
+}
+function goPage(i, smooth = true) {
+  const el = $(`#n-pages .n-page[data-p="${i}"]`);
+  nw.page = i;
+  nwNav(); nwSide(); if (!nw.sel) nwInsp();
+  if (el) $("#n-scroll").scrollTo({ top: el.offsetTop - 16, behavior: smooth ? "smooth" : "auto" });
+}
+function nwTrack() {
+  const sc = $("#n-scroll"), y = sc.scrollTop + sc.clientHeight * 0.3;
+  let p = nw.page;
+  const pages = $$("#n-pages .n-page");
+  if (!pages.length) return;
+  p = +pages[0].dataset.p;
+  pages.forEach(el => { if (el.offsetTop <= y) p = +el.dataset.p; });
+  if (p !== nw.page) {
+    nw.page = p;
+    nwNav();
+    $$("#n-sidebody .n-thumb").forEach(t => t.classList.toggle("on", +t.dataset.p === p));
+    nwThumbInView();
+    if (nw.tab === "outline") nwSide();
+    if (!nw.sel) nwInsp();
+  }
+}
+$("#n-scroll").addEventListener("scroll", () => { nwTrack(); });
+function setZoom(z, keepFit) {
+  const sc = $("#n-scroll");
+  if (!keepFit) { nw.fit = null; nw.shrunk = null; }
+  const frac = sc.scrollTop / Math.max(1, sc.scrollHeight);
+  nw.zoom = clamp(Math.round(z), 10, 800);
+  nwBuildPages();
+  sc.scrollTop = frac * sc.scrollHeight;
+  schedulePins();
+}
+function fitValue(kind) {
+  const sc = $("#n-scroll"), d = D();
+  const cols = nw.layout === "two" ? 2 : 1;
+  const w = (sc.clientWidth - 80 - (cols - 1) * 12) / (cols * d.w * PT) * 100;
+  const h = (sc.clientHeight - 48) / (d.h * PT) * 100;
+  return kind === "page" ? Math.min(w, h) : w;
+}
+function fitZoom(kind) {
+  if (!$("#n-scroll").clientWidth) return;
+  nw.fit = kind; nw.shrunk = null;
+  setZoom(fitValue(kind), true);
+}
+// Keeps a fitted zoom fitted. A page too wide for the room it has left (the inspector opened,
+// the window shrank) is fitted to the width, and gets its zoom back when the room returns.
+function autoFit() {
+  if (P.ver !== "new" || nw.mode === "organize" || !$("#n-scroll").clientWidth) return;
+  if (nw.fit) return setZoom(fitValue(nw.fit), true);
+  const w = Math.floor(fitValue("width")), want = nw.shrunk || nw.zoom;
+  if (want > w) { nw.shrunk = want; if (nw.zoom !== w) setZoom(w, true); }
+  else if (nw.shrunk) { nw.shrunk = null; setZoom(want, true); }
+}
+const afterSlide = () => setTimeout(autoFit, 230);
+
+let toastT = 0;
+function toast(msg, undo) {
+  const t = $("#n-toast");
+  t.innerHTML = `<span>${msg}</span>` + (undo ? '<button data-act="undo">Undo</button>' : "");
+  t.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove("show"), 3200);
+}
+function doAct(label, redo, undo, { build } = {}) {
+  redo();
+  nw.hist.push({ label, redo, undo, build, doc: nw.doc });
+  nw.fut = [];
+  D().edited = true;
+  if (build) nwBuildPages();
+  nwRender();
+}
+function undoAct() {
+  const a = nw.hist.pop();
+  if (!a) return;
+  a.undo(); nw.fut.push(a);
+  if (a.build) nwBuildPages();
+  nwRender(); toast("Undid " + a.label);
+}
+function redoAct() {
+  const a = nw.fut.pop();
+  if (!a) return;
+  a.redo(); nw.hist.push(a);
+  if (a.build) nwBuildPages();
+  nwRender(); toast("Redid " + a.label);
+}
+function deleteBox() {
+  if (!(nw.sel && hasBox())) return;
+  doAct("delete text box", () => { nw.tbox.on = false; nw.sel = false; }, () => { nw.tbox.on = true; nw.sel = true; });
+  toast("Text box deleted", true);
+}
+function setBox(key, val, label) {
+  const old = nw.tbox[key];
+  if (old === val) return;
+  doAct(label, () => { nw.tbox[key] = val; }, () => { nw.tbox[key] = old; });
+}
+function openDoc(id) {
+  if (!nw.docs.includes(id)) nw.docs.push(id);
+  switchDoc(id);
+}
+function switchDoc(id) {
+  if (id === nw.doc) return;
+  nw.doc = id; nw.page = 0; nw.sel = id === "report" && nw.tbox.on && false;
+  nw.deleted = new Set(); nw.rot = {}; nw.orgSel.clear(); nw.hits = []; nw.q = ""; $("#n-q").value = ""; nwSearchUi();
+  nw.esel = false; nw.back = []; nw.rfound = null; nw.red = 0; nw.shrunk = null;
+  nwBuildPages(); nwRender();
+  $("#n-scroll").scrollTop = 0;
+}
+function closeDoc(id) {
+  nw.docs = nw.docs.filter(x => x !== id);
+  if (!nw.docs.length) nw.docs = ["report"];
+  if (nw.doc === id) { nw.doc = null; switchDoc(nw.docs[0]); } else nwRender();
+}
+
+/* search */
+function nwSearch(q) {
+  nw.q = q;
+  nw.hits = [];
+  if (q.trim().length >= 2) {
+    const re = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    (TEXT[nw.doc] || []).forEach((t, p) => { const n = (t.match(re) || []).length; for (let k = 0; k < n; k++) nw.hits.push(p); });
+  }
+  nw.hit = 0;
+  nwSearchUi();
+  nwSide();
+  if (nw.hits.length) goPage(nw.hits[0]);
+}
+function nwSearchUi() {
+  const has = nw.q.trim().length >= 2;
+  $("#n-search").classList.toggle("has", !!nw.q);
+  $("#n-hits").textContent = has ? (nw.hits.length ? `${nw.hit + 1} of ${nw.hits.length}` : "No matches") : "";
+  $("#n-prev").hidden = $("#n-next").hidden = !nw.hits.length;
+  $("#n-qk").hidden = !!nw.q;
+}
+function stepHit(d) {
+  if (!nw.hits.length) return;
+  nw.hit = (nw.hit + d + nw.hits.length) % nw.hits.length;
+  nwSearchUi();
+  goPage(nw.hits[nw.hit]);
+}
+$("#n-q").addEventListener("input", e => nwSearch(e.target.value));
+$("#n-q").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); stepHit(e.shiftKey ? -1 : 1); }
+  if (e.key === "Escape") { e.target.value = ""; nwSearch(""); e.target.blur(); }
+});
+$("#n-pin").addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const v = e.target.value.trim(), d = D();
+  let i = d.labels.indexOf(v);
+  if (i < 0 && /^\d+$/.test(v)) i = +v - 1;
+  if (i >= 0 && i < d.labels.length) { e.target.blur(); jump(i); } else { e.target.select(); toast(`No page “${v}”`); }
+});
+$("#n-pin").addEventListener("focus", e => e.target.select());
+$("#n-pin").addEventListener("blur", () => nwNav());
+
+/* command palette */
+function toggleVim() {
+  nw.vim = !nw.vim; nw.vimline = null;
+  nwVim(); applyProto();
+  toast(nw.vim ? "Vim keys on: the mode and the : line show at the bottom left; letters no longer pick tools" : "Vim keys off");
+}
+function toggleProt() {
+  D().prot = !D().prot;
+  nwRender();
+  toast(D().prot ? "Protected: a lock shows next to the name" : "Protection removed");
+}
+const CMDS = [
+  ["Modes", [["View", "book", "", () => setMode("view")], ["Annotate", "highlight", "", () => setMode("annotate")], ["Edit text and images", "edit", "⌘E", () => setMode("edit")], ["Fill & Sign", "signature", "", () => setMode("sign")], ["Organize pages", "organize", "", () => setMode("organize")]]],
+  ["Recent", [["lease.pdf", "file", "", () => openDoc("lease")], ["form.pdf", "file"], ["scan.pdf", "file"]]],
+  ["Protect", [["Redact", "redact", "", () => { setMode("edit"); setTool("redact"); }], ["Password and permissions…", "lock", "", toggleProt], ["Sign with a certificate…", "seal"], ["Signatures in this document", "shieldcheck"]]],
+  ["Prepare", [["Prepare form", "formadd", "", () => { setMode("sign"); setTool("prepare"); }], ["Recognize text…", "scan"], ["Watermark…", "stamp"], ["Header and footer…", "header"], ["Bates numbering…", "hash"]]],
+  ["Export", [["Save as…", "save", "⇧⌘S"], ["Save a smaller copy…", "compress"], ["Optimize…", "wand"], ["Save as PDF/A…", "archive"], ["Flatten…", "layers"], ["Print…", "printer", "⌘P"]]],
+  ["Review", [["Compare with another PDF…", "compare"], ["Accessibility check", "access"], ["Document properties", "info", "⌘I"]]],
+  ["View", [["Reading view", "book"], ["Read aloud", "speaker", "⇧⌘V"], ["Present", "present", "⌘↩"], ["Bookmark this page", "bookmark", "⌘D"], ["Show or hide the sidebar", "sidebar", "⌘\\", () => act("side")], ["Show or hide the inspector", "panelright", "⌥⌘I", () => act("insp")]]],
+  ["Pagebara", [["Open…", "folder", "⌘O", () => openDoc("lease")], ["Close document", "x", "⌘W"], ["Library", "library", "⌘L"], ["Settings", "gear", "⌘,"], ["Vim keys: turn on or off", "keyboard", "", toggleVim], ["Keyboard shortcuts", "keyboard", "?"], ["Join the community on Discord", "chat"], ["About Pagebara", "info"]]],
+];
+function openPalette() {
+  closePop();
+  if ($("#nw .n-scrim")) return;
+  const sc = document.createElement("div");
+  sc.className = "n-scrim";
+  sc.innerHTML = `<div class="n-pal"><div class="q">${ic("search")}<input id="n-palq" placeholder="Search tools and commands" autocomplete="off" spellcheck="false"><kbd>esc</kbd></div><div class="list" id="n-pall"></div><div class="foot"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>↩</kbd> run</span><span>Everything that was in ⋯, grouped</span></div></div>`;
+  $("#nw").appendChild(sc);
+  let act = 0, flat = [];
+  const draw = () => {
+    const q = $("#n-palq").value.trim().toLowerCase();
+    flat = [];
+    let h = "";
+    for (const [g, items] of CMDS) {
+      const f = items.filter(([l]) => !q || l.toLowerCase().includes(q) || g.toLowerCase().includes(q));
+      if (!f.length) continue;
+      h += `<div class="grp">${g}</div>`;
+      for (const it of f) {
+        const i = flat.length;
+        flat.push(it);
+        h += `<button class="it ${i === act ? "act" : ""}" data-i="${i}">${ic(it[1])}<span>${it[0]}</span>${it[2] ? `<kbd>${it[2]}</kbd>` : ""}</button>`;
+      }
+    }
+    $("#n-pall").innerHTML = h || '<div class="none">Nothing matches</div>';
+    const a = $("#n-pall .it.act");
+    if (a) a.scrollIntoView({ block: "nearest" });
+  };
+  const run = i => {
+    const it = flat[i];
+    sc.remove();
+    if (!it) return;
+    if (it[3]) it[3](); else toast(`“${it[0]}” opens here`);
+  };
+  $("#n-palq").addEventListener("input", () => { act = 0; draw(); });
+  $("#n-palq").addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { act = Math.min(flat.length - 1, act + 1); draw(); e.preventDefault(); }
+    if (e.key === "ArrowUp") { act = Math.max(0, act - 1); draw(); e.preventDefault(); }
+    if (e.key === "Enter") run(act);
+    if (e.key === "Escape") sc.remove();
+  });
+  sc.addEventListener("mousedown", e => { if (e.target === sc) sc.remove(); });
+  sc.addEventListener("click", e => { const b = e.target.closest(".it"); if (b) run(+b.dataset.i); });
+  sc.addEventListener("mousemove", e => { const b = e.target.closest(".it"); if (b && +b.dataset.i !== act) { act = +b.dataset.i; $$("#n-pall .it").forEach(x => x.classList.toggle("act", x === b)); } });
+  draw();
+  $("#n-palq").focus();
+}
+
+/* menus */
+function swatchPop(anchor, curIdx, pick) {
+  togglePop(anchor, SW.map((c, i) => `<button class="n-sw ${i === curIdx ? "on" : ""}" data-v="${i}" style="background:${c}" data-tip="${SWN[i]}"></button>`).join(""),
+    { cls: "sw", onPick: v => { closePop(); pick(+v); } });
+}
+function sizePop(anchor, list, curV, pick) {
+  togglePop(anchor, list.map(s => mi(s, s + " pt", { check: s === curV })).join(""), { onPick: v => { closePop(); pick(+v); } });
+}
+function optClick(b) {
+  const k = b.dataset.opt, o = nw.opts[nw.tool];
+  if (k === "color") swatchPop(b, o.color, v => { o.color = v; nwPill(); });
+  if (k === "width") sizePop(b, [0.5, 1, 2, 3, 4, 6, 8, 12], o.width, v => { o.width = v; nwPill(); });
+  if (k === "size") sizePop(b, [9, 10, 11, 12, 14, 18, 24, 36, 48, 72], o.size, v => { o.size = v; nwPill(); });
+  if (k === "tcolor") swatchPop(b, nw.tbox.color, v => setBox("color", v, "colour change"));
+  if (k === "tsize") sizePop(b, [9, 10, 11, 12, 14, 18, 24, 36, 48, 72], nw.tbox.size, v => setBox("size", v, "size change"));
+  if (k === "efont") togglePop(b, ["Helvetica", "Times", "Courier", "Inter"].map(f => mi(f, f, { check: f === nw.etext.font })).join(""), { onPick: v => { closePop(); nw.etext.font = v; nwRender(); } });
+  if (k === "esize") sizePop(b, [9, 10, 11, 12, 14, 18, 24, 28, 36, 48, 72], nw.etext.size, v => { nw.etext.size = v; nwRender(); });
+  if (k === "ecolor") swatchPop(b, nw.etext.color, v => { nw.etext.color = v; nwRender(); });
+}
+const viewAct = v => toast({ reading: "Reading view: the text reflowed to fit the window", aloud: "Read aloud starts at page " + D().labels[nw.page], present: "Present: full screen, one page at a time", bm: "Bookmarked page " + D().labels[nw.page] }[v]);
+function toolClick(b) {
+  const id = b.dataset.tool;
+  if (nw.mode === "organize") return orgAction(id, b);
+  if (nw.mode === "view") return viewAct(id);
+  const t = MODES[nw.mode].tools.find(x => x.id === id);
+  if (t.variants && nw.tool === id) {
+    togglePop(b, t.variants.map(([v, l, icn]) => `<button class="mi" data-v="${v}">${ic(icn)}<span>${l}</span>${v === nw.opts[id].v ? `<span class="k">${ic("check")}</span>` : ""}</button>`).join(""),
+      { place: "below-start", onPick: v => { closePop(); nw.opts[id].v = v; nwPill(); } });
+    return;
+  }
+  closePop();
+  setTool(id);
+  if (id === "certify") toast("Certificate: a dialog to choose the certificate and where the seal goes");
+  if (id === "addimg") toast("Add image: choose a file, then click where it goes");
+}
+// Fill & Sign: a click on the page places the signature, initials, date or checkmark there.
+function placeStamp(pg, e) {
+  const r = pg.getBoundingClientRect(), sc = nw.zoom / 100 * PT;
+  const [cls, text, size] = STAMPS[nw.tool];
+  const st = { doc: nw.doc, p: +pg.dataset.p, x: Math.round((e.clientX - r.left) / sc), y: Math.round((e.clientY - r.top) / sc), cls, text: text(), size, color: cls === "k-sig" ? INKS[nw.seg.ink || 0] : "#18181B" };
+  doAct("place " + MODES.sign.tools.find(t => t.id === nw.tool).label.toLowerCase(), () => nw.stamps.push(st), () => { nw.stamps = nw.stamps.filter(x => x !== st); });
+}
+function redactFind() {
+  const q = ($("#n-rq") ? $("#n-rq").value : nw.rq).trim();
+  nw.rq = q;
+  if (!q) { nw.rfound = null; return nwInsp(); }
+  let re;
+  try {
+    const src = nw.chk.rregex ? q : q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    re = new RegExp(nw.chk.rword ? `\\b(?:${src})\\b` : src, nw.chk.rcase ? "g" : "gi");
+  } catch (err) { nw.rfound = null; nwInsp(); return toast("Not a valid regular expression"); }
+  let n = 0, pages = 0;
+  (TEXT[nw.doc] || []).forEach(t => { const k = (t.match(re) || []).length; n += k; if (k) pages++; });
+  nw.rfound = { n, pages };
+  nwInsp();
+}
+function orgAction(id, b) {
+  const sel = [...nw.orgSel];
+  if (id === "insert") return toast("Insert: choose PDFs or images, or drop them between pages");
+  if (!sel.length) return;
+  if (id === "rotl" || id === "rotr") {
+    const d = id === "rotl" ? -90 : 90;
+    doAct("rotate", () => sel.forEach(i => { nw.rot[i] = (nw.rot[i] || 0) + d; }), () => sel.forEach(i => { nw.rot[i] = (nw.rot[i] || 0) - d; }));
+  }
+  if (id === "extract") toast(`Extract ${sel.length} page${sel.length > 1 ? "s" : ""} to a new PDF…`);
+  if (id === "del") {
+    doAct(`delete ${sel.length} page${sel.length > 1 ? "s" : ""}`, () => { sel.forEach(i => nw.deleted.add(i)); nw.orgSel.clear(); }, () => { sel.forEach(i => nw.deleted.delete(i)); }, { build: true });
+    toast(`${sel.length} page${sel.length > 1 ? "s" : ""} deleted`, true);
+  }
+}
+let orgAnchor = -1;
+function orgClick(b, e) {
+  const i = +b.dataset.p;
+  if (e.shiftKey && orgAnchor >= 0) { const [a, z] = [Math.min(orgAnchor, i), Math.max(orgAnchor, i)]; for (let k = a; k <= z; k++) if (!nw.deleted.has(k)) nw.orgSel.add(k); }
+  else if (e.metaKey || e.ctrlKey) { nw.orgSel.has(i) ? nw.orgSel.delete(i) : nw.orgSel.add(i); orgAnchor = i; }
+  else { const only = nw.orgSel.size === 1 && nw.orgSel.has(i); nw.orgSel.clear(); if (!only) nw.orgSel.add(i); orgAnchor = i; }
+  nwRender();
+}
+function act(a, b) {
+  switch (a) {
+    case "side": nw.side = !nw.side; if (nw.mode === "organize") nw.sideBeforeOrg = nw.side; nwRender(); return afterSlide();
+    case "insp":
+      if (inspOpen()) { nw.pin = false; nw.dismiss = true; } else { nw.pin = true; nw.dismiss = false; }
+      nwRender(); return afterSlide();
+    case "back": if (nw.back.length) goPage(nw.back.pop()); return;
+    case "ebold": nw.etext.bold = !nw.etext.bold; return nwRender();
+    case "eital": nw.etext.ital = !nw.etext.ital; return nwRender();
+    case "esize-": nw.etext.size = Math.max(4, nw.etext.size - 1); return nwRender();
+    case "esize+": nw.etext.size = Math.min(144, nw.etext.size + 1); return nwRender();
+    case "edelete": return toast("Delete: the text leaves the page; ⌘Z brings it back");
+    case "edup": return toast("Duplicate: a copy appears beside it");
+    case "signew": return toast("A dialog to draw the signature, or to pick a photo of it and remove the paper");
+    case "rfind": return redactFind();
+    case "rmark": {
+      const n = nw.rfound ? nw.rfound.n : 0;
+      if (!n) return;
+      doAct(`mark ${n} area${n > 1 ? "s" : ""}`, () => { nw.red += n; }, () => { nw.red -= n; });
+      return toast(`${n} area${n > 1 ? "s" : ""} marked for redaction`, true);
+    }
+    case "redapply": return toast("Apply asks once, saves the redacted copy as a new file and checks nothing is left");
+    case "detect": return toast("Detect fields: finds the blanks of a printed form and offers them as fields");
+    case "toprepare": return setTool("prepare");
+    case "modemenu":
+      return togglePop(b, Object.entries(MODES).map(([k, m]) => mi("M" + k, m.label, { check: nw.mode === k })).join(""), { onPick: v => { closePop(); setMode(v.slice(1)); } });
+    case "palette": return openPalette();
+    case "save": if (D().edited) { D().edited = false; nwRender(); toast(`Saved ${D().name}`); } else toast("No changes to save"); return;
+    case "pprev": return goPage(Math.max(0, nw.page - 1));
+    case "pnext": return goPage(Math.min(D().labels.length - 1, nw.page + 1));
+    case "zin": return setZoom(ZOOMS.find(z => z > nw.zoom) || nw.zoom);
+    case "zout": return setZoom([...ZOOMS].reverse().find(z => z < nw.zoom) || nw.zoom);
+    case "undo": return undoAct();
+    case "redo": return redoAct();
+    case "delete": return deleteBox();
+    case "size-": return setBox("size", Math.max(4, nw.tbox.size - 2), "size change");
+    case "size+": return setBox("size", Math.min(144, nw.tbox.size + 2), "size change");
+    case "hitprev": return stepHit(-1);
+    case "hitnext": return stepHit(1);
+    case "comment": nw.pin = true; nwRender(); afterSlide(); return setTimeout(() => $("#n-cin") && $("#n-cin").focus(), 220);
+    case "send": return sendComment();
+    case "flatten": return toast("Flatten: the box becomes part of the page");
+    case "props": return toast("Document properties opens here");
+    case "open": return openDoc(nw.docs.includes("lease") ? "report" : "lease");
+    case "boxmenu":
+      return togglePop(b, mi("copy", "Copy", { icon: "file", k: "⌘C" }) + mi("dup", "Duplicate", { icon: "combine", k: "⌘D" }) + '<div class="sep"></div>' + mi("front", "Bring to front", { icon: "layers" }) + mi("flat", "Flatten", { icon: "layers" }) + '<div class="sep"></div>' + mi("del", "Delete", { icon: "trash", k: "⌫" }),
+        { place: "below-end", onPick: v => { closePop(); if (v === "del") deleteBox(); else toast(v === "flat" ? "Flatten: the box becomes part of the page" : "Done"); } });
+    case "docmenu":
+      return togglePop(b, mi("rename", "Rename…") + mi("finder", "Show in Finder") + '<div class="sep"></div>' + mi("saveas", "Save as…", { icon: "save", k: "⇧⌘S" }) + mi("small", "Save a smaller copy…", { icon: "compress" }) + mi("print", "Print…", { icon: "printer", k: "⌘P" }) + '<div class="sep"></div>' +
+        mi("lease", "Open another… (lease.pdf)", { icon: "folder", k: "⌘O" }) + mi("props", "Document properties", { icon: "info", k: "⌘I" }) + '<div class="sep"></div>' + mi("close", "Close", { icon: "x", k: "⌘W" }),
+        { place: "below-start", onPick: v => { closePop(); if (v === "lease") openDoc("lease"); else if (v === "close") toast("Close: asks to save the changes first"); else toast(`${{ rename: "Rename", finder: "Show in Finder", saveas: "Save as", small: "Save a smaller copy", print: "Print", props: "Document properties" }[v]} opens here`); } });
+    case "zmenu":
+      return togglePop(b, mi("fitw", "Fit width", { k: "⌘2" }) + mi("fitp", "Fit page", { k: "⌘0" }) + mi("100", "Actual size", { k: "⌘1" }) + '<div class="sep"></div>' + [50, 75, 100, 125, 150, 200, 400].map(z => mi(z, z + "%", { check: z === nw.zoom })).join(""),
+        { place: "below", onPick: v => { closePop(); v === "fitw" ? fitZoom("width") : v === "fitp" ? fitZoom("page") : setZoom(+v); } });
+    case "viewmenu":
+      return togglePop(b, '<div class="hd">Layout</div>' + [["continuous", "Continuous"], ["two", "Two pages"]].map(([v, l]) => mi("L" + v, l, { check: nw.layout === v })).join("") +
+        '<div class="hd">Page colour</div>' + [["normal", "Normal"], ["dark", "Dark"], ["sepia", "Sepia"]].map(([v, l]) => mi("C" + v, l, { check: nw.pagecolor === v })).join(""),
+        { place: "below-end", onPick: v => {
+          closePop();
+          if (v[0] === "L") { nw.layout = v.slice(1); nwBuildPages(); return schedulePins(); }
+          nw.pagecolor = v.slice(1); nwBuildPages();
+        } });
+  }
+}
+function sendComment() {
+  const i = $("#n-cin");
+  if (!i || !i.value.trim()) return;
+  const text = i.value.trim();
+  doAct("comment", () => nw.comments.push(text), () => nw.comments.pop());
+  setTimeout(() => $("#n-cin") && $("#n-cin").focus(), 0);
+}
+
+function nwInit() {
+  hydrate($("#nw"));
+  // The side panels slide; refit and re-pin once they have.
+  $("#nw").addEventListener("transitionend", e => { if (e.target.matches(".n-side, .n-insp")) { autoFit(); schedulePins(); } });
+  nwBuildPages();
+  nwRender();
+  $("#nw").addEventListener("click", e => {
+    const t = e.target;
+    let b;
+    if ((b = t.closest("[data-mode]"))) return setMode(b.dataset.mode);
+    if ((b = t.closest("#n-toolpill [data-tool]"))) return toolClick(b);
+    if ((b = t.closest("[data-opt]"))) return optClick(b);
+    if ((b = t.closest("[data-close]"))) { e.stopPropagation(); return closeDoc(b.dataset.close); }
+    if ((b = t.closest("[data-act]"))) return act(b.dataset.act, b);
+    if ((b = t.closest("[data-chk]"))) { nw.chk[b.dataset.chk] = !nw.chk[b.dataset.chk]; return nwInsp(); }
+    if ((b = t.closest("[data-seg]"))) { nw.seg[b.dataset.seg] = +b.dataset.v; return nwInsp(); }
+    if ((b = t.closest("[data-sig]"))) { nw.sig = +b.dataset.sig; return nwInsp(); }
+    if ((b = t.closest("[data-esw]"))) { nw.etext.color = +b.dataset.esw; return nwRender(); }
+    if ((b = t.closest(".n-thumb"))) return jump(+b.dataset.p);
+    if ((b = t.closest("#n-sidetabs [data-t]"))) { nw.tab = b.dataset.t; return nwSide(); }
+    if ((b = t.closest("[data-goto]"))) return jump(+b.dataset.goto);
+    if ((b = t.closest("[data-selbox]"))) { nw.sel = true; nw.esel = false; jump(0); return nwRender(); }
+    if ((b = t.closest(".n-sw[data-sw]"))) return setBox("color", +b.dataset.sw, "colour change");
+    if ((b = t.closest(".n-tbox"))) { if (nw.mode !== "organize") { nw.sel = true; nw.esel = false; if (nw.mode === "annotate" && nw.tool !== "select") nw.tool = "select"; nwRender(); } return; }
+    if ((b = t.closest(".n-eobj"))) { nw.esel = true; nw.sel = false; if (nw.tool !== "etext") nw.tool = "eselect"; return nwRender(); }
+    if ((b = t.closest(".n-page")) && nw.mode === "sign" && STAMPS[nw.tool]) return placeStamp(b, e);
+    if ((b = t.closest(".n-ot"))) return orgClick(b, e);
+    if ((b = t.closest(".n-tab"))) return switchDoc(b.dataset.doc);
+    if (t.closest(".n-page") || t.closest(".n-scroll")) { if (nw.sel || nw.esel) { nw.sel = false; nw.esel = false; nwRender(); } }
+  });
+  $("#nw").addEventListener("input", e => { if (e.target.id === "n-rq") nw.rq = e.target.value; });
+  $("#nw").addEventListener("change", e => {
+    if (e.target.id === "n-size") { const v = parseFloat(e.target.value); if (v >= 4 && v <= 144) setBox("size", Math.round(v), "size change"); else nwInsp(); }
+    if (e.target.id === "n-esize") { const v = parseFloat(e.target.value); if (v >= 4 && v <= 144) nw.etext.size = Math.round(v); nwRender(); }
+  });
+  $("#nw").addEventListener("keydown", e => {
+    if (e.target.id === "n-cin" && e.key === "Enter") sendComment();
+    if (e.target.id === "n-rq" && e.key === "Enter") { redactFind(); setTimeout(() => $("#n-rq") && $("#n-rq").focus(), 0); }
+    if (e.target.id === "n-size" && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); act(e.key === "ArrowUp" ? "size+" : "size-"); setTimeout(() => $("#n-size").focus(), 0); }
+  });
+}
+
+document.addEventListener("keydown", e => {
+  if (P.ver !== "new") return;
+  const typing = e.target.closest && e.target.closest("input, textarea");
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); return openPalette(); }
+  if (mod && e.key.toLowerCase() === "f") { e.preventDefault(); $("#n-q").focus(); $("#n-q").select(); return; }
+  if (mod && e.key === "\\") { e.preventDefault(); return act("side"); }
+  if (mod && e.altKey && e.code === "KeyI") { e.preventDefault(); return act("insp"); }
+  if (mod && !typing && e.key.toLowerCase() === "z") { e.preventDefault(); return e.shiftKey ? redoAct() : undoAct(); }
+  if (mod && (e.key === "=" || e.key === "+")) { e.preventDefault(); return act("zin"); }
+  if (mod && e.key === "-") { e.preventDefault(); return act("zout"); }
+  if (mod && e.key === "[") { e.preventDefault(); return act("back"); }
+  if (typing) return;
+  if (nw.vim && !mod && !e.altKey && vimKey(e)) return e.preventDefault();
+  if (e.key === "Escape") { if (openPop) return closePop(); if (nw.sel || nw.esel) { nw.sel = false; nw.esel = false; return nwRender(); } }
+  if ((e.key === "Backspace" || e.key === "Delete") && nw.sel) { e.preventDefault(); return deleteBox(); }
+  if (mod || e.altKey) return;
+  const keys = { v: "select", h: "highlight", p: "draw", t: "text", n: "note" };
+  const k = e.key.toLowerCase();
+  // With vim keys on, the letters belong to vim.
+  if (keys[k] && !nw.vim) { if (nw.mode !== "annotate") setMode("annotate"); setTool(keys[k]); }
+  if (e.key === "ArrowRight" || e.key === "PageDown") act("pnext");
+  if (e.key === "ArrowLeft" || e.key === "PageUp") act("pprev");
+});
+
+// The vim keys the app has, as far as the mock needs them: `:` and `/` open the line.
+function vimKey(e) {
+  if (nw.vimline != null) {
+    if (e.key === "Escape") nw.vimline = null;
+    else if (e.key === "Backspace") nw.vimline = nw.vimline.length > 1 ? nw.vimline.slice(0, -1) : null;
+    else if (e.key === "Enter") {
+      const l = nw.vimline, v = l.slice(1).trim(), d = D();
+      nw.vimline = null;
+      if (l[0] === "/") { $("#n-q").value = v; nwSearch(v); }
+      else {
+        let i = d.labels.indexOf(v);
+        if (i < 0 && /^\d+$/.test(v)) i = +v - 1;
+        if (i >= 0 && i < d.labels.length) jump(i); else toast(`Not a command: ${l}`);
+      }
+    } else if (e.key.length === 1) nw.vimline += e.key;
+    else return false;
+    nwVim();
+    return true;
+  }
+  if (e.key === ":" || e.key === "/") { nw.vimline = e.key; nwVim(); return true; }
+  if (e.key === "j" || e.key === "k") { $("#n-scroll").scrollBy({ top: e.key === "j" ? 80 : -80 }); return true; }
+  if (e.key === "n" || e.key === "N") { stepHit(e.key === "n" ? 1 : -1); return true; }
+  return false;
+}
+
+/* ------------------------------------------------------------------ start */
+hydrate($("#cur"));
+curInit();
+nwInit();
+applyProto();
+// Both windows start on page i with the selected text box in view, as in the screenshot.
+addEventListener("load", schedulePins);
+})();
+</script>
+</body>
+</html>

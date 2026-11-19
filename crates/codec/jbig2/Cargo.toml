@@ -1,0 +1,16 @@
+[package]
+name = "pagebara-jbig2"
+description = "JBIG2 (ITU-T T.88) decoder for standalone files and PDF embedded streams"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+
+
+[dev-dependencies]
+# Differential-test oracle only; never linked into Specular.
+hayro-jbig2 = { version = "0.3", default-features = false }
+
+[lints]
+workspace = true

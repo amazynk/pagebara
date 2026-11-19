@@ -1,0 +1,30 @@
+# Files for keeping and sharing on the phone: the tools sheet, a smaller copy, a PDF/A
+# copy, and the accessibility check with its automatic fixes (undoable).
+open "$SAMPLES/report.pdf"
+assert pages == 12
+call sheet more
+wait 300
+screenshot 12-more.png
+call sheet tools
+assert sheet == tools
+wait 400
+screenshot 12-tools.png
+call optimize 0
+await busy == false 30000
+assert sheet == none
+assert tools.output contains report (smaller).pdf
+assert tools.output-exists == true
+assert message contains smaller
+call save-pdfa
+await busy == false 30000
+assert tools.output contains report (PDF-A).pdf
+assert message contains conforms
+open "$SAMPLES/tagged.pdf"
+call check-access
+assert access.fixable > 0
+assert message contains accessibility problems
+call fix-access
+assert access.errors == 0
+assert message contains No accessibility problems
+wait 400
+screenshot 12-fixed.png

@@ -1,0 +1,21 @@
+[package]
+name = "pagebara-os"
+description = "Desktop integration: one running instance, file:// and #page=N arguments, the system's recent files and default-app registration"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-identity.workspace = true
+pagebara-thread.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+quick-xml = "0.41"
+
+# Named pipes for the single-instance channel (Unix uses std's domain sockets).
+[target.'cfg(windows)'.dependencies]
+interprocess = "2"
+
+[lints]
+workspace = true

@@ -1,0 +1,16 @@
+[package]
+name = "pixel-diff"
+description = "Renders PDF pages with our engine and with MuPDF (and pdfium when available) and reports per-page differences"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+corpus-check = { path = "../corpus-check" }
+pagebara-render.workspace = true
+pagebara-png.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

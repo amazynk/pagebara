@@ -1,0 +1,200 @@
+# Changing page text in place: a double click puts the caret in a paragraph; typing
+# reflows it in its box; Ctrl+B makes a selected word bold, the tool row and the inspector
+# change its colour and size (and those of a selected block); deleting, keyboard selection
+# and the clipboard work as in a text field; Escape or a click outside writes it as one
+# step that undo takes back. A new paragraph, an input method's composition, a new text
+# box (one over a picture, one on the blue box, where the caret and frame keep an edge
+# that shows, in the high-contrast theme too); the preview in a dark page theme and
+# rendered sharp again after zooming; saved and read again.
+cursor on
+open "$SAMPLES/flyer.pdf"
+zoom 100 0
+tool edit
+wait 600
+move text 1 "Saturday" 300
+dblclick text 1 "Saturday" 300
+assert edit.text-editing == true
+assert edit.text contains Join us on Saturday for plants, seeds
+assert message contains Editing text
+assert edit.lines == 3
+# After "Saturday", a long phrase: the paragraph flows onto another line.
+key ctrl+right|alt+right
+type " morning and afternoon, rain or shine," 600
+assert edit.text contains Saturday morning and afternoon, rain or shine, for plants
+assert edit.lines >= 4
+screenshot 22-reflow.png
+key backspace
+assert edit.text contains rain or shine for plants
+# A double click with the hand moving a little before the button comes up still selects
+# the whole word; dragging on from it selects word by word. (Targets are where the words
+# were on the page: "morning" is typed where "for" was.)
+click text 1 "Saturday" 100
+drag-hold text 1 "Saturday" text-end 1 "Satur" 200
+release
+assert edit.caret == 11,19
+wait 700
+click text 1 "Saturday" 100
+drag-hold text 1 "Saturday" text-end 1 "Saturday fo" 200
+release
+assert edit.caret == 11,27
+wait 700
+# A double click selects a word; Ctrl+B makes it bold.
+dblclick text 1 "Saturday" 300
+key ctrl+b
+assert edit.style contains bold=true
+screenshot 22-bold.png
+# The tool row has the colour and the size of the selected word, with the inspector
+# closed too; typing goes on in the text afterwards.
+# (The swatches and the sizes open in a popup: chosen with the keys, black to the
+# swatch after it and 12 pt to the size after it.)
+click #ToolRow::text-colour 300
+key right
+assert edit.style contains fill=#facc15
+click #ToolRow::text-size 300
+key down
+wait 200
+key return
+assert edit.style contains size=14
+# The inspector's list of common sizes does the same.
+click "Inspector" 300
+click "Common sizes" 300
+key down
+wait 200
+key return
+assert edit.style contains size=16
+click "Inspector" 300
+assert edit.text-editing == true
+screenshot 22-colour-size.png
+# The rendered paragraph follows the zoom in both directions on any display.
+assert edit.preview-sharp == true
+assert edit.preview-zoom == 100
+zoom 160 400
+assert edit.preview-sharp == true
+assert edit.preview-zoom == 160
+screenshot 22-zoomed.png
+zoom 100 400
+assert edit.preview-sharp == true
+assert edit.preview-zoom == 100
+# The preview is the page rendered as it will be, in the page's colours.
+call page-theme dark
+wait 800
+assert edit.text-editing == true
+screenshot 22-dark.png
+call page-theme normal
+# Home and End follow the laid-out lines; Shift extends.
+key ctrl+home|ctrl+up
+key end|ctrl+right
+key home|ctrl+left
+assert edit.caret == 0,0
+key shift+end|ctrl+shift+right
+key ctrl+c
+key ctrl+end|ctrl+down
+key ctrl+v
+assert edit.text contains club.Join us on
+key ctrl+z
+assert edit.text !contains club.Join us on
+# Escape writes the paragraph: one step.
+key escape
+assert edit.text-editing == false
+assert undo == Edit text
+assert page.text:1 contains afternoon
+assert page.text:1 contains shine
+key ctrl+z
+assert page.text:1 contains Join us on Saturday for plants, seeds
+assert page.text:1 !contains afternoon
+key ctrl+y
+assert page.text:1 contains afternoon
+# Enter on the selected heading edits it; Ctrl+A in the text selects all of it; a click
+# outside finishes.
+click object 1 1 300
+# Selected, not typed in: its colour and size are in the tool row as well.
+click #ToolRow::obj-colour 300
+key right
+assert undo == Change text colour
+assert edit.fill == #facc15
+click #ToolRow::obj-size 300
+key down
+wait 200
+key return
+assert edit.font-size == 36
+screenshot 22-selected-colour-size.png
+key return
+assert edit.text-editing == true
+key ctrl+a
+type "Summer Garden Fair" 400
+click page 1 500,760 300
+assert edit.text-editing == false
+assert page.text:1 contains Summer Garden Fair
+# A new paragraph at the end of the footer.
+dblclick text 1 "Tickets" 300
+key ctrl+end
+key return
+type "Free parking" 400
+assert edit.text contains "gate\nFree parking"
+# An input method's composition shows at the caret before it is committed.
+call edit-preedit "ab"
+assert edit.preview contains Free parkingab
+assert edit.text !contains parkingab
+call edit-preedit ""
+screenshot 22-newline.png
+key escape
+assert page.text:1 contains Tickets at the gate
+assert page.text:1 contains Free parking
+# Ctrl+Z with nothing typed undoes the last edit.
+dblclick text 1 "Tickets" 300
+key ctrl+z
+assert edit.text-editing == false
+assert page.text:1 !contains Free parking
+key ctrl+y
+assert page.text:1 contains Free parking
+# A new text box. With only a caret, the colour chosen is for what is typed next.
+call edit add-text-centre
+assert edit.text-editing == true
+assert edit.text == ""
+type "Hello from " 300
+click #ToolRow::text-colour 300
+key left
+type "pagebara" 300
+key shift+left
+assert edit.style contains fill=#dc2626
+key right
+key escape
+assert undo == Add text
+assert page.text:1 contains Hello from pagebara
+# On the blue box the caret and the frame show, in the high-contrast theme too.
+call edit add-text
+click page 1 340,300 300
+assert edit.text-editing == true
+type "On blue" 400
+move page 1 500,700 200
+key shift+left
+wait 300
+screenshot 22-caret-on-blue.png
+key right
+wait 300
+screenshot 22-caret-on-blue-caret.png
+call theme high-contrast
+wait 400
+screenshot 22-caret-high-contrast.png
+call theme light
+key escape
+assert page.text:1 contains On blue
+# Typed over a picture, the text shows on it.
+call edit add-text
+click page 1 90,236 300
+assert edit.text-editing == true
+type "On the sky" 400
+wait 300
+screenshot 22-on-colour.png
+key escape
+assert page.text:1 contains On the sky
+screenshot 22-edited.png
+call save-as "$OUT/flyer-text.pdf"
+await title == flyer-text.pdf 20000
+open "$OUT/flyer-text.pdf"
+assert page.text:1 contains Summer Garden Fair
+assert page.text:1 contains afternoon
+assert page.text:1 contains Free parking
+assert page.text:1 contains Hello from pagebara
+assert object.fonts:1,2 contains Bold
+screenshot 22-reopened.png

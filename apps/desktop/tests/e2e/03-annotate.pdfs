@@ -1,0 +1,78 @@
+# Annotation tools: highlight / underline / strike by selecting text, ink, shapes, text box,
+# sticky note with a reply; select, move, resize, change colour, delete; comments list.
+cursor on
+call author "Sam Tester"
+open "$SAMPLES/lease.pdf"
+zoom 75 0
+call set sidebar comments
+# Highlight a sentence of clause 3 (y positions are points from the page top).
+# The marking tools are in the Annotate mode.
+click "Annotate" 300
+click "Highlight" 300
+drag text 1 "Rent paid" text-end 1 "monthly amount." 700
+assert annotations == 1
+assert annotation.kinds == Highlight
+call set markup 1
+dblclick text 1 "twelve" 300
+assert annotation.kinds contains Underline
+call set markup 2
+call set colour 5
+drag text 1 "Landlord:" text-end 1 "Portsmouth." 500
+assert annotation.kinds contains Strikethrough
+# Draw: a pen stroke, a box, an ellipse, an arrow.
+click "Draw" 300
+call set colour 2
+stroke page 2 100,490 140,470 190,520 230,480 280,515 900
+call set shape 1
+drag page 2 320,460 page 2 480,540 600
+call set shape 2
+drag page 2 100,560 page 2 260,640 600
+call set shape 4
+drag page 2 300,680 page 2 460,600 600
+assert annotations == 7
+# A text box, typed in place.
+click "Text box" 300
+call set colour 6
+click page 3 300,300 400
+assert editing == true
+type "Keys returned on 30 Nov" 600
+key ctrl+return
+assert editing == false
+assert annotation.kinds contains Text box
+# Characters Helvetica lacks are kept but reported.
+click page 3 300,380 400
+type "Ключи: 3" 400
+key ctrl+return
+assert message contains cannot show
+key ctrl+z
+# A sticky note with a comment and a reply.
+call set text-mode 1
+click page 3 480,120 400
+assert selected == Note
+click "Comment text" 400
+type "Two sets of keys, or three?" 700
+click "Reply" 400
+type "Three, the garage has its own." 700
+key return
+assert replies == 1
+assert selected.contents == Two sets of keys, or three?
+assert comments == 9
+screenshot 03-note.png
+# Select tool: select the box, move it, resize it, recolour, delete.
+click "Select" 300
+click page 2 320,500 300
+assert selected == Rectangle
+drag page 2 330,500 page 2 380,560 700
+assert undo == Move
+drag page 2 530,600 page 2 580,640 600
+assert undo == Resize
+call set colour 3
+call selection colour:3
+assert undo == Change colour
+screenshot 03-annotated.png
+key delete
+assert annotations == 8
+key ctrl+z
+assert annotations == 9
+call save-as "$OUT/annotated.pdf"
+assert file.exists:$OUT/annotated.pdf == true

@@ -1,0 +1,88 @@
+# Optimize with presets and a live result, saving a smaller copy; Save as
+# PDF/A with a check, a conversion that passes and the converted file opened; the
+# accessibility check with automatic fixes (undoable), a guided fix and jumping to a page.
+cursor on
+open "$SAMPLES/report.pdf"
+zoom 75 0
+# Optimize: the lossless preset first, worked out in the background.
+call optimize
+assert dialog == optimize
+await optimize.busy == false 30000
+assert optimize.preset == 0
+assert optimize.smaller == true
+assert optimize.rows > 1
+wait 300
+screenshot 25-optimize.png
+call optimize-preset 2
+await optimize.busy == false 30000
+assert optimize.preset == 2
+call optimize-option linearize true
+assert optimize.preset == 3
+await optimize.busy == false 30000
+wait 300
+screenshot 25-optimize-custom.png
+call optimize-save "$OUT/report-small.pdf"
+await dialog == none 20000
+assert file.exists:$OUT/report-small.pdf == true
+assert optimize.file contains report-small.pdf
+# A signed document warns that its signatures will break.
+open "$SAMPLES/signed.pdf"
+call optimize
+await optimize.busy == false 30000
+assert optimize.signed == true
+wait 300
+screenshot 25-optimize-signed.png
+key escape
+# PDF/A: the original does not conform; the conversion does and opens.
+open "$SAMPLES/lease.pdf"
+call pdfa
+assert dialog == pdfa
+screenshot 25-pdfa.png
+call pdfa-part 1
+call pdfa-check
+await pdfa.phase == 2 30000
+assert pdfa.passed == false
+assert pdfa.issues > 0
+wait 300
+screenshot 25-pdfa-check.png
+call pdfa-convert
+await pdfa.phase == 2 30000
+assert pdfa.passed == true
+assert pdfa.changes > 0
+assert pdfa.summary contains PDF/A-2b
+wait 300
+screenshot 25-pdfa-done.png
+call pdfa-save "$OUT/lease-pdfa.pdf"
+await title == lease-pdfa.pdf 20000
+assert file.exists:$OUT/lease-pdfa.pdf == true
+# Accessibility: a tagged document, fixed automatically, then a guided change.
+open "$SAMPLES/tagged.pdf"
+call access
+assert dialog == accesscheck
+await access.busy == false 30000
+assert access.passed == false
+assert access.automatic > 0
+assert access.elements > 0
+wait 300
+screenshot 25-access.png
+call access-fix
+await access.busy == false 30000
+assert access.passed == true
+assert undo == Accessibility fixes
+assert dirty == true
+wait 300
+screenshot 25-access-fixed.png
+call access-level 0 3
+await access.busy == false 30000
+assert access.passed == false
+assert access.rules contains 14-002
+call access-jump 2
+assert page == 2
+key escape
+key ctrl+z
+assert undo == Accessibility fixes
+call access
+await access.busy == false 30000
+assert access.passed == true
+key escape
+assert dialog == none

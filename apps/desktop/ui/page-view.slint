@@ -1,0 +1,1053 @@
+import { Theme } from "theme.slint";
+import { ViewState, AppState, OverlayItem, TileSlot } from "state.slint";
+import { ReadingState } from "reading.slint";
+import { FocusNav } from "components/button.slint";
+import { Divider, MenuCard, MenuItem } from "components/panel.slint";
+import { SpellMenuState, SpellMarks, SpellState } from "spell-menu.slint";
+
+// A thin overlay scrollbar; dragging the thumb scrolls. It lies over the pages, so it
+// shows only while the view scrolls or zooms and while the pointer is on it, then fades.
+component ScrollBar inherits Rectangle {
+    in property <bool> vertical;
+    in property <float> start;
+    in property <float> size;
+    property <length> track: vertical ? self.height : self.width;
+    property <float> grab-start;
+    // Shown at first, so the reader sees there is more to scroll to.
+    property <bool> active: true;
+    // Scroll events, and how many the idle timer has seen; it hides the bar after a
+    // tick with none.
+    property <int> moves;
+    property <int> seen;
+
+    visible: size < 0.999;
+    accessible-role: none;
+    opacity: root.active || touch.has-hover || touch.pressed ? 1 : 0;
+    animate opacity { duration: Theme.reduce-motion ? 0ms : 180ms; }
+
+    changed start => {
+        root.moves += 1;
+        root.active = true;
+    }
+    changed size => {
+        root.moves += 1;
+        root.active = true;
+    }
+    Timer {
+        interval: 900ms;
+        running: root.active;
+        triggered => {
+            if root.moves == root.seen && !touch.pressed {
+                root.active = false;
+            }
+            root.seen = root.moves;
+        }
+    }
+
+    thumb := Rectangle {
+        x: root.vertical ? 2px : root.start * root.track;
+        y: root.vertical ? root.start * root.track : 2px;
+        width: root.vertical ? root.width - 4px : max(24px, root.size * root.track);
+        height: root.vertical ? max(24px, root.size * root.track) : root.height - 4px;
+        border-radius: 4px;
+        background: touch.pressed || touch.has-hover ? Theme.muted.with-alpha(0.7) : Theme.muted.with-alpha(0.35);
+    }
+
+    touch := TouchArea {
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down {
+                root.grab-start = root.start;
+            }
+        }
+        moved => {
+            if self.pressed {
+                ViewState.scrollbar(root.vertical, root.grab-start + (root.vertical ? (self.mouse-y - self.pressed-y) : (self.mouse-x - self.pressed-x)) / root.track);
+            }
+        }
+    }
+}
+
+// A frame in the accent colour edged with a thin halo either side, so it shows on any
+// page colour (the accent's own too).
+component HaloFrame inherits Rectangle {
+    in property <length> line: 1.5px;
+    in property <color> fill: transparent;
+    Rectangle {
+        x: -1px;
+        y: -1px;
+        width: parent.width + 2px;
+        height: parent.height + 2px;
+        border-width: root.line + 2px;
+        border-color: Theme.accent-halo;
+    }
+    Rectangle {
+        background: root.fill;
+        border-width: root.line;
+        border-color: Theme.accent;
+    }
+}
+
+// A grab handle centred on (`cx`, `cy`): white, edged in the accent colour and a halo.
+component Grip inherits Rectangle {
+    in property <length> cx;
+    in property <length> cy;
+    in property <length> size: 9px;
+    in property <bool> round;
+    x: root.cx - root.size / 2 - 1px;
+    y: root.cy - root.size / 2 - 1px;
+    width: root.size + 2px;
+    height: root.size + 2px;
+    border-radius: root.round ? root.width / 2 : 3px;
+    background: Theme.accent-halo;
+    Rectangle {
+        width: root.size;
+        height: root.size;
+        border-radius: root.round ? root.size / 2 : 2px;
+        background: #FFFFFF;
+        border-width: 1.5px;
+        border-color: Theme.accent;
+    }
+}
+
+// One overlay item: highlights, annotations, the selection frame.
+component Overlay inherits Rectangle {
+    in property <OverlayItem> o;
+    property <float> x0: ViewState.lx(o.bx);
+    property <float> y0: ViewState.ly(o.di, o.by);
+    property <length> stroke-w: max(1px, o.width * ViewState.k * 1px);
+    x: x0 * 1px;
+    y: y0 * 1px;
+    width: (ViewState.lx(o.bx + o.w) - x0) * 1px;
+    height: (ViewState.ly(o.di, o.by + o.h) - y0) * 1px;
+
+    if o.kind == 0 && !o.halo: Rectangle {
+        background: o.fill;
+        border-radius: 1px;
+    }
+    if o.kind == 0 && o.halo: Rectangle {
+        x: -1px;
+        y: -1px;
+        width: parent.width + 2px;
+        height: parent.height + 2px;
+        background: Theme.accent-halo;
+        Rectangle {
+            x: 1px;
+            y: 1px;
+            width: root.width;
+            height: root.height;
+            background: Theme.accent;
+        }
+    }
+    if o.kind == 1 && !o.halo: Rectangle {
+        background: o.fill;
+        border-width: root.stroke-w;
+        border-color: o.stroke;
+    }
+    if o.kind == 1 && o.halo: HaloFrame {
+        line: root.stroke-w;
+        fill: o.fill;
+    }
+    if o.kind == 2 && o.halo: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: max(o.w, 0.01);
+        viewbox-height: max(o.h, 0.01);
+        commands: o.commands;
+        stroke: Theme.accent-halo;
+        stroke-width: root.stroke-w + 2px;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+    }
+    if o.kind == 2: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: max(o.w, 0.01);
+        viewbox-height: max(o.h, 0.01);
+        commands: o.commands;
+        stroke: o.halo ? Theme.accent : o.stroke;
+        stroke-width: root.stroke-w;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+        fill: o.fill;
+    }
+    if o.kind == 3: Rectangle {
+        background: o.fill;
+        border-width: o.width > 0 ? root.stroke-w : 0px;
+        border-color: o.stroke;
+        Text {
+            x: 2px * ViewState.k;
+            y: 2px * ViewState.k;
+            width: parent.width - 4px * ViewState.k;
+            height: parent.height - 4px * ViewState.k;
+            text: o.text;
+            color: o.stroke;
+            font-size: max(1px, o.font-size * ViewState.k * 1px);
+            font-family: "Helvetica";
+            wrap: word-wrap;
+            vertical-alignment: top;
+        }
+    }
+    if o.kind == 4: Image {
+        accessible-role: none;
+        width: parent.width;
+        height: parent.height;
+        source: o.image;
+        image-fit: fill;
+        transform-rotation: o.angle * 1deg;
+    }
+    if o.kind == 5: Rectangle {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        background: o.fill;
+        drop-shadow-blur: 3px;
+        drop-shadow-color: #00000040;
+        Image {
+            accessible-role: none;
+            width: 15px;
+            height: 15px;
+            source: @image-url("icons/note.svg");
+            colorize: #3F3F46;
+        }
+    }
+    if o.kind == 6: Rectangle {
+        border-width: 1.5px;
+        border-color: Theme.accent;
+        for c in [0, 1, 2, 3]: Rectangle {
+            x: (mod(c, 2) == 0 ? 0px : parent.width) - 4.5px;
+            y: (c < 2 ? 0px : parent.height) - 4.5px;
+            width: 9px;
+            height: 9px;
+            border-radius: 2px;
+            background: #FFFFFF;
+            border-width: 1.5px;
+            border-color: Theme.accent;
+        }
+    }
+    if o.kind == 7: HaloFrame {
+        fill: Theme.accent.with-alpha(0.08);
+    }
+
+    if o.kind == 9: HaloFrame {
+        if o.width > 0: Rectangle {
+            x: parent.width / 2 - 1.75px;
+            y: -18px;
+            width: 3.5px;
+            height: 17px;
+            background: Theme.accent-halo;
+            Rectangle {
+                width: 1.5px;
+                background: Theme.accent;
+            }
+        }
+        if o.width > 0: Grip {
+            cx: parent.width / 2;
+            cy: -18.5px;
+            size: 11px;
+            round: true;
+        }
+        for c in [0, 1, 2, 3, 4, 5, 6, 7]: Grip {
+            cx: c == 0 || c == 3 || c == 7 ? 0px : c == 4 || c == 6 ? parent.width / 2 : parent.width;
+            cy: c == 0 || c == 1 || c == 4 ? 0px : c == 5 || c == 7 ? parent.height / 2 : parent.height;
+        }
+    }
+    // The caret: an accent line edged with a halo.
+    if o.kind == 10: Rectangle {
+        x: -1.75px;
+        y: -1px;
+        width: 3.5px;
+        height: parent.height + 2px;
+        border-radius: 1px;
+        background: Theme.accent-halo;
+        Rectangle {
+            width: 1.5px;
+            height: root.height;
+            background: Theme.accent;
+        }
+    }
+}
+
+// One step of a page's shadow: bands beside and below the page rather than a fill under
+// it, which a software renderer would paint in full.
+component ShadowStep {
+    in property <length> side;
+    in property <length> top;
+    in property <length> below;
+    in property <color> color;
+
+    Rectangle {
+        x: -root.side;
+        y: root.top;
+        width: root.side;
+        height: root.height - root.top + root.below;
+        background: root.color;
+    }
+
+    Rectangle {
+        x: root.width;
+        y: root.top;
+        width: root.side;
+        height: root.height - root.top + root.below;
+        background: root.color;
+    }
+
+    Rectangle {
+        y: root.height;
+        width: root.width;
+        height: root.below;
+        background: root.color;
+    }
+}
+
+// The continuous page view. Rust decides what exists (only visible pages and tiles) and
+// where it goes; this file only draws it and forwards input.
+// No background of its own: the window's (the same colour) is cleared for free, while a
+// fill here would cost a software renderer a whole layer every frame.
+export component PageView inherits Rectangle {
+    clip: true;
+    accessible-role: main;
+    accessible-label: @tr("Document pages");
+    forward-focus: keys;
+    out property <bool> page-focused: keys.has-focus;
+    // Where the context menu opens.
+    property <length> menu-x;
+    property <length> menu-y;
+
+    public function focus-view() {
+        keys.focus();
+    }
+
+    // Rust asks for the page text's spelling menu (Shift+F10) at the word's position.
+    property <int> spell-serial: ViewState.spell-menu-serial;
+    changed spell-serial => {
+        SpellMenuState.show(0, root.absolute-position.x + ViewState.spell-menu-x * 1px, root.absolute-position.y + ViewState.spell-menu-y * 1px);
+    }
+
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 3 {
+            keys.focus();
+        }
+    }
+
+    changed width => {
+        ViewState.resized(self.width / 1px, self.height / 1px);
+    }
+    changed height => {
+        ViewState.resized(self.width / 1px, self.height / 1px);
+    }
+    init => {
+        ViewState.resized(self.width / 1px, self.height / 1px);
+    }
+
+    // Everything drawn on the pages, in one layer: scrolling moves only the layer.
+    Rectangle {
+        x: ViewState.ox() * 1px;
+        y: ViewState.oy-px() * 1px;
+
+        for p[i] in ViewState.pages: Rectangle {
+            property <float> x0: ViewState.lx(p.bx);
+            property <float> y0: ViewState.ly(p.di, p.by);
+            property <float> x1: ViewState.lx(p.bx + p.w);
+            property <float> y1: ViewState.ly(p.di, p.by + p.h);
+            visible: p.visible;
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: (x1 - x0) * 1px;
+            height: (y1 - y0) * 1px;
+            accessible-role: image;
+            accessible-label: @tr("Page {}", p.number);
+
+            // A soft two-step shadow, cheap to draw at any zoom.
+            ShadowStep {
+                side: 1px;
+                below: 2px;
+                color: Theme.shadow-near;
+            }
+
+            ShadowStep {
+                side: 2px;
+                top: 1px;
+                below: 4px;
+                color: Theme.shadow-far;
+            }
+
+            // Under the tiles only while they do not cover the page, and the paper only
+            // until the (opaque) preview is there.
+            Rectangle {
+                visible: !ViewState.page-covered[i] && p.preview.width == 0;
+                background: ReadingState.paper;
+            }
+
+            Image {
+                visible: !ViewState.page-covered[i];
+                accessible-role: none;
+                source: p.preview;
+                width: parent.width;
+                height: parent.height;
+                image-fit: fill;
+            }
+        }
+
+        // Tiles repeat over their images: an image is then the item's own data, and a new
+        // one uploads only its texture. Indexing an image model from every item would make
+        // any change of it upload all of them again.
+        for img[i] in ViewState.fallback-images: Image {
+            property <TileSlot> t: ViewState.fallback[i];
+            property <float> x0: ViewState.lx(t.bx);
+            property <float> y0: ViewState.ly(t.di, t.by);
+            visible: t.visible;
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: (ViewState.lx(t.bx + t.w) - x0) * 1px;
+            height: (ViewState.ly(t.di, t.by + t.h) - y0) * 1px;
+            source: img;
+            image-fit: fill;
+            accessible-role: none;
+        }
+
+        for img[i] in ViewState.tile-images: Image {
+            property <TileSlot> t: ViewState.tiles[i];
+            property <float> x0: ViewState.lx(t.bx);
+            property <float> y0: ViewState.ly(t.di, t.by);
+            visible: t.visible;
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: (ViewState.lx(t.bx + t.w) - x0) * 1px;
+            height: (ViewState.ly(t.di, t.by + t.h) - y0) * 1px;
+            source: img;
+            image-fit: fill;
+            accessible-role: none;
+        }
+
+        for o in ViewState.overlay: Overlay {
+            o: o;
+        }
+
+        // The pages' text for screen readers, in reading order over where it is shown.
+        for t in ViewState.page-text: Rectangle {
+            property <float> x0: ViewState.lx(t.bx);
+            property <float> y0: ViewState.ly(t.di, t.by);
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: max(1px, (ViewState.lx(t.bx + t.w) - x0) * 1px);
+            height: max(1px, (ViewState.ly(t.di, t.by + t.h) - y0) * 1px);
+            accessible-role: none;
+            if t.link < 0: Rectangle {
+                accessible-role: text;
+                accessible-label: t.label;
+                accessible-description: t.description;
+            }
+            if t.link >= 0: Rectangle {
+                accessible-role: button;
+                accessible-label: t.label;
+                accessible-description: t.description;
+                accessible-action-default => {
+                    ViewState.page-link(t.page, t.link);
+                }
+            }
+        }
+    }
+
+    gesture := ScaleRotateGestureHandler {
+        started => {
+            ViewState.pinch-start();
+        }
+        updated => {
+            ViewState.pinch(self.scale, self.center.x / 1px, self.center.y / 1px);
+        }
+        ended => {
+            ViewState.pinch-end();
+        }
+        cancelled => {
+            ViewState.pinch-end();
+        }
+
+        keys := FocusScope {
+            accessible-role: groupbox;
+            accessible-label: @tr("Page {} of {}", AppState.current-page + 1, AppState.page-count);
+            accessible-description: @tr("Arrow keys scroll, Page Up and Page Down turn pages");
+            key-pressed(e) => {
+                if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
+                    return accept;
+                }
+                reject
+            }
+
+            touch := TouchArea {
+                mouse-cursor: ViewState.cursor == 1 ? MouseCursor.text : ViewState.cursor == 2 ? MouseCursor.pointer : ViewState.cursor == 3 ? MouseCursor.crosshair : ViewState.cursor == 4 ? MouseCursor.move : ViewState.cursor == 5 ? MouseCursor.grab : ViewState.cursor == 6 ? MouseCursor.grabbing : ViewState.cursor == 7 ? MouseCursor.nwse-resize : ViewState.cursor == 8 ? MouseCursor.nesw-resize : ViewState.cursor == 9 ? MouseCursor.progress : ViewState.cursor == 10 ? MouseCursor.ew-resize : ViewState.cursor == 11 ? MouseCursor.ns-resize : ViewState.cursor == 12 ? MouseCursor.crosshair : MouseCursor.default;
+                scroll-event(e) => {
+                    ViewState.wheel(e.delta-x / 1px, e.delta-y / 1px, self.mouse-x / 1px, self.mouse-y / 1px, e.modifiers.control, e.modifiers.shift);
+                    accept
+                }
+                pointer-event(e) => {
+                    // While text is edited in place its field keeps the keys.
+                    if e.kind == PointerEventKind.down && !ViewState.text-editing {
+                        keys.focus();
+                    }
+                    ViewState.pointer(e.kind == PointerEventKind.down ? 0 : e.kind == PointerEventKind.up ? 2 : e.kind == PointerEventKind.cancel ? 4 : 3, self.mouse-x / 1px, self.mouse-y / 1px, e.button == PointerEventButton.right ? 1 : e.button == PointerEventButton.middle ? 2 : 0, e.modifiers.control, e.modifiers.shift, e.modifiers.alt);
+                    if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                        root.menu-x = self.mouse-x;
+                        root.menu-y = self.mouse-y;
+                        // On a misspelled word of the page text being edited: its menu.
+                        if ViewState.ctx-spell {
+                            SpellMenuState.show(0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                        } else {
+                            context-menu.show();
+                        }
+                    }
+                }
+
+                // Right click: copying, and the text of pictures or areas (live text); with
+                // the Edit tool, what can be done with the objects there.
+                context-menu := PopupWindow {
+                    x: max(0px, min(root.menu-x, touch.width - 240px));
+                    y: max(0px, min(root.menu-y, touch.height - (ViewState.ctx-edit ? 420px : 300px)));
+                    width: 236px;
+                    // One card for either list: a card under an `if` gets no height in the popup.
+                    MenuCard {
+                        if ViewState.ctx-edit: VerticalLayout {
+                            if ViewState.ctx-edit-text: MenuItem {
+                                text: @tr("Edit text");
+                                shortcut: "Enter";
+                                initial-focus: true;
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:edit-text");
+                                }
+                            }
+                            if ViewState.ctx-edit-sel: MenuItem {
+                                text: @tr("Duplicate");
+                                shortcut: "Ctrl+D";
+                                initial-focus: !ViewState.ctx-edit-text;
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:duplicate");
+                                }
+                            }
+                            if ViewState.ctx-edit-sel: MenuItem {
+                                text: @tr("Delete");
+                                shortcut: "Delete";
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:delete");
+                                }
+                            }
+                            if ViewState.ctx-edit-sel: Divider { }
+                            if ViewState.ctx-edit-sel: MenuItem {
+                                text: @tr("Bring to front");
+                                shortcut: "Ctrl+Shift+]";
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:front");
+                                }
+                            }
+                            if ViewState.ctx-edit-sel: MenuItem {
+                                text: @tr("Bring forward");
+                                shortcut: "Ctrl+]";
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:forward");
+                                }
+                            }
+                            if ViewState.ctx-edit-sel: MenuItem {
+                                text: @tr("Send backward");
+                                shortcut: "Ctrl+[";
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:backward");
+                                }
+                            }
+                            if ViewState.ctx-edit-sel: MenuItem {
+                                text: @tr("Send to back");
+                                shortcut: "Ctrl+Shift+[";
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:back");
+                                }
+                            }
+                            if ViewState.ctx-edit-image: Divider { }
+                            if ViewState.ctx-edit-image: MenuItem {
+                                text: @tr("Replace image…");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:replace-image");
+                                }
+                            }
+                            if ViewState.ctx-edit-image: MenuItem {
+                                text: @tr("Crop image");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:crop");
+                                }
+                            }
+                            if ViewState.ctx-edit-image: MenuItem {
+                                text: @tr("Save image as PNG…");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:extract-image");
+                                }
+                            }
+                            Divider { }
+                            MenuItem {
+                                text: @tr("Add text here");
+                                initial-focus: !ViewState.ctx-edit-sel;
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:add-text-here");
+                                }
+                            }
+                            MenuItem {
+                                text: @tr("Add image…");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("edit:add-image");
+                                }
+                            }
+                        }
+                        if !ViewState.ctx-edit: VerticalLayout {
+                            if ViewState.ctx-copy: MenuItem {
+                                // TRANSLATORS: verb, copies the selection
+                                text: @tr("Copy");
+                                shortcut: "Ctrl+C";
+                                initial-focus: true;
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("copy");
+                                }
+                            }
+                            MenuItem {
+                                text: @tr("Select all text");
+                                shortcut: "Ctrl+A";
+                                initial-focus: !ViewState.ctx-copy;
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("select-all");
+                                }
+                            }
+                            // The selected text marked as the Highlight tool would.
+                            if ViewState.ctx-copy: Divider { }
+                            if ViewState.ctx-copy: MenuItem {
+                                text: @tr("Highlight");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("highlight");
+                                }
+                            }
+                            if ViewState.ctx-copy: MenuItem {
+                                text: @tr("Underline");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("underline");
+                                }
+                            }
+                            if ViewState.ctx-copy: MenuItem {
+                                text: @tr("Strike");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("strike");
+                                }
+                            }
+                            if ViewState.ctx-picture || ViewState.ctx-area: Divider { }
+                            if ViewState.ctx-picture: MenuItem {
+                                text: @tr("Copy text from image");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("copy-picture");
+                                }
+                            }
+                            if ViewState.ctx-area: MenuItem {
+                                text: @tr("Copy text from area…");
+                                // TRANSLATORS: hold Alt and drag with the mouse
+                                shortcut: @tr("Alt+drag");
+                                clicked => {
+                                    context-menu.close();
+                                    ViewState.context-action("copy-area");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Editing page text in place: this field takes the keys, clipboard and input method;
+    // the overlay draws the text where the page will show it.
+    if ViewState.text-editing: Rectangle {
+        property <float> x0: ViewState.px(ViewState.text-edit-at.bx);
+        property <float> y0: ViewState.py(ViewState.text-edit-at.di, ViewState.text-edit-at.by);
+        x: x0 * 1px;
+        y: y0 * 1px;
+        width: 2px;
+        height: max(4px, ViewState.text-edit-at.h * ViewState.k * 1px);
+        text-field := TextInput {
+            width: parent.width;
+            height: parent.height;
+            text <=> ViewState.text-edit-text;
+            color: transparent;
+            selection-background-color: transparent;
+            selection-foreground-color: transparent;
+            text-cursor-width: 0px;
+            font-size: max(6px, ViewState.text-edit-at.font-size * ViewState.k * 1px);
+            single-line: false;
+            accessible-label: @tr("Page text");
+            accessible-description: @tr("Escape finishes editing");
+            function report() {
+                ViewState.text-edit-changed(self.text, self.cursor-position-byte-offset, self.anchor-position-byte-offset, self.preedit-text);
+            }
+            property <int> serial: ViewState.text-edit-serial;
+            changed serial => {
+                self.set-selection-offsets(ViewState.text-edit-anchor, ViewState.text-edit-focus);
+                self.focus();
+                self.report();
+            }
+            changed cursor-position-byte-offset => {
+                self.report();
+            }
+            changed anchor-position-byte-offset => {
+                self.report();
+            }
+            changed preedit-text => {
+                self.report();
+            }
+            edited => {
+                self.report();
+            }
+            key-pressed(e) => {
+                if ViewState.text-edit-key(e.text, e.modifiers.control, e.modifiers.shift) {
+                    return accept;
+                }
+                reject
+            }
+            init => {
+                self.set-selection-offsets(ViewState.text-edit-anchor, ViewState.text-edit-focus);
+                self.focus();
+                self.report();
+            }
+        }
+        // The field sits at the caret, under the pointer after a click: presses go to the
+        // page as anywhere else.
+        TouchArea {
+            mouse-cursor: MouseCursor.text;
+            pointer-event(e) => {
+                ViewState.pointer(e.kind == PointerEventKind.down ? 0 : e.kind == PointerEventKind.up ? 2 : e.kind == PointerEventKind.cancel ? 4 : 3, parent.x / 1px + self.mouse-x / 1px, parent.y / 1px + self.mouse-y / 1px, e.button == PointerEventButton.right ? 1 : e.button == PointerEventButton.middle ? 2 : 0, e.modifiers.control, e.modifiers.shift, e.modifiers.alt);
+            }
+        }
+    }
+
+    // Typing a free text annotation in place.
+    if ViewState.editing: editor-box := Rectangle {
+        property <float> x0: ViewState.px(ViewState.editor.bx);
+        property <float> y0: ViewState.py(ViewState.editor.di, ViewState.editor.by);
+        x: x0 * 1px;
+        y: y0 * 1px;
+        width: max(60px, (ViewState.px(ViewState.editor.bx + ViewState.editor.w) - x0) * 1px);
+        height: max(24px, (ViewState.py(ViewState.editor.di, ViewState.editor.by + ViewState.editor.h) - y0) * 1px);
+        background: #FFFFFFE6;
+        border-width: 1.5px;
+        border-color: Theme.accent;
+        // Where the field draws its caret (for the spelling menu from the keyboard).
+        property <Point> caret;
+        function spell-menu(index: int, x: length, y: length) {
+            if index >= 0 && SpellState.open-menu(2, index) {
+                SpellMenuState.show(2, input.absolute-position.x + x, input.absolute-position.y + y);
+            }
+        }
+        property <int> spell-closed: SpellMenuState.closed;
+        changed spell-closed => {
+            if SpellMenuState.editor == 2 {
+                input.focus();
+            }
+        }
+        editor-scope := FocusScope {
+            key-pressed(e) => {
+                // Esc finishes and keeps the text, as in the Edit tool (Undo takes it away).
+                if e.text == Key.Escape {
+                    ViewState.editor-done(true);
+                    return accept;
+                }
+                if e.text == Key.Return && e.modifiers.control {
+                    ViewState.editor-done(true);
+                    return accept;
+                }
+                if (e.text == Key.F10 && e.modifiers.shift) || e.text == Key.Menu {
+                    editor-box.spell-menu(SpellState.word-at(2, input.cursor-position-byte-offset), editor-box.caret.x, editor-box.caret.y + input.font-size * 1.3);
+                    return accept;
+                }
+                reject
+            }
+            if SpellState.enabled: editor-marks := SpellMarks {
+                x: input.x;
+                y: input.y;
+                width: input.width;
+                height: input.height;
+                words: SpellState.editor;
+                text: input.text;
+                font-size: input.font-size;
+                font-family: input.font-family;
+                wrap: input.wrap;
+                single-line: input.single-line;
+                menu(i, x, y) => {
+                    editor-box.spell-menu(i, x, y);
+                }
+            }
+            input := TextInput {
+                x: 3px;
+                y: 3px;
+                width: parent.width - 6px;
+                height: parent.height - 6px;
+                text <=> ViewState.editor-text;
+                color: ViewState.editor.stroke;
+                font-size: max(6px, ViewState.editor.font-size * ViewState.k * 1px);
+                font-family: "Helvetica";
+                wrap: word-wrap;
+                single-line: false;
+                accessible-label: @tr("Text box");
+                init => {
+                    self.focus();
+                    SpellState.text-changed(2, self.text);
+                }
+                edited => {
+                    SpellState.text-changed(2, self.text);
+                }
+                cursor-position-changed(p) => {
+                    editor-box.caret = p;
+                }
+            }
+        }
+    }
+
+    // Filling in a form field in place: text, comb cells, a list of options, or (kind 5) a
+    // focused check box or radio button that Space toggles.
+    if ViewState.field-editing && ViewState.field-shown: field-box := Rectangle {
+        property <float> x0: ViewState.px(ViewState.field-box.bx);
+        property <float> y0: ViewState.py(ViewState.field-box.di, ViewState.field-box.by);
+        property <length> font: max(7px, ViewState.field-box.font-size * ViewState.k * 1px);
+        property <bool> text-input: ViewState.field-kind <= 2 || ViewState.field-typed;
+        x: x0 * 1px;
+        y: y0 * 1px;
+        width: max(24px, (ViewState.px(ViewState.field-box.bx + ViewState.field-box.w) - x0) * 1px);
+        height: max(16px, (ViewState.py(ViewState.field-box.di, ViewState.field-box.by + ViewState.field-box.h) - y0) * 1px);
+
+        // The option the arrow keys are on, in combo and list boxes.
+        property <int> option: -1;
+        // Spelling: in text fields other than passwords and combs.
+        property <bool> spelling: SpellState.enabled && text-input && !ViewState.field-password && ViewState.field-kind != 2;
+        property <Point> caret;
+        function spell-menu(index: int, x: length, y: length) {
+            if index >= 0 && SpellState.open-menu(1, index) {
+                SpellMenuState.show(1, field-input.absolute-position.x + x, field-input.absolute-position.y + y);
+            }
+        }
+        property <int> spell-closed: SpellMenuState.closed;
+        changed spell-closed => {
+            if SpellMenuState.editor == 1 {
+                field-input.focus();
+            }
+        }
+        field-scope := FocusScope {
+            capture-key-pressed(e) => {
+                if e.text == Key.Escape {
+                    ViewState.field-done(false);
+                    return accept;
+                }
+                if ViewState.field-kind == 5 && e.text == " " {
+                    ViewState.field-pick(0);
+                    return accept;
+                }
+                if ViewState.field-kind >= 3 && ViewState.field-kind <= 4 && ViewState.field-options.length > 0 {
+                    if e.text == Key.DownArrow || e.text == Key.UpArrow {
+                        option = max(0, min(ViewState.field-options.length - 1, option + (e.text == Key.DownArrow ? 1 : -1)));
+                        return accept;
+                    }
+                    if ((e.text == Key.Return && !e.modifiers.control) || (e.text == " " && ViewState.field-kind == 4)) && option >= 0 {
+                        ViewState.field-pick(option);
+                        return accept;
+                    }
+                }
+                if field-box.spelling && ((e.text == Key.F10 && e.modifiers.shift) || e.text == Key.Menu) {
+                    field-box.spell-menu(SpellState.word-at(1, field-input.cursor-position-byte-offset), field-box.caret.x, field-box.caret.y + font * 1.3);
+                    return accept;
+                }
+                if e.text == Key.Tab || e.text == Key.Backtab {
+                    ViewState.field-tab(e.text == Key.Backtab || e.modifiers.shift);
+                    return accept;
+                }
+                if e.text == Key.Return && (ViewState.field-kind != 1 || e.modifiers.control) {
+                    ViewState.field-done(true);
+                    return accept;
+                }
+                reject
+            }
+            // Bumped by each field opened: focus moves to its input.
+            property <int> serial: ViewState.field-serial;
+            function take-focus() {
+                if text-input {
+                    field-input.focus();
+                    field-input.select-all();
+                } else {
+                    self.focus();
+                }
+            }
+            changed serial => {
+                option = -1;
+                self.take-focus();
+            }
+            init => {
+                self.take-focus();
+            }
+
+            Rectangle {
+                background: ViewState.field-kind == 5 ? transparent : #FFFFFF;
+                border-width: 1.5px;
+                border-color: Theme.accent;
+            }
+
+            if ViewState.field-kind == 2: Rectangle {
+                property <length> cell: parent.width / max(1, ViewState.field-cells);
+                for _[i] in ViewState.field-cells - 1: Rectangle {
+                    x: (i + 1) * cell;
+                    width: 1px;
+                    background: #D4D4D8;
+                }
+                for c[i] in ViewState.field-chars: Text {
+                    x: i * cell;
+                    width: cell;
+                    text: c;
+                    font-size: font;
+                    font-family: "Helvetica";
+                    color: #18181B;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Rectangle {
+                    x: min(ViewState.field-chars.length, ViewState.field-cells - 1) * cell + 1px;
+                    width: cell - 2px;
+                    height: parent.height - 2px;
+                    border-width: 1px;
+                    border-color: Theme.accent.with-alpha(0.6);
+                }
+            }
+
+            if field-box.spelling: field-marks := SpellMarks {
+                x: field-input.x;
+                y: field-input.y;
+                width: field-input.width;
+                height: field-input.height;
+                words: SpellState.field;
+                text: field-input.text;
+                font-size: field-input.font-size;
+                font-family: field-input.font-family;
+                wrap: field-input.wrap;
+                single-line: field-input.single-line;
+                vertical-alignment: field-input.vertical-alignment;
+                menu(i, x, y) => {
+                    field-box.spell-menu(i, x, y);
+                }
+            }
+
+            field-input := TextInput {
+                visible: text-input;
+                enabled: text-input;
+                x: 3px;
+                y: ViewState.field-kind == 1 ? 3px : 0px;
+                width: parent.width - 6px;
+                height: parent.height - 2 * self.y;
+                text <=> ViewState.field-text;
+                font-size: font;
+                font-family: "Helvetica";
+                color: ViewState.field-kind == 2 ? transparent : #18181B;
+                vertical-alignment: ViewState.field-kind == 1 ? top : center;
+                single-line: ViewState.field-kind != 1;
+                wrap: ViewState.field-kind == 1 ? word-wrap : no-wrap;
+                input-type: ViewState.field-password ? InputType.password : InputType.text;
+                accessible-label: @tr("Form field");
+                edited => {
+                    ViewState.field-edited(self.text);
+                    SpellState.text-changed(1, self.text);
+                }
+                cursor-position-changed(p) => {
+                    field-box.caret = p;
+                }
+            }
+
+            if !text-input: Text {
+                x: 4px;
+                width: parent.width - 8px;
+                text: ViewState.field-text;
+                font-size: font;
+                font-family: "Helvetica";
+                color: #18181B;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+
+        // The options of a combo or list box, below the field.
+        if ViewState.field-kind >= 3: Rectangle {
+            y: parent.height + 2px;
+            width: max(parent.width, 160px);
+            height: min(ViewState.field-options.length * 26px, 260px) + 8px;
+            background: Theme.chrome;
+            border-radius: Theme.radius-small;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: #00000033;
+            accessible-role: list;
+            accessible-label: @tr("Options");
+            Flickable {
+                y: 4px;
+                height: parent.height - 8px;
+                content-height: ViewState.field-options.length * 26px;
+                for o[i] in ViewState.field-options: Rectangle {
+                    y: i * 26px;
+                    height: 26px;
+                    background: ViewState.field-selected[i] ? Theme.accent-soft : pick.has-hover || i == option ? Theme.hover : transparent;
+                    border-width: i == option ? Theme.focus-width : 0px;
+                    border-color: Theme.focus;
+                    accessible-role: list-item;
+                    accessible-label: o;
+                    accessible-item-selected: ViewState.field-selected[i];
+                    Text {
+                        x: 10px;
+                        width: parent.width - 20px;
+                        text: o;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    pick := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            ViewState.field-pick(i);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ScrollBar {
+        vertical: true;
+        x: root.width - 12px;
+        width: 12px;
+        height: root.height - 12px;
+        start: ViewState.v-start;
+        size: ViewState.v-size;
+    }
+
+    ScrollBar {
+        vertical: false;
+        y: root.height - 12px;
+        height: 12px;
+        width: root.width - 12px;
+        start: ViewState.h-start;
+        size: ViewState.h-size;
+    }
+}

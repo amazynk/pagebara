@@ -1,0 +1,63 @@
+# Output tools: a watermark with its live preview (undoable, removable later), a header
+# and footer with tokens, Bates numbering on a box, and flattening a form.
+open "$SAMPLES/lease.pdf"
+wait 500
+call pro-open 1
+assert pro.dialog == 1
+await pro.preview contains x 15000
+call pro-set wm-text "DRAFT COPY"
+call pro-set wm-opacity 40
+call pro-set wm-anchor 4
+wait 300
+await pro.busy == false 15000
+screenshot 25-watermark.png
+call pro-apply
+assert pro.dialog == 0
+assert stamps == 4
+assert undo == Add watermark
+assert page.text:1 contains DRAFT COPY
+key ctrl+z
+assert stamps == 0
+key ctrl+y
+assert stamps == 4
+screenshot 25-watermarked.png
+# Saved settings come back.
+call pro-open 1
+call pro-preset-save
+assert pro.status contains Saved
+assert pro.found contains watermarks
+call pro-remove
+assert stamps == 0
+assert undo == Remove watermarks
+# Header and footer.
+call pro-open 2
+call pro-set hf-tr "{file}"
+call pro-set hf-bc "Page {page} of {pages}"
+wait 300
+await pro.busy == false 15000
+await pro.preview contains x 15000
+screenshot 25-header.png
+call pro-apply
+assert stamps == 4
+assert stamps.kinds == HeaderFooter
+assert page.text:2 contains Page 2 of 4
+assert page.text:1 contains lease.pdf
+# Bates numbering.
+call pro-open 3
+call pro-set bates-prefix "ACME-"
+call pro-set bates-box true
+wait 300
+await pro.busy == false 15000
+screenshot 25-bates.png
+call pro-apply
+assert stamps.kinds contains Bates
+assert page.text:4 contains ACME-000004
+# Flatten a filled form.
+open "$SAMPLES/form.pdf"
+wait 500
+call pro-open 4
+assert pro.counts contains 11 form fields
+screenshot 25-flatten.png
+call pro-apply
+assert flatten.contents contains fields=0
+assert undo == Flatten

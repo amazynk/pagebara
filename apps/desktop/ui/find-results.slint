@@ -1,0 +1,177 @@
+import { ListView } from "std-widgets.slint";
+import { Panel } from "components/panel.slint";
+import { Check } from "components/controls.slint";
+import { FocusNav, FocusRing, Keys } from "components/button.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+
+component FindOption inherits Rectangle {
+    in property <string> label;
+    in property <string> shortcut;
+    in-out property <bool> checked;
+    callback toggled();
+    height: max(Theme.control-height, Theme.font-body * 2.6);
+    Check {
+        x: Theme.rtl && hint.visible ? hint.width + 24px : 16px;
+        width: parent.width - 32px - (hint.visible ? hint.width + 8px : 0px);
+        height: root.height;
+        text: root.label;
+        accessible-description: hint.text;
+        checked <=> root.checked;
+        toggled => { root.toggled(); }
+    }
+    hint := Text {
+        x: Theme.rtl ? 16px : parent.width - self.width - 16px;
+        width: self.preferred-width;
+        visible: root.width > 13 * Theme.font-body + self.width;
+        text: Keys.label(root.shortcut, false);
+        font-size: Theme.font-small;
+        color: Theme.muted;
+        vertical-alignment: center;
+        accessible-role: none;
+    }
+}
+
+export component FindResults inherits Panel {
+    title: @tr("Matches");
+    property <length> row-height: max(52px, 18px + Theme.font-small * 1.4 + Theme.font-body * 1.4);
+    property <int> current: AppState.find-current;
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 2 && self.visible { keys.focus(); reveal(); }
+    }
+    changed current => { reveal(); }
+    changed visible => { if self.visible { reveal(); report(); } }
+    function reveal() {
+        if current < 0 { return; }
+        let top = current * row-height;
+        if top < -lv.content-y {
+            lv.content-y = -top;
+        } else if top + row-height > -lv.content-y + lv.visible-height {
+            lv.content-y = -(top + row-height - lv.visible-height);
+        }
+    }
+    // Include a few rows beyond the viewport so ordinary scrolling has their text ready.
+    function report() {
+        AppState.find-first = max(0, floor(-lv.content-y / row-height) - 4);
+        AppState.find-end = max(0, ceil((lv.visible-height - lv.content-y) / row-height) + 4);
+        AppState.find-range-changed();
+    }
+    function select-row(i: int) {
+        if AppState.find-hits > 0 {
+            AppState.find-select(clamp(i, 0, AppState.find-hits - 1));
+        }
+    }
+    init => { reveal(); report(); }
+
+    VerticalLayout {
+        padding-bottom: 8px;
+        FindOption {
+            label: @tr("Match case");
+            shortcut: Keys.find-case;
+            checked <=> AppState.find-match-case;
+            toggled => { AppState.set-find-options(self.checked, AppState.find-whole-words); }
+        }
+        FindOption {
+            label: @tr("Whole words");
+            shortcut: Keys.find-words;
+            checked <=> AppState.find-whole-words;
+            toggled => { AppState.set-find-options(AppState.find-match-case, self.checked); }
+        }
+    }
+
+    keys := FocusScope {
+        accessible-role: list;
+        accessible-label: root.title;
+        property <int> offset: root.current - AppState.find-rows-start;
+        accessible-value: offset >= 0 && offset < AppState.find-rows.length
+            ? @tr("Page {}", AppState.find-rows[offset].page) + " — " + AppState.find-rows[offset].before + AppState.find-rows[offset].matched + AppState.find-rows[offset].after : "";
+        vertical-stretch: 1;
+        changed has-focus => { if self.has-focus { FocusNav.entered(2); } }
+        key-pressed(e) => {
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
+                return reject;
+            }
+            if e.text == Key.UpArrow { root.select-row(root.current - 1); return accept; }
+            if e.text == Key.DownArrow { root.select-row(root.current + 1); return accept; }
+            if e.text == Key.Home { root.select-row(0); return accept; }
+            if e.text == Key.End { root.select-row(AppState.find-hits - 1); return accept; }
+            if e.text == Key.PageUp || e.text == Key.PageDown {
+                let rows = max(1, floor(lv.visible-height / root.row-height));
+                root.select-row(root.current + (e.text == Key.PageUp ? -rows : rows));
+                return accept;
+            }
+            if e.text == Key.Return && root.current >= 0 {
+                root.select-row(root.current);
+                FocusNav.request(3);
+                return accept;
+            }
+            reject
+        }
+
+        lv := ListView {
+            accessible-role: none;
+            changed content-y => { root.report(); }
+            changed visible-height => { root.report(); }
+            for idx in AppState.find-hits: Rectangle {
+                height: root.row-height;
+                property <int> offset: idx - AppState.find-rows-start;
+                property <bool> loaded: offset >= 0 && offset < AppState.find-rows.length;
+                property <string> page: loaded ? @tr("Page {}", AppState.find-rows[offset].page) : "";
+                property <string> before: loaded ? AppState.find-rows[offset].before : "";
+                property <string> matched: loaded ? AppState.find-rows[offset].matched : "";
+                property <string> after: loaded ? AppState.find-rows[offset].after : "";
+                property <bool> selected: idx == root.current;
+                background: selected ? Theme.accent-soft : touch.has-hover ? Theme.hover : Theme.chrome;
+                accessible-role: list-item;
+                accessible-label: page + " — " + before + matched + after;
+                accessible-item-selectable: true;
+                accessible-item-selected: selected;
+                accessible-action-default => { keys.focus(); root.select-row(idx); }
+
+                VerticalLayout {
+                    padding-left: 14px; padding-right: 14px;
+                    alignment: center;
+                    spacing: 2px;
+                    Text {
+                        text: page;
+                        font-size: Theme.font-small;
+                        font-weight: 600;
+                        color: selected ? Theme.accent-fg : Theme.muted;
+                        horizontal-alignment: Theme.rtl ? right : left;
+                        overflow: elide;
+                        accessible-role: none;
+                    }
+                    StyledText {
+                        text: @markdown("\{before}**\{matched}**\{after}");
+                        default-font-size: Theme.font-body;
+                        default-color: Theme.text;
+                        horizontal-alignment: Theme.rtl ? right : left;
+                        max-lines: 1;
+                        accessible-role: none;
+                    }
+                }
+                if selected: Rectangle {
+                    x: Theme.rtl ? parent.width - self.width : 0px;
+                    width: 3px;
+                    background: Theme.accent-fg;
+                }
+                if selected: FocusRing {
+                    x: 2px; y: 2px; width: parent.width - 4px; height: parent.height - 4px;
+                    show: keys.has-focus;
+                }
+                touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { keys.focus(); root.select-row(idx); }
+                }
+            }
+        }
+        if AppState.find-hits == 0: Text {
+            x: 16px; y: 8px; width: parent.width - 32px;
+            text: AppState.find-status;
+            font-size: Theme.font-body;
+            color: Theme.muted;
+            horizontal-alignment: Theme.rtl ? right : left;
+        }
+    }
+}

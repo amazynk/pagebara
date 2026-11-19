@@ -1,0 +1,13 @@
+[package]
+name = "pagebara-pages"
+description = "Page tree model and page operations: delete, move, rotate, insert, extract, merge, split, crop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

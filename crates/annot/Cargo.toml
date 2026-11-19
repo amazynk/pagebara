@@ -1,0 +1,16 @@
+[package]
+name = "pagebara-annot"
+description = "PDF annotations: typed model, editing with generated appearance streams, image stamps"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-font.workspace = true
+unicode-bidi.workspace = true
+miniz_oxide.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

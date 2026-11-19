@@ -1,0 +1,352 @@
+import { RowLayout } from "components/row.slint";
+import { Theme, ThemeColors } from "theme.slint";
+import { Palette } from "std-widgets.slint";
+import { FocusNav, Keys } from "components/button.slint";
+import { AppState, ViewState, Chrome, Mode, PageSlot, TileSlot, Thumb, GridRow, FindRow, OutlineRow, RecentFile, SidebarTab, OverlayItem, TabInfo, CommentRow, ReplyRow, SignatureRow, FieldRow, InfoRow, DialogKind, PageTextItem } from "state.slint";
+import { TopBar } from "top-bar.slint";
+import { ToolRow } from "tool-row.slint";
+import { Notices } from "notices.slint";
+import { AllTools, PaletteState, PaletteItem } from "palette.slint";
+import { TabBar } from "tabs.slint";
+import { FindResults } from "find-results.slint";
+import { Sidebar } from "sidebar.slint";
+import { PageView } from "page-view.slint";
+import { RightPanel } from "right-panel.slint";
+import { PasswordDialog } from "password-dialog.slint";
+import { OrganizeView } from "organize.slint";
+import { Dialogs } from "dialogs.slint";
+import { Welcome } from "welcome.slint";
+import { DocBanners, ExtraDialogs } from "extras.slint";
+import { SigningState, SignaturesPanel, SigCard, ChangeRow, TrustRow, StoreId } from "signing.slint";
+import { RedactState, HitRow } from "redaction.slint";
+import { OcrState } from "ocr.slint";
+import { OptimizeState, SizeRow } from "optimize.slint";
+import { PdfaState, AccessState, IssueRow, ElementRow } from "conformance.slint";
+import { ReadingState, ReflowRow, BookmarkRow, ReflowView, PresentationView, BookmarksPanel } from "reading.slint";
+import { LibraryState, LibraryDoc, LibraryHit, LibraryView } from "library.slint";
+import { PrintState, PrintDialog } from "print-dialog.slint";
+import { ReadAloudState, ReadAloudBar } from "read-aloud.slint";
+import { VimHelp } from "vim-help.slint";
+import { ShortcutsDialog } from "shortcuts.slint";
+import { EditState } from "edit.slint";
+import { ProState, ProDialog } from "stamps.slint";
+import { CompareState, CompareRow, CompareMark, CompareView } from "compare.slint";
+import { PrepState, PrepRow } from "prepare.slint";
+import { SpellState, SpellWord, SpellMenuState, SpellMenuLayer } from "spell-menu.slint";
+
+export { Theme, ThemeColors, FocusNav, Keys, AppState, ViewState, Chrome, Mode, PageSlot, TileSlot, Thumb, GridRow, FindRow, OutlineRow, RecentFile, SidebarTab, OverlayItem, TabInfo, CommentRow, ReplyRow, SignatureRow, FieldRow, InfoRow, DialogKind, PageTextItem }
+export { SigningState, SigCard, ChangeRow, TrustRow, StoreId, RedactState, HitRow, OcrState }
+export { ReadingState, ReflowRow, BookmarkRow, LibraryState, LibraryDoc, LibraryHit, PrintState, ReadAloudState, EditState }
+export { OptimizeState, PdfaState, AccessState, SizeRow, IssueRow, ElementRow }
+export { ProState, CompareState, CompareRow, CompareMark, PrepState, PrepRow, SpellState, SpellWord, SpellMenuState }
+export { PaletteState, PaletteItem }
+
+export enum KeyboardOwner { document, dialog, print, library, presentation }
+
+export component AppWindow inherits Window {
+    icon: @image-url("../../../packaging/icons/app-256.png");
+    // Match the stacking order of the views over the document.
+    out property <KeyboardOwner> keyboard-owner: SpellMenuState.open ? KeyboardOwner.dialog
+        : ReadingState.presenting ? KeyboardOwner.presentation
+        : Chrome.palette-open || AppState.dialog != DialogKind.none || ProState.dialog != 0
+            || CompareState.visible ? KeyboardOwner.dialog
+        : PrintState.visible ? KeyboardOwner.print
+        : LibraryState.visible ? KeyboardOwner.library
+        : AppState.password-visible ? KeyboardOwner.dialog : KeyboardOwner.document;
+    out property <bool> vim-active: AppState.vim-keys && keyboard-owner == KeyboardOwner.document
+        && AppState.mode == Mode.view && view.page-focused && !ReadingState.reflow
+        && AppState.tool != 7 && AppState.tool != 8
+        && !ViewState.editing && !ViewState.field-editing && !ViewState.text-editing;
+    changed vim-active => {
+        if !vim-active && (AppState.vim-line != "" || AppState.vim-mode == "VISUAL" || AppState.vim-mode == "V-LINE") {
+            AppState.cancel-vim-input();
+        }
+    }
+    // The inspector stays closed until it is needed: the tools that keep a list (the
+    // signatures, the marks to redact, the fields of a form) open it, and so does a note,
+    // whose comment is written there. The toolbar's button pins it open or closes it.
+    property <bool> wants-panel: AppState.tool == 4 || AppState.tool == 6 || AppState.tool == 8 || (AppState.tool == 5 && (AppState.fields.length > 0 || AppState.form-notice != "")) || (AppState.has-selection && AppState.sel-is-note);
+    property <bool> panel-open: AppState.mode == Mode.view && (Chrome.inspector-pinned || (wants-panel && !Chrome.inspector-dismissed));
+    property <bool> tabs-shown: AppState.tabs.length > 1;
+    // The window's top row, where its own buttons sit when it has no title bar.
+    property <length> top-row: tabs-shown ? 40px : Theme.toolbar-height;
+    changed top-row => {
+        Chrome.titlebar-height = top-row;
+        Chrome.titlebar-changed();
+    }
+    // Use the allocated window width to size the results panel after layout.
+    property <length> allocated-width;
+    changed width => { allocated-width = self.width; }
+    init => {
+        allocated-width = self.width;
+        Chrome.titlebar-height = top-row;
+    }
+    // The group of tools follows the tool.
+    property <int> tool: AppState.tool;
+    changed tool => {
+        Chrome.follow(tool);
+    }
+
+    title: AppState.window-title;
+    // A new title has macOS lay its title bar out again, the window's buttons with it.
+    property <string> shown-title: AppState.window-title;
+    changed shown-title => {
+        Chrome.titlebar-changed();
+    }
+    preferred-width: 1280px;
+    preferred-height: 820px;
+    min-width: 640px;
+    min-height: 420px;
+    background: Theme.canvas;
+    // Registered from Rust (src/fonts.rs), which also embeds it in signature appearances.
+    default-font-family: "Inter";
+    default-font-size: Theme.font-body;
+    forward-focus: keys;
+
+    // The desktop's light or dark mode, for the theme that follows it.
+    out property <bool> system-dark: Palette.color-scheme == ColorScheme.dark;
+    changed system-dark => {
+        AppState.system-theme-changed();
+    }
+
+    // Focus the search field (Ctrl+F).
+    public function focus-find() {
+        bar.focus-search();
+    }
+    public function focus-view() {
+        if root.keyboard-owner != KeyboardOwner.document { return; }
+        if AppState.mode == Mode.view {
+            view.focus-view();
+        } else {
+            keys.focus();
+        }
+    }
+
+    changed dialog-open => {
+        if !dialog-open {
+            root.focus-view();
+        }
+    }
+    property <bool> dialog-open: AppState.dialog != DialogKind.none || AppState.password-visible;
+
+    // However the search opens (Ctrl+F, the toolbar's button), its field takes the focus;
+    // with vim keys only when asked for (Ctrl+F and the button do), so `/`, `n` and tab
+    // switches keep the keys on the pages.
+    property <bool> find-open: AppState.find-visible && AppState.mode == Mode.view;
+    changed find-open => {
+        if find-open && root.keyboard-owner == KeyboardOwner.document && !AppState.vim-keys {
+            bar.open-search();
+        }
+    }
+
+    changed panel-open => {
+        Chrome.inspector-open = panel-open;
+    }
+    property <bool> palette-open: Chrome.palette-open;
+    changed palette-open => {
+        if !palette-open && !dialog-open {
+            root.focus-view();
+        }
+    }
+    changed wants-panel => {
+        if !wants-panel {
+            Chrome.inspector-dismissed = false;
+        }
+    }
+
+    // Shortcuts when nothing else has the focus; not a stop for Tab, as it has no name of its own.
+    keys := FocusScope {
+        // Tab traversal skips the document under an opaque full-window view.
+        visible: !LibraryState.visible && !CompareState.visible && !ReadingState.presenting;
+        focus-on-tab-navigation: false;
+        // Handle document chords before a focused text or form field handles the key.
+        capture-key-pressed(e) => {
+            if root.keyboard-owner != KeyboardOwner.document {
+                return accept;
+            }
+            if AppState.mode == Mode.view && !e.modifiers.alt && !e.modifiers.meta
+                && (Keys.macos ? e.modifiers.control && e.text.to-lowercase() == "g"
+                               : !e.modifiers.control && e.text == Key.F3) {
+                AppState.find-next(!e.modifiers.shift);
+                return accept;
+            }
+            if root.find-open && e.modifiers.alt && !e.modifiers.meta && !e.modifiers.shift
+                && e.modifiers.control == Keys.macos {
+                let key = e.text.to-lowercase();
+                if key == "c" || key == "w" {
+                    if !e.repeat {
+                        AppState.set-find-options(
+                            key == "c" ? !AppState.find-match-case : AppState.find-match-case,
+                            key == "w" ? !AppState.find-whole-words : AppState.find-whole-words);
+                    }
+                    return accept;
+                }
+            }
+            let primary = e.modifiers.control && !e.modifiers.meta;
+            if primary && !e.modifiers.shift && !e.modifiers.alt && e.text == "," {
+                AppState.show-dialog(DialogKind.settings);
+                return accept;
+            }
+            let control = Keys.macos ? e.modifiers.meta && !e.modifiers.control : primary;
+            if control && !e.modifiers.alt && (e.text == Key.Tab || e.text == Key.Backtab) && AppState.tabs.length > 0 {
+                AppState.step-tab(e.modifiers.shift || e.text == Key.Backtab, false);
+                return accept;
+            }
+            let page = control && !e.modifiers.alt && (e.text == Key.PageUp || e.text == Key.PageDown);
+            let arrow = Keys.macos && primary && e.modifiers.alt && (e.text == Key.LeftArrow || e.text == Key.RightArrow);
+            if (page || arrow) && AppState.tabs.length > 0 {
+                AppState.step-tab(e.text == Key.PageUp || e.text == Key.LeftArrow, e.modifiers.shift);
+                return accept;
+            }
+            if primary && !e.modifiers.alt {
+                let k = e.text.to-lowercase();
+                if (k == "s" || (!e.modifiers.shift && (k == "w" || k == "t" || k == "o")))
+                    && AppState.shortcut(e.text, true, e.modifiers.shift, false, false) {
+                    return accept;
+                }
+            }
+            reject
+        }
+        key-pressed(e) => {
+            if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
+                return accept;
+            }
+            reject
+        }
+
+        VerticalLayout {
+            // Tabs only when there is more than one document.
+            if root.tabs-shown: TabBar {
+                window-height: root.height;
+                inset: Chrome.titlebar-inset;
+            }
+            bar := TopBar {
+                window-height: root.height;
+                inset: root.tabs-shown ? 0px : Chrome.titlebar-inset;
+                find-opened => {
+                    // Shows hits that vim's `:noh` hid.
+                    if AppState.find-text != "" {
+                        AppState.find(AppState.find-text);
+                    }
+                }
+            }
+            if AppState.mode != Mode.welcome: ToolRow { }
+            if AppState.mode == Mode.view: DocBanners { }
+
+            RowLayout {
+                vertical-stretch: 1;
+                if AppState.find-panel: FindResults {
+                    visible: !AppState.find-collapsed;
+                    width: self.visible ? min(310px * min(Theme.text-scale, 1.3), root.allocated-width * 0.35) : 0px;
+                }
+                if !AppState.find-panel && AppState.sidebar-shown: Sidebar { }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    // Kept alive in every mode so its slots and textures survive.
+                    view := PageView {
+                        visible: AppState.mode == Mode.view;
+                    }
+                    if AppState.mode == Mode.welcome: Welcome { }
+                    if AppState.mode == Mode.organize: OrganizeView { }
+                    if ReadingState.reflow && AppState.mode == Mode.view: ReflowView { }
+                    if ReadingState.bookmarks-visible && AppState.mode == Mode.view: BookmarksPanel {
+                        x: Theme.rtl ? 20px : parent.width - self.width - 20px;
+                        y: 12px;
+                    }
+                    if ReadAloudState.visible && AppState.mode == Mode.view: ReadAloudBar {
+                        x: (parent.width - self.width) / 2;
+                        y: parent.height - self.height - 24px;
+                    }
+                    // Messages and the vim line, over the bottom of the pages.
+                    Notices {
+                        vim-active: root.vim-active;
+                        lifted: ReadAloudState.visible && AppState.mode == Mode.view;
+                    }
+                }
+                if SigningState.panel-open && AppState.mode == Mode.view: SignaturesPanel { }
+                if root.panel-open && !SigningState.panel-open && AppState.mode == Mode.view: RightPanel {
+                    // TRANSLATORS: panel headings named after the tools, as on the toolbar
+                    heading: AppState.has-selection && !RedactState.has-mark ? @tr("Properties") : [@tr("Document"), @tr("Highlight"), @tr("Draw"), @tr("Text"), @tr("Sign"), @tr("Fill forms"), @tr("Redact"), @tr("Edit"), @tr("Prepare form")][AppState.tool];
+                    close => {
+                        Chrome.toggle-inspector();
+                    }
+                }
+            }
+        }
+    }
+
+    if AppState.password-visible: PasswordDialog {
+        width: root.width;
+        height: root.height;
+    }
+
+    if LibraryState.visible: LibraryView {
+        width: root.width;
+        height: root.height;
+    }
+
+    if PrintState.visible: PrintDialog {
+        width: root.width;
+        height: root.height;
+    }
+
+    if CompareState.visible: CompareView {
+        width: root.width;
+        height: root.height;
+    }
+
+    if ProState.dialog != 0: ProDialog {
+        width: root.width;
+        height: root.height;
+    }
+
+    if AppState.dialog != DialogKind.none: Dialogs {
+        width: root.width;
+        height: root.height;
+    }
+
+    if AppState.dialog == DialogKind.vim-help || AppState.dialog == DialogKind.vim-help-from-shortcuts: VimHelp {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.shortcuts: ShortcutsDialog {
+        width: root.width;
+        height: root.height;
+    }
+
+    if AppState.dialog != DialogKind.none: ExtraDialogs {
+        width: root.width;
+        height: root.height;
+    }
+
+    if Chrome.palette-open: AllTools {
+        width: root.width;
+        height: root.height;
+    }
+
+    if ReadingState.presenting: PresentationView {
+        width: root.width;
+        height: root.height;
+    }
+
+    if SpellMenuState.open: SpellMenuLayer {
+        width: root.width;
+        height: root.height;
+    }
+
+    // The synthetic pointer of scripted recordings.
+    if AppState.cursor-visible: Path {
+        x: AppState.cursor-x * 1px - 3px;
+        y: AppState.cursor-y * 1px - 2px;
+        width: 22px;
+        height: 22px;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        commands: "M5.5 3.5 L18.5 10.7 L12.9 12.2 L16.3 18.3 L13.9 19.6 L10.5 13.5 L6.5 17.7 Z";
+        fill: AppState.cursor-pressed ? #2563EB : #18181B;
+        stroke: #FFFFFF;
+        stroke-width: 1.5px;
+        stroke-line-join: round;
+        accessible-role: none;
+    }
+}

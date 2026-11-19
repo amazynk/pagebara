@@ -1,0 +1,42 @@
+# Marking up: highlight by dragging over text, highlight a word selected with a long
+# press, draw with a finger, undo and redo, save, and go back with unsaved changes.
+open "$SAMPLES/lease.pdf"
+wait 600
+tool highlight
+assert tool == highlight
+drag text 1 "monthly rent" text-end 1 "monthly rent" 500
+assert annotations == 1
+assert dirty == true
+# A long press in Read selects the word; the chip over it highlights it.
+tool read
+drag text 1 "Winchester" text 1 "Winchester" 1000
+assert selection == true
+wait 200
+screenshot 02-long-press.png
+click "Highlight selection" 200
+assert annotations == 2
+assert selection == false
+# Drawing: one finger draws, a tap does not.
+tool draw
+stroke page 1 120,560 160,540 200,580 240,545 280,570 600
+assert annotations == 3
+click page 1 300,620 100
+assert annotations == 3
+wait 800
+screenshot 02-drawn.png
+call undo
+assert annotations == 2
+call redo
+assert annotations == 3
+# Back with unsaved changes warns first.
+key back
+assert reading == true
+assert message contains unsaved
+call save
+assert dirty == false
+key back
+assert reading == false
+# The saved highlights and drawing are in the file.
+open "$SAMPLES/lease.pdf"
+wait 400
+assert annotations == 3

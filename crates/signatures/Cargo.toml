@@ -1,0 +1,21 @@
+[package]
+name = "pagebara-signatures"
+description = "Signature library: import with background removal, drawing, local persistence, placement"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-annot.workspace = true
+pagebara-syntax.workspace = true
+pagebara-png.workspace = true
+pagebara-jpeg.workspace = true
+rayon.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+pagebara-identity.workspace = true
+getrandom.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

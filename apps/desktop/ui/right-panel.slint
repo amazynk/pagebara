@@ -1,0 +1,498 @@
+import { RowLayout } from "components/row.slint";
+import { ScrollView } from "std-widgets.slint";
+import { PreparePanel, FormDataButtons } from "prepare.slint";
+import { Theme } from "theme.slint";
+import { AppState, ReplyRow, Chrome, DialogKind } from "state.slint";
+import { Button, Pressable, Keys } from "components/button.slint";
+import { Divider, Panel } from "components/panel.slint";
+import { TextField } from "components/text-field.slint";
+import { ColourRow, ChoiceRow, SectionLabel, LabeledSlider, Check } from "components/controls.slint";
+import { SignPanel } from "sign-panel.slint";
+import { RedactPanel, RedactState } from "redaction.slint";
+import { EditPanel } from "edit.slint";
+import { SpellMenuState, SpellMarks, SpellState } from "spell-menu.slint";
+
+component Hint inherits Text {
+    color: Theme.muted;
+    font-size: Theme.font-small;
+    wrap: word-wrap;
+    line-height-factor: 1.15;
+}
+
+// A multi-line text box that reports edits when it loses focus, its misspelled words
+// underlined.
+component TextEdit2 inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    height: max(64px, input.preferred-height + 16px);
+    border-radius: Theme.radius-small;
+    background: Theme.chrome;
+    border-width: input.has-focus ? 2px : 1px;
+    border-color: input.has-focus ? Theme.accent : Theme.border;
+    property <Point> caret;
+    function spell-menu(index: int, x: length, y: length) {
+        if index >= 0 && SpellState.open-menu(3, index) {
+            SpellMenuState.show(3, input.absolute-position.x + x, input.absolute-position.y + y);
+        }
+    }
+    property <int> spell-closed: SpellMenuState.closed;
+    changed spell-closed => {
+        if SpellMenuState.editor == 3 {
+            input.focus();
+        }
+    }
+    if SpellState.enabled: comment-marks := SpellMarks {
+        x: input.x;
+        y: input.y;
+        width: input.width;
+        height: input.height;
+        words: SpellState.comment;
+        text: input.text;
+        font-size: input.font-size;
+        wrap: input.wrap;
+        single-line: input.single-line;
+        menu(i, x, y) => {
+            root.spell-menu(i, x, y);
+        }
+    }
+    // Asked for from the selection's bar: the field takes the focus, now or once shown.
+    property <bool> wanted: Chrome.focus-comment;
+    changed wanted => {
+        root.take-focus();
+    }
+    init => {
+        root.take-focus();
+    }
+    function take-focus() {
+        if Chrome.focus-comment {
+            Chrome.focus-comment = false;
+            input.focus();
+        }
+    }
+    input := TextInput {
+        x: 8px;
+        y: 8px;
+        width: parent.width - 16px;
+        wrap: word-wrap;
+        single-line: false;
+        color: Theme.text;
+        font-size: Theme.font-body;
+        accessible-label: @tr("Comment text");
+        changed has-focus => {
+            if !self.has-focus {
+                AppState.contents-edited(self.text);
+            }
+        }
+        changed text => {
+            SpellState.text-changed(3, self.text);
+        }
+        cursor-position-changed(p) => {
+            root.caret = p;
+        }
+        key-pressed(e) => {
+            if (e.text == Key.F10 && e.modifiers.shift) || e.text == Key.Menu {
+                root.spell-menu(SpellState.word-at(3, self.cursor-position-byte-offset), root.caret.x, root.caret.y + self.font-size * 1.3);
+                return accept;
+            }
+            reject
+        }
+    }
+    if root.text == "" && !input.has-focus: Text {
+        x: 9px;
+        y: 8px;
+        text: @tr("Add a comment");
+        color: Theme.faint;
+    }
+}
+
+component Thread inherits VerticalLayout {
+    spacing: 10px;
+    SectionLabel {
+        // TRANSLATORS: noun, heading above the comment text
+        text: @tr("Comment");
+    }
+    comment := TextEdit2 {
+        text <=> AppState.sel-contents;
+    }
+    for r in AppState.sel-replies: VerticalLayout {
+        spacing: 2px;
+        RowLayout {
+            spacing: 6px;
+            Text {
+                text: r.author != "" ? r.author : @tr("Anonymous");
+                color: Theme.text;
+                font-weight: 600;
+            }
+            Text {
+                text: r.when;
+                color: Theme.faint;
+                font-size: Theme.font-small;
+                vertical-alignment: center;
+            }
+        }
+        Text {
+            text: r.body;
+            color: Theme.text;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+        }
+    }
+    reply := TextField {
+        placeholder: @tr("Write a reply");
+        // TRANSLATORS: field for writing a reply to a comment
+        label: @tr("Reply");
+        accepted => {
+            if self.text != "" {
+                AppState.reply(self.text);
+                self.text = "";
+            }
+        }
+    }
+    RowLayout {
+        alignment: end;
+        Button {
+            // TRANSLATORS: verb, on the button that posts a reply
+            text: @tr("Reply");
+            enabled: reply.text != "";
+            clicked => {
+                AppState.reply(reply.text);
+                reply.text = "";
+            }
+        }
+    }
+}
+
+component SelectionProperties inherits VerticalLayout {
+    spacing: 12px;
+    RowLayout {
+        Text {
+            text: AppState.sel-kind;
+            color: Theme.text;
+            font-weight: 600;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: AppState.sel-page;
+            color: Theme.muted;
+            font-size: Theme.font-small;
+        }
+    }
+    if AppState.sel-author != "" || AppState.sel-when != "": Hint {
+        text: AppState.sel-author + (AppState.sel-author != "" && AppState.sel-when != "" ? " · " : "") + AppState.sel-when;
+    }
+    if !AppState.sel-is-signature: VerticalLayout {
+        spacing: 6px;
+        SectionLabel {
+            text: @tr("Colour");
+        }
+        ColourRow {
+            selected: AppState.sel-colour;
+            picked(i) => {
+                AppState.selection-action("colour:" + i);
+            }
+        }
+    }
+    if AppState.sel-has-width: LabeledSlider {
+        label: @tr("Line width");
+        value-text: @tr("{} pt", round(AppState.sel-width * 10) / 10);
+        value: AppState.sel-width;
+        minimum: 0.5;
+        maximum: 12;
+        released(v) => {
+            AppState.selection-action("width:" + v);
+        }
+    }
+    if AppState.sel-has-font: LabeledSlider {
+        label: @tr("Font size");
+        value-text: @tr("{} pt", round(AppState.sel-font-size));
+        value: AppState.sel-font-size;
+        minimum: 6;
+        maximum: 48;
+        released(v) => {
+            AppState.selection-action("font:" + v);
+        }
+    }
+    if AppState.text-warning != "": Hint {
+        text: AppState.text-warning;
+        color: Theme.danger;
+    }
+    Divider { }
+    Thread { }
+    Divider { }
+    RowLayout {
+        spacing: 8px;
+        Button {
+            text: @tr("Delete");
+            icon: @image-url("icons/trash.svg");
+            clicked => {
+                AppState.selection-action("delete");
+            }
+        }
+        if AppState.sel-is-signature: Button {
+            // TRANSLATORS: verb, on a button that merges the annotation into the page
+            text: @tr("Flatten");
+            clicked => {
+                AppState.selection-action("flatten");
+            }
+        }
+    }
+}
+
+// With no tool and nothing selected: the document itself.
+component DocumentInfo inherits VerticalLayout {
+    spacing: 10px;
+    Text {
+        text: AppState.title;
+        color: Theme.text;
+        font-weight: 600;
+        wrap: word-wrap;
+    }
+    Hint {
+        text: AppState.subtitle;
+    }
+    if AppState.page-size != "": Hint {
+        text: AppState.page-size;
+    }
+    if AppState.protection != "": Hint {
+        text: AppState.protection;
+    }
+    RowLayout {
+        alignment: start;
+        Button {
+            text: @tr("Document properties");
+            icon: @image-url("icons/properties.svg");
+            clicked => {
+                AppState.show-dialog(DialogKind.properties);
+            }
+        }
+    }
+    Hint {
+        text: @tr("The options of a tool and the properties of what is selected show here.");
+    }
+}
+
+component HighlightOptions inherits VerticalLayout {
+    spacing: 12px;
+    ChoiceRow {
+        items: [
+            { label: @tr("Highlight"), icon: @image-url("icons/highlight.svg") },
+            { label: @tr("Underline"), icon: @image-url("icons/underline.svg") },
+            { label: @tr("Strike"), icon: @image-url("icons/strike.svg") },
+        ];
+        selected: AppState.markup-kind;
+        picked(i) => {
+            AppState.markup-kind = i;
+            AppState.option-changed("markup");
+        }
+    }
+    SectionLabel {
+        text: @tr("Colour");
+    }
+    ColourRow {
+        selected: AppState.colour;
+        picked(i) => {
+            AppState.colour = i;
+            AppState.option-changed("colour");
+        }
+    }
+    Hint {
+        text: @tr("Drag across text to mark it. Double-click marks a word.");
+    }
+}
+
+component DrawOptions inherits VerticalLayout {
+    spacing: 12px;
+    ChoiceRow {
+        items: [
+            { label: @tr("Pen"), icon: @image-url("icons/pen.svg") },
+            { label: @tr("Box"), icon: @image-url("icons/rect.svg") },
+            { label: @tr("Ellipse"), icon: @image-url("icons/ellipse.svg") },
+            // TRANSLATORS: noun, the shape tool for straight lines
+            { label: @tr("Line"), icon: @image-url("icons/line.svg") },
+            { label: @tr("Arrow"), icon: @image-url("icons/arrow.svg") },
+        ];
+        selected: AppState.shape;
+        picked(i) => {
+            AppState.shape = i;
+            AppState.option-changed("shape");
+        }
+    }
+    SectionLabel {
+        text: @tr("Colour");
+    }
+    ColourRow {
+        selected: AppState.colour;
+        picked(i) => {
+            AppState.colour = i;
+            AppState.option-changed("colour");
+        }
+    }
+    LabeledSlider {
+        label: @tr("Width");
+        value-text: @tr("{} pt", round(AppState.pen-width * 10) / 10);
+        value <=> AppState.pen-width;
+        minimum: 0.5;
+        maximum: 12;
+        released => {
+            AppState.option-changed("width");
+        }
+    }
+    if AppState.shape == 0: Check {
+        text: @tr("Smooth strokes");
+        checked <=> AppState.smoothing;
+    }
+    Hint {
+        text: AppState.shape == 0 ? @tr("Draw on the page with the mouse or a pen.") : @tr("Drag on the page to draw. Hold Shift for squares, circles and straight angles.");
+    }
+}
+
+component TextOptions inherits VerticalLayout {
+    spacing: 12px;
+    ChoiceRow {
+        items: [
+            { label: @tr("Text box"), icon: @image-url("icons/text.svg") },
+            { label: @tr("Note"), icon: @image-url("icons/note.svg") },
+        ];
+        selected: AppState.text-mode;
+        picked(i) => {
+            AppState.text-mode = i;
+            AppState.option-changed("text-mode");
+        }
+    }
+    if AppState.text-mode == 0: LabeledSlider {
+        label: @tr("Font size");
+        value-text: @tr("{} pt", round(AppState.font-size));
+        value <=> AppState.font-size;
+        minimum: 6;
+        maximum: 48;
+    }
+    SectionLabel {
+        text: @tr("Colour");
+    }
+    ColourRow {
+        selected: AppState.colour;
+        picked(i) => {
+            AppState.colour = i;
+            AppState.option-changed("colour");
+        }
+    }
+    if AppState.text-warning != "": Hint {
+        text: AppState.text-warning;
+        color: Theme.danger;
+    }
+    Hint {
+        text: AppState.text-mode == 0 ? Keys.label(@tr("Click on the page to add a text box, or drag to size it. Esc, Ctrl+Enter or a click elsewhere finishes."), false) : @tr("Click on the page to add a note, then write the comment here.");
+    }
+}
+
+component FormOptions inherits VerticalLayout {
+    spacing: 10px;
+    if AppState.form-notice != "": Rectangle {
+        border-radius: Theme.radius-small;
+        background: Theme.accent-soft;
+        height: notice.preferred-height + 20px;
+        notice := Text {
+            x: 10px;
+            width: parent.width - 20px;
+            text: AppState.form-notice;
+            color: Theme.text;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+            font-size: Theme.font-small;
+        }
+    }
+    if AppState.can-fill: Hint {
+        text: Keys.label(@tr("Click a field to fill it in. Tab and Shift+Tab move between fields; Enter or a click elsewhere finishes, Esc cancels."), false);
+    }
+    // Notes, not errors: the form can still be filled in.
+    for w in AppState.form-warnings: Text {
+        text: w;
+        color: Theme.muted;
+        font-size: Theme.font-small;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+    }
+    if AppState.fields.length > 0: FormDataButtons {
+        act(w) => {
+            AppState.form-action(w);
+        }
+    }
+    RowLayout {
+        alignment: start;
+        Button {
+            text: @tr("Prepare form");
+            clicked => {
+                AppState.tool = 8;
+                AppState.tool-changed(8);
+            }
+        }
+    }
+    if AppState.can-fill: Check {
+        text: @tr("Flatten fields when saving");
+        checked <=> AppState.flatten-forms;
+        toggled => {
+            AppState.option-changed("flatten-forms");
+        }
+    }
+    if AppState.fields.length == 0: Hint {
+        text: @tr("This document has no form fields.");
+    }
+    for f[i] in AppState.fields: Pressable {
+        height: 44px;
+        border-radius: Theme.radius-small;
+        background: self.has-hover ? Theme.hover : transparent;
+        accessible-role: list-item;
+        label: f.name != "" ? f.name : @tr("Unnamed field");
+        description: f.value != "" ? @tr("{}, page {}, {}", f.kind, f.page, f.value) : @tr("{}, page {}", f.kind, f.page);
+        clicked => {
+            AppState.field-clicked(i);
+        }
+        VerticalLayout {
+            padding-left: 8px;
+            alignment: center;
+            Text {
+                text: f.name != "" ? f.name : @tr("Unnamed field");
+                color: Theme.text;
+                overflow: elide;
+            }
+            Text {
+                text: f.value != "" ? @tr("{} · page {} · {}", f.kind, f.page, f.value) : @tr("{} · page {}", f.kind, f.page);
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                overflow: elide;
+            }
+        }
+    }
+}
+
+// Options for the current tool, or the properties of the selected annotation.
+export component RightPanel inherits Panel {
+    in property <string> heading;
+    // One width for every tool and selection, so the pages do not shift sideways when
+    // the tool changes; signing and redacting need at least 300px.
+    width: max(300px, Theme.panel-width);
+    title: heading;
+    closable: true;
+    border-left: true;
+    region: 4;
+
+    sv := ScrollView {
+        vertical-stretch: 1;
+        VerticalLayout {
+            width: sv.visible-width;
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: 16px;
+            alignment: start;
+            if !AppState.has-selection && AppState.tool == 0: DocumentInfo { }
+            if AppState.has-selection && !RedactState.has-mark: SelectionProperties { }
+            if AppState.tool == 6 && (!AppState.has-selection || RedactState.has-mark): RedactPanel { }
+            if !AppState.has-selection && AppState.tool == 1: HighlightOptions { }
+            if !AppState.has-selection && AppState.tool == 2: DrawOptions { }
+            if !AppState.has-selection && AppState.tool == 3: TextOptions { }
+            if !AppState.has-selection && AppState.tool == 4: SignPanel { }
+            if !AppState.has-selection && AppState.tool == 5: FormOptions { }
+            if !AppState.has-selection && AppState.tool == 7: EditPanel { }
+            if !AppState.has-selection && AppState.tool == 8: PreparePanel { }
+        }
+    }
+}

@@ -1,0 +1,168 @@
+# Edit mode: select a page object with a tap, move it with a finger, recolour, fade,
+# duplicate, arrange and delete it from the action bar, resize and replace a picture,
+# edit a paragraph in place (rendered sharp again after a pinch zoom, in the page colours
+# chosen), a picture mirrored by dragging a corner past the opposite one, undo and redo,
+# save and open again; page colours from the menu; the caret over a blue box.
+open "$SAMPLES/flyer.pdf"
+wait 600
+click "Edit" 200
+assert tool == edit
+assert edit.objects == 6
+# A tap selects the blue box; the bar shows what it is.
+click object 1 4 300
+assert edit.kind == drawing
+assert edit.bar == true
+assert edit.selected contains 200 by 150 points
+wait 200
+screenshot 10-selected.png
+# A finger on the selection moves it: one undo step.
+drag object 1 4 page 1 420,520 900
+assert edit.y > 400
+assert undo == Move object
+assert dirty == true
+wait 200
+screenshot 10-moved.png
+# Colour and opacity from the bar.
+click "Colour" 200
+click "Colour 3" 200
+assert edit.fill == #dc2626
+assert undo == Change fill colour
+wait 200
+screenshot 10-colour.png
+click "Opacity" 200
+click "Opacity 50 percent" 200
+assert edit.opacity == 50
+# Duplicate selects the copy; arrange it; delete it.
+click "Duplicate" 200
+assert edit.objects == 7
+assert undo == Duplicate object
+click "Arrange" 200
+click "Send to back" 200
+assert undo == Send to back
+click "Delete object" 200
+assert edit.objects == 6
+assert edit.bar == false
+call undo
+assert edit.objects == 7
+call redo
+assert edit.objects == 6
+# A tap on empty paper selects nothing.
+click page 1 560,760 200
+assert edit.count == 0
+# Two fingers resize the picture; then it is replaced.
+click object 1 3 300
+assert edit.kind == image
+# Its top left corner dragged past the right edge: mirrored while dragging and once let go.
+assert edit.mirrored == false
+drag-hold page 1 72,222 page 1 392,262 900
+wait 200
+screenshot 10-mirroring.png
+release
+assert undo == Resize object
+assert edit.mirrored == true
+wait 200
+screenshot 10-mirrored.png
+call undo
+wait 300
+call edit-select 3
+assert edit.kind == image
+assert edit.mirrored == false
+call edit-pinch 1.5
+assert edit.w > 250
+assert undo == Resize object
+call replace-image "$SAMPLES/chart.png"
+assert undo == Replace image
+assert edit.kind == image
+wait 300
+screenshot 10-image.png
+# A double tap on the paragraph edits it in place; a long phrase reflows it.
+dblclick object 1 2 300
+await edit.text-editing == true 3000
+assert edit.bar == false
+assert edit.text-lines == 3
+wait 300
+type " Free parking for every visitor who comes along by bicycle or on foot."
+assert edit.text contains garden club. Free parking for every visitor
+assert edit.text-lines > 3
+wait 300
+screenshot 10-typing.png
+# A pinch while typing: the paragraph is rendered again, sharp, once the zoom settles.
+assert edit.preview-sharp == true
+call pinch 1.4
+assert edit.preview-sharp == false
+wait 600
+assert edit.preview-sharp == true
+screenshot 10-zoomed.png
+# In dark page colours, the paragraph being edited too.
+call page-theme dark
+wait 400
+screenshot 10-typing-dark.png
+call page-theme normal
+# The first word made bold.
+call edit-caret 4 0
+click "Bold" 200
+assert edit.text-bold == true
+wait 300
+screenshot 10-bold.png
+click "Done" 200
+assert edit.text-editing == false
+# Reflowed: the phrase goes on over two new lines.
+assert page.text:1 contains garden club.
+assert page.text:1 contains Free parking for every visitor who
+assert page.text:1 contains comes along by bicycle or on foot.
+assert undo == Edit text
+assert edit.selected contains Join us
+assert edit.bold == true
+wait 600
+screenshot 10-edited.png
+# Reopen from the action bar. The upper part of Done is level with the other controls.
+click "Edit text" 200
+assert edit.text-editing == true
+click 335,799 200
+assert edit.text-editing == false
+call undo
+assert undo == Replace image
+call redo
+assert page.text:1 contains bicycle
+# Saved, closed and opened again: the changes are in the file.
+call save
+assert dirty == false
+key back
+key back
+assert reading == false
+open "$SAMPLES/flyer.pdf"
+wait 400
+assert page.text:1 contains bicycle
+assert edit.objects == 6
+tool edit
+click object 1 2 300
+assert edit.kind == text
+# Page colours from the menu, remembered.
+call sheet more
+click "Sepia pages" 300
+assert page-theme == sepia
+wait 300
+screenshot 10-page-colours.png
+call sheet none
+wait 400
+screenshot 10-sepia.png
+call page-theme normal
+# Over a blue box the caret and the text frame keep an edge that shows.
+click page 1 420,520 300
+assert edit.kind == drawing
+click "Colour" 200
+click "Colour 6" 200
+assert edit.fill == #2563eb
+click "Opacity" 200
+click "Opacity 100 percent" 200
+assert edit.opacity == 100
+drag page 1 420,520 page 1 220,160 900
+click "Arrange" 200
+click "Send to back" 200
+dblclick text 1 "Saturday" 300
+await edit.text-editing == true 3000
+wait 300
+screenshot 10-caret-on-blue.png
+call edit-caret 0 7
+wait 300
+screenshot 10-selection-on-blue.png

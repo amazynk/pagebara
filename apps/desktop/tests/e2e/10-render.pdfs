@@ -1,0 +1,29 @@
+# Real page rendering: dark text pixels where the page has text and paper elsewhere, at
+# two zoom levels, in thumbnails and the organize grid; edits show up on the page.
+cursor on
+open "$SAMPLES/lease.pdf"
+zoom 100 0
+wait 1200
+# The title of the lease, then an empty margin.
+assert ink:1,72,60,460,40 > 300
+assert ink:1,8,8,50,40 == 0
+screenshot 10-page.png
+zoom 250 400
+wait 1200
+assert ink:1,200,240,120,100 > 1000
+screenshot 10-zoomed.png
+zoom 100 400
+# Thumbnails in the sidebar and the organize grid are rendered pages too.
+call set sidebar pages
+wait 600
+screenshot 10-thumbnails.png
+call organize
+wait 800
+screenshot 10-organize.png
+call organize-done
+# The report has page labels and links; its pages render as well.
+open "$SAMPLES/report.pdf"
+zoom 100 0
+wait 1200
+assert ink:1,72,290,300,80 > 200
+screenshot 10-report.png

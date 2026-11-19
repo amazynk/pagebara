@@ -1,0 +1,19 @@
+[package]
+name = "pagebara-fdf"
+description = "Form data exchange: FDF and XFDF export and import of field values, and annotations in XFDF"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-annot.workspace = true
+pagebara-pages.workspace = true
+pagebara-forms.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

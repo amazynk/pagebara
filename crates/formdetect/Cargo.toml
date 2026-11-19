@@ -1,0 +1,19 @@
+[package]
+name = "pagebara-formdetect"
+description = "Finds where a form's fields belong: lines, underscores, boxes and check boxes in page content, named after the text next to them"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-content.workspace = true
+pagebara-pages.workspace = true
+pagebara-annot.workspace = true
+pagebara-forms.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+pagebara-samples.workspace = true

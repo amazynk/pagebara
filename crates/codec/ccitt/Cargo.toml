@@ -1,0 +1,12 @@
+[package]
+name = "pagebara-ccitt"
+description = "CCITT Group 3 / Group 4 fax decoding"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+
+
+[lints]
+workspace = true

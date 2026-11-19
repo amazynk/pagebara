@@ -1,0 +1,615 @@
+// pagebara on phones and tablets. Phones: a header, the pages, a bottom tool bar and sheets.
+// Tablets: the tools in the header, the page thumbnails and the signatures beside the pages.
+
+import { RowLayout } from "row.slint";
+import { Theme } from "theme.slint";
+import { AppState, ViewState, Tool, Sheet, PageSlot, TileSlot, Mark, Thumb, SigCard, RecentFile } from "state.slint";
+import { Button, IconButton, BottomSheet } from "controls.slint";
+import { Header, Tools } from "header.slint";
+import { PageView } from "page-view.slint";
+import { ThumbGrid, SignatureLibrary, MoreMenu, ToolsMenu, DrawPad, FieldEditor, ChoiceList, PasswordPanel, LanguageList, SpellBar } from "sheets.slint";
+import { SpellState, SpellWord } from "../../../crates/ui/slint/spell.slint";
+import { Home } from "home.slint";
+import { EditBar, TextEditBar } from "edit-bar.slint";
+import { PrepBar, FieldProps } from "prep-bar.slint";
+
+export { AppState, ViewState, Theme, Tool, Sheet, PageSlot, TileSlot, Mark, Thumb, SigCard, RecentFile, SpellState, SpellWord }
+
+// A small floating action over the page.
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <string> label: text;
+    in property <image> icon;
+    callback clicked();
+    height: 40px;
+    width: row.preferred-width;
+    border-radius: 20px;
+    background: touch.pressed ? #1D4ED8 : Theme.accent;
+    drop-shadow-blur: 8px;
+    drop-shadow-color: Theme.shadow;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        root.clicked();
+    }
+    row := HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 16px;
+        spacing: 6px;
+        Image {
+            y: (parent.height - self.height) / 2;
+            width: 18px;
+            height: 18px;
+            source: root.icon;
+            colorize: Theme.on-accent;
+            accessible-role: none;
+        }
+        Text {
+            text: root.text;
+            color: Theme.on-accent;
+            font-size: Theme.font-body;
+            font-weight: 600;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+// The ink colours and undo, over the pages while highlighting or drawing.
+component InkBar inherits Rectangle {
+    height: 52px;
+    background: Theme.chrome;
+    accessible-role: groupbox;
+    accessible-label: @tr("Colour");
+    Rectangle {
+        height: 1px;
+        y: 0;
+        background: Theme.border;
+    }
+    RowLayout {
+        padding-left: 12px;
+        padding-right: 8px;
+        spacing: 6px;
+        for c[i] in AppState.colours: Rectangle {
+            cross-axis-self-alignment: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            border-width: i == AppState.colour ? 2px : 0px;
+            border-color: Theme.accent-fg;
+            accessible-role: button;
+            accessible-label: @tr("Colour {}", i + 1);
+            accessible-checkable: true;
+            accessible-checked: i == AppState.colour;
+            accessible-action-default => {
+                AppState.colour = i;
+            }
+            Rectangle {
+                width: 26px;
+                height: 26px;
+                border-radius: 13px;
+                background: c;
+                border-width: 1px;
+                border-color: #00000022;
+            }
+            TouchArea {
+                clicked => {
+                    AppState.colour = i;
+                }
+            }
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+        }
+        IconButton {
+            cross-axis-self-alignment: center;
+            icon: @image-url("icons/undo.svg");
+            label: @tr("Undo");
+            enabled: AppState.can-undo;
+            clicked => {
+                AppState.undo();
+            }
+        }
+    }
+}
+
+export component MobileWindow inherits Window {
+    title: AppState.app-name;
+    background: Theme.bg;
+    preferred-width: 390px;
+    preferred-height: 844px;
+    forward-focus: keys;
+    default-font-size: Theme.font-body;
+
+    // Puts text on the system clipboard (through a text field the user never sees).
+    public function copy-text(text: string) {
+        clipboard.text = text;
+        clipboard.select-all();
+        clipboard.copy();
+        clipboard.text = "";
+    }
+
+    clipboard := TextInput {
+        width: 0px;
+        height: 0px;
+        opacity: 0;
+        accessible-role: none;
+    }
+
+    property <length> top: self.safe-area-insets.top;
+    property <length> bottom: self.safe-area-insets.bottom;
+    property <bool> keyboard: self.virtual-keyboard-size.height > 0;
+    property <bool> phone-sign: AppState.reading && !AppState.tablet && AppState.tool == Tool.sign && AppState.sheet == Sheet.signatures;
+
+    // Keys (Android's Back) go to `keys` again once a text field closes.
+    property <bool> typing: AppState.searching || AppState.field-editing || AppState.password-needed || AppState.edit-text-editing;
+    changed typing => {
+        if !self.typing {
+            keys.focus();
+        }
+    }
+    property <bool> reading: AppState.reading;
+    changed reading => {
+        keys.focus();
+    }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if e.text == Key.Back || e.text == Key.Escape {
+                if AppState.back-key() {
+                    return accept;
+                }
+            }
+            reject
+        }
+
+        if !AppState.reading: Home {
+            top-inset: root.top;
+            bottom-inset: root.bottom;
+        }
+
+        if AppState.reading: VerticalLayout {
+            Header {
+                top-inset: root.top;
+                keyboard-visible: root.keyboard;
+            }
+            RowLayout {
+                vertical-stretch: 1;
+                if AppState.tablet && AppState.sheet == Sheet.pages: Rectangle {
+                    width: AppState.side-width;
+                    background: Theme.chrome;
+                    ThumbGrid {
+                        columns: 2;
+                    }
+                    Rectangle {
+                        x: parent.width - 1px;
+                        width: 1px;
+                        background: Theme.border;
+                    }
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    // Text being edited in place goes through this field (under the pages,
+                    // which draw it): the keyboard, input methods and the clipboard work
+                    // as in any field.
+                    if AppState.edit-text-editing: TextInput {
+                        x: AppState.edit-x * 1px;
+                        y: AppState.edit-y * 1px;
+                        width: 160px;
+                        height: 32px;
+                        single-line: false;
+                        color: transparent;
+                        selection-background-color: transparent;
+                        selection-foreground-color: transparent;
+                        text-cursor-width: 0px;
+                        accessible-label: @tr("Text being edited");
+                        text <=> AppState.edit-text;
+                        init => {
+                            self.focus();
+                            self.set-selection-offsets(AppState.edit-sel-anchor, AppState.edit-sel-focus);
+                        }
+                        property <int> serial: AppState.edit-sel-serial;
+                        changed serial => {
+                            self.set-selection-offsets(AppState.edit-sel-anchor, AppState.edit-sel-focus);
+                        }
+                        edited => {
+                            AppState.edit-text-input(self.text, self.cursor-position-byte-offset, self.anchor-position-byte-offset, self.preedit-text);
+                        }
+                        changed cursor-position-byte-offset => {
+                            AppState.edit-text-input(self.text, self.cursor-position-byte-offset, self.anchor-position-byte-offset, self.preedit-text);
+                        }
+                        changed anchor-position-byte-offset => {
+                            AppState.edit-text-input(self.text, self.cursor-position-byte-offset, self.anchor-position-byte-offset, self.preedit-text);
+                        }
+                        key-pressed(e) => {
+                            if e.text == Key.UpArrow {
+                                AppState.edit-text-move(0, e.modifiers.shift);
+                                return accept;
+                            }
+                            if e.text == Key.DownArrow {
+                                AppState.edit-text-move(1, e.modifiers.shift);
+                                return accept;
+                            }
+                            if e.text == Key.Home {
+                                AppState.edit-text-move(2, e.modifiers.shift);
+                                return accept;
+                            }
+                            if e.text == Key.End {
+                                AppState.edit-text-move(3, e.modifiers.shift);
+                                return accept;
+                            }
+                            reject
+                        }
+                        changed preedit-text => {
+                            AppState.edit-text-input(self.text, self.cursor-position-byte-offset, self.anchor-position-byte-offset, self.preedit-text);
+                        }
+                    }
+                    pages := PageView { }
+                    if AppState.has-selection: RowLayout {
+                        x: max(8px, min(parent.width - self.width - 8px, AppState.selection-x * 1px - self.width / 2));
+                        y: max(8px, min(parent.height - self.height - 8px, AppState.selection-y * 1px - self.height - 12px));
+                        width: self.preferred-width;
+                        height: self.preferred-height;
+                        spacing: 8px;
+                        Chip {
+                            text: @tr("Copy");
+                            label: @tr("Copy selection");
+                            icon: @image-url("icons/copy.svg");
+                            clicked => {
+                                AppState.copy-selection();
+                            }
+                        }
+                        Chip {
+                            text: @tr("Highlight");
+                            label: @tr("Highlight selection");
+                            icon: @image-url("icons/highlight.svg");
+                            clicked => {
+                                AppState.highlight-selection();
+                            }
+                        }
+                    }
+                    if AppState.has-selected-annot: Chip {
+                        x: max(8px, min(parent.width - self.width - 8px, AppState.selected-x * 1px - self.width / 2));
+                        y: max(8px, min(parent.height - self.height - 8px, AppState.selected-y * 1px - self.height - 16px));
+                        text: @tr("Delete");
+                        label: @tr("Delete signature");
+                        icon: @image-url("icons/trash.svg");
+                        clicked => {
+                            AppState.delete-selected();
+                        }
+                    }
+                    if AppState.tool == Tool.highlight || AppState.tool == Tool.draw: InkBar {
+                        y: parent.height - self.height;
+                    }
+                    if AppState.tool == Tool.edit && AppState.edit-selected && !AppState.edit-text-editing: EditBar {
+                        y: parent.height - self.height;
+                    }
+                    if AppState.tool == Tool.prepare: PrepBar {
+                        y: parent.height - self.height;
+                    }
+                }
+                if AppState.tablet && AppState.tool == Tool.sign: Rectangle {
+                    width: AppState.side-width + 40px;
+                    background: Theme.chrome;
+                    Rectangle {
+                        width: 1px;
+                        x: 0;
+                        background: Theme.border;
+                    }
+                    VerticalLayout {
+                        padding-top: 12px;
+                        spacing: 4px;
+                        Text {
+                            x: 16px;
+                            text: @tr("My signatures");
+                            font-size: Theme.font-title;
+                            font-weight: 600;
+                            color: Theme.text;
+                        }
+                        SignatureLibrary {
+                            narrow: true;
+                        }
+                        Rectangle {
+                            vertical-stretch: 1;
+                        }
+                    }
+                }
+            }
+            if root.phone-sign: Rectangle {
+                background: Theme.chrome;
+                border-top-left-radius: 16px;
+                border-top-right-radius: 16px;
+                drop-shadow-blur: 12px;
+                drop-shadow-color: Theme.shadow;
+                height: sig-col.preferred-height;
+                accessible-role: groupbox;
+                accessible-label: @tr("My signatures");
+                sig-col := VerticalLayout {
+                    RowLayout {
+                        padding-left: 16px;
+                        padding-right: 4px;
+                        height: 44px;
+                        Text {
+                            text: @tr("My signatures");
+                            font-size: Theme.font-title;
+                            font-weight: 600;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+                        IconButton {
+                            icon: @image-url("icons/chevron-down.svg");
+                            label: @tr("Hide signatures");
+                            clicked => {
+                                AppState.sheet = Sheet.none;
+                                AppState.sheet-changed();
+                            }
+                        }
+                    }
+                    SignatureLibrary { }
+                }
+            }
+            if !AppState.tablet: Rectangle {
+                height: Theme.toolbar-height + root.bottom;
+                background: Theme.chrome;
+                Rectangle {
+                    y: 0;
+                    height: 1px;
+                    background: Theme.border;
+                }
+                Tools {
+                    y: 0;
+                    height: Theme.toolbar-height;
+                    padding-left: 4px;
+                    padding-right: 4px;
+                }
+            }
+        }
+
+        if AppState.reading && !AppState.tablet && AppState.sheet == Sheet.pages: BottomSheet {
+            title: @tr("Pages");
+            sheet-height: root.height * 0.72;
+            bottom-inset: root.bottom;
+            close => {
+                AppState.sheet = Sheet.none;
+                AppState.sheet-changed();
+            }
+            ThumbGrid {
+                vertical-stretch: 1;
+                columns: AppState.thumb-columns;
+                picked => {
+                    AppState.sheet = Sheet.none;
+                    AppState.sheet-changed();
+                }
+            }
+        }
+
+        if AppState.reading && AppState.sheet == Sheet.more: BottomSheet {
+            sheet-height: 594px;
+            bottom-inset: root.bottom;
+            close => {
+                AppState.sheet = Sheet.none;
+                AppState.sheet-changed();
+            }
+            MoreMenu { }
+        }
+
+        if AppState.sheet == Sheet.language: BottomSheet {
+            title: @tr("Language");
+            sheet-height: min(root.height * 0.8, 17 * 52px + 56px);
+            bottom-inset: root.bottom;
+            close => {
+                AppState.sheet = Sheet.none;
+            }
+            LanguageList {
+                vertical-stretch: 1;
+            }
+        }
+
+        if AppState.reading && AppState.sheet == Sheet.tools: BottomSheet {
+            title: @tr("Tools");
+            sheet-height: 640px;
+            bottom-inset: root.bottom;
+            close => {
+                AppState.sheet = Sheet.none;
+                AppState.sheet-changed();
+            }
+            ToolsMenu {
+                vertical-stretch: 1;
+            }
+        }
+
+        if AppState.reading && AppState.sheet == Sheet.field-props: BottomSheet {
+            title: @tr("Field properties");
+            sheet-height: min(root.height * 0.8, 600px);
+            bottom-inset: root.keyboard ? root.virtual-keyboard-size.height : root.bottom;
+            close => {
+                AppState.sheet = Sheet.none;
+            }
+            FieldProps {
+                vertical-stretch: 1;
+            }
+        }
+
+        if AppState.sheet == Sheet.choices: BottomSheet {
+            title: AppState.field-label;
+            sheet-height: min(420px, AppState.field-options.length * 52px + 80px);
+            bottom-inset: root.bottom;
+            close => {
+                AppState.field-done(false);
+            }
+            ChoiceList {
+                vertical-stretch: 1;
+            }
+        }
+
+        if AppState.sheet == Sheet.licences: BottomSheet {
+            title: @tr("Licences");
+            sheet-height: root.height * 0.8;
+            bottom-inset: root.bottom;
+            close => {
+                AppState.sheet = Sheet.none;
+            }
+            Flickable {
+                vertical-stretch: 1;
+                content-height: notices.preferred-height + 24px;
+                notices := Text {
+                    x: 20px;
+                    y: 8px;
+                    width: parent.width - 40px;
+                    text: AppState.licences;
+                    wrap: word-wrap;
+                    font-size: Theme.font-small;
+                    color: Theme.text;
+                }
+            }
+        }
+
+        // The dictionary of the document's language can be downloaded.
+        if SpellState.offer != "": Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: root.top + Theme.header-height + 12px;
+            width: min(parent.width - 24px, 480px);
+            height: spell-offer.preferred-height;
+            border-radius: 12px;
+            background: Theme.chrome;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 10px;
+            drop-shadow-color: Theme.shadow;
+            spell-offer := VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                Text {
+                    text: SpellState.progress >= 0 ? @tr("Downloading the dictionary… {}%", round(SpellState.progress * 100)) : SpellState.offer;
+                    color: Theme.text;
+                    wrap: word-wrap;
+                    font-size: Theme.font-body;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: end;
+                    Button {
+                        text: SpellState.progress < 0 ? @tr("Not now") : @tr("Cancel");
+                        clicked => {
+                            SpellState.action("dismiss", "");
+                        }
+                    }
+                    if SpellState.progress < 0: Button {
+                        text: @tr("Download");
+                        primary: true;
+                        clicked => {
+                            SpellState.action("download", "");
+                        }
+                    }
+                }
+            }
+        }
+
+        if AppState.sheet == Sheet.draw-pad: DrawPad {
+            top-inset: root.top;
+            bottom-inset: root.bottom;
+        }
+
+        if AppState.edit-text-editing: TextEditBar {
+            y: root.keyboard ? min(root.height, root.virtual-keyboard-position.y) - self.height : root.height - self.height - root.bottom;
+        }
+        // The caret in a misspelled word of the page text: its corrections.
+        if AppState.edit-text-editing && SpellState.word != "": SpellBar {
+            width: root.width;
+            y: (root.keyboard ? min(root.height, root.virtual-keyboard-position.y) : root.height - root.bottom) - 56px - self.height;
+        }
+
+        if AppState.field-editing: FieldEditor {
+            y: root.keyboard ? min(root.height, root.virtual-keyboard-position.y) - self.height : root.height - self.height - root.bottom;
+        }
+
+        if AppState.password-needed: PasswordPanel { }
+
+        if AppState.message != "": Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: root.top + Theme.header-height + 64px;
+            width: min(parent.width - 32px, toast.preferred-width + 32px);
+            height: toast.preferred-height + 20px;
+            border-radius: 10px;
+            background: #27272AEE;
+            accessible-role: text;
+            accessible-label: AppState.message;
+            toast := Text {
+                width: parent.width - 32px;
+                text: AppState.message;
+                color: #FAFAFA;
+                wrap: word-wrap;
+                horizontal-alignment: center;
+                font-size: Theme.font-body;
+                accessible-role: none;
+            }
+        }
+
+        // An offer with a button (models to download for text in pictures).
+        if AppState.reading && AppState.offer != "": Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: root.height - root.bottom - (AppState.tablet ? 0px : Theme.toolbar-height) - self.height - 12px;
+            width: min(parent.width - 24px, 480px);
+            height: offer-row.preferred-height;
+            border-radius: 12px;
+            background: Theme.chrome;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 10px;
+            drop-shadow-color: Theme.shadow;
+            offer-row := VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                Text {
+                    text: AppState.offer;
+                    color: Theme.text;
+                    wrap: word-wrap;
+                    font-size: Theme.font-body;
+                }
+                RowLayout {
+                    spacing: 8px;
+                    alignment: end;
+                    Button {
+                        text: @tr("Not now");
+                        clicked => {
+                            AppState.offer-dismiss();
+                        }
+                    }
+                    if AppState.offer-action != "": Button {
+                        text: AppState.offer-action;
+                        primary: true;
+                        clicked => {
+                            AppState.offer-accept();
+                        }
+                    }
+                }
+            }
+        }
+
+        if AppState.busy: Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: root.top + Theme.header-height + 16px;
+            width: 120px;
+            height: 36px;
+            border-radius: 18px;
+            background: Theme.chrome;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: Theme.shadow;
+            accessible-role: text;
+            accessible-label: @tr("Working");
+            Text {
+                text: @tr("Working…");
+                color: Theme.muted;
+                font-size: Theme.font-small;
+            }
+        }
+    }
+}

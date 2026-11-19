@@ -1,0 +1,37 @@
+# size: 360x780
+# The phone UI in other languages: chosen from the start screen's Language button, applied
+# at once and remembered; German (long words), Arabic and Hebrew mirror the bars; back to
+# following the system (English under the tests).
+wait 300
+click "Language: English" 300
+assert sheet == language
+screenshot 14-languages.png
+click "Deutsch" 400
+assert sheet == none
+assert ui.language == de
+assert ui.rtl == false
+screenshot 14-de-home.png
+open "$SAMPLES/form.pdf"
+wait 800
+screenshot 14-de-reading.png
+# On a narrow phone the longer German labels put the signature actions on separate rows.
+tool sign
+assert gap-y:SignatureLibrary::draw-button,SignatureLibrary::photo-button >= 10
+assert gap-y:SignatureLibrary::photo-button,SignatureLibrary::placement-hint >= 12
+screenshot 14-de-signatures.png
+tool read
+call language ar
+assert ui.language == ar
+assert ui.rtl == true
+wait 400
+screenshot 14-ar-reading.png
+call back
+wait 300
+screenshot 14-ar-home.png
+call language he
+assert ui.rtl == true
+wait 300
+screenshot 14-he-home.png
+call language system
+assert ui.language == en
+assert ui.rtl == false

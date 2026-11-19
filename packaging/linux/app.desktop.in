@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Name=@APP_NAME@
+GenericName=PDF Viewer and Editor
+Comment=@APP_SUMMARY@
+Exec=@APP_BIN@ %U
+Icon=@APP_ID@
+Terminal=false
+Categories=Office;Viewer;
+MimeType=application/pdf;application/x-pdf;
+Keywords=PDF;document;viewer;annotate;sign;form;
+StartupNotify=true
+StartupWMClass=@APP_ID@
+Actions=new-window;
+
+[Desktop Action new-window]
+Name=New Window
+Exec=@APP_BIN@ --new-window

@@ -1,0 +1,400 @@
+// All tools: every command of the app in one list that typing narrows. Opened from the
+// toolbar or with Ctrl+K; the arrows choose, Enter runs, Esc closes.
+import { RowLayout } from "components/row.slint";
+import { Theme } from "theme.slint";
+import { AppState, Mode, DialogKind, Chrome } from "state.slint";
+import { Keys } from "components/button.slint";
+import { Divider } from "components/panel.slint";
+import { LibraryState } from "library.slint";
+import { PrintState } from "print-dialog.slint";
+import { ProState } from "stamps.slint";
+import { OcrState } from "ocr.slint";
+import { SigningState } from "signing.slint";
+import { ReadAloudState } from "read-aloud.slint";
+import { ReadingState } from "reading.slint";
+
+// `heading` and `heads` are filled in by the filter: the item starts a group, and how many
+// groups start at or before it (for where it is in the list).
+export struct PaletteItem {
+    id: string,
+    title: string,
+    group: string,
+    shortcut: string,
+    icon: image,
+    enabled: bool,
+    heading: bool,
+    heads: int,
+}
+
+export global PaletteState {
+    // The enabled items that match the words of `query`, the recent files first (Rust).
+    pure callback filter(items: [PaletteItem], query: string) -> [PaletteItem];
+}
+
+export component AllTools inherits Rectangle {
+    property <bool> has-doc: AppState.mode != Mode.welcome;
+    property <bool> view: AppState.mode == Mode.view;
+    // TRANSLATORS: headings of the groups of commands in the All tools list
+    property <string> g-file: @tr("File");
+    property <string> g-tools: @tr("Tools");
+    property <string> g-protect: @tr("Protect and sign");
+    property <string> g-output: @tr("Output tools");
+    property <string> g-view: @tr("View");
+    property <[PaletteItem]> items: [
+        { id: "open", title: @tr("Open…"), group: g-file, shortcut: "Ctrl+O", icon: @image-url("icons/folder.svg"), enabled: true },
+        { id: "library", title: @tr("Library"), group: g-file, shortcut: "Ctrl+L", icon: @image-url("icons/library.svg"), enabled: true },
+        { id: "save", title: @tr("Save"), group: g-file, shortcut: "Ctrl+S", icon: @image-url("icons/save.svg"), enabled: has-doc && !AppState.busy },
+        { id: "save-as", title: @tr("Save as…"), group: g-file, shortcut: "Ctrl+Shift+S", icon: @image-url("icons/save.svg"), enabled: has-doc },
+        { id: "save-small", title: @tr("Save a smaller copy…"), group: g-file, icon: @image-url("icons/compress.svg"), enabled: has-doc },
+        { id: "print", title: @tr("Print…"), group: g-file, shortcut: "Ctrl+P", icon: @image-url("icons/printer.svg"), enabled: has-doc },
+        { id: "properties", title: @tr("Document properties"), group: g-file, icon: @image-url("icons/properties.svg"), enabled: has-doc },
+        { id: "close", title: @tr("Close document"), group: g-file, shortcut: "Ctrl+W", icon: @image-url("icons/close.svg"), enabled: has-doc },
+        { id: "tool-1", title: @tr("Highlight"), group: g-tools, icon: @image-url("icons/highlight.svg"), enabled: view },
+        { id: "tool-2", title: @tr("Draw"), group: g-tools, icon: @image-url("icons/draw.svg"), enabled: view },
+        { id: "tool-3", title: @tr("Text box"), group: g-tools, icon: @image-url("icons/text.svg"), enabled: view },
+        { id: "note", title: @tr("Note"), group: g-tools, icon: @image-url("icons/note.svg"), enabled: view },
+        { id: "tool-5", title: @tr("Fill forms"), group: g-tools, icon: @image-url("icons/form.svg"), enabled: view },
+        { id: "tool-4", title: @tr("Sign"), group: g-tools, icon: @image-url("icons/sign.svg"), enabled: view },
+        { id: "tool-8", title: @tr("Prepare form"), group: g-tools, icon: @image-url("icons/form.svg"), enabled: view },
+        { id: "tool-7", title: @tr("Edit text and images"), group: g-tools, shortcut: "Ctrl+E", icon: @image-url("icons/edit.svg"), enabled: view },
+        { id: "organize", title: @tr("Organize pages"), group: g-tools, icon: @image-url("icons/organize.svg"), enabled: has-doc },
+        { id: "ocr", title: @tr("Recognize text…"), group: g-tools, icon: @image-url("icons/text.svg"), enabled: has-doc },
+        { id: "protect", title: @tr("Protect…"), group: g-protect, icon: @image-url("icons/shield.svg"), enabled: has-doc },
+        { id: "tool-6", title: @tr("Redact"), group: g-protect, icon: @image-url("icons/eye-off.svg"), enabled: view },
+        { id: "signatures", title: @tr("Signatures"), group: g-protect, icon: @image-url("icons/sign.svg"), enabled: view },
+        { id: "sign-cert", title: @tr("Sign with a certificate…"), group: g-protect, icon: @image-url("icons/seal.svg"), enabled: has-doc },
+        { id: "optimize", title: @tr("Optimize…"), group: g-output, icon: @image-url("icons/compress.svg"), enabled: has-doc },
+        { id: "pdfa", title: @tr("Save as PDF/A…"), group: g-output, icon: @image-url("icons/file.svg"), enabled: has-doc },
+        { id: "access", title: @tr("Accessibility check"), group: g-output, icon: @image-url("icons/check.svg"), enabled: has-doc },
+        { id: "pro-1", title: @tr("Watermark…"), group: g-output, icon: @image-url("icons/file.svg"), enabled: has-doc },
+        { id: "pro-2", title: @tr("Header and footer…"), group: g-output, icon: @image-url("icons/file.svg"), enabled: has-doc },
+        { id: "pro-3", title: @tr("Bates numbering…"), group: g-output, icon: @image-url("icons/file.svg"), enabled: has-doc },
+        { id: "pro-4", title: @tr("Flatten…"), group: g-output, icon: @image-url("icons/file.svg"), enabled: has-doc },
+        { id: "pro-5", title: @tr("Compare…"), group: g-output, icon: @image-url("icons/duplicate.svg"), enabled: has-doc },
+        { id: "reflow", title: @tr("Reading view"), group: g-view, shortcut: "Ctrl+Shift+R", icon: @image-url("icons/reflow.svg"), enabled: view },
+        { id: "read-aloud", title: @tr("Read aloud"), group: g-view, shortcut: "Ctrl+Shift+V", icon: @image-url("icons/speaker.svg"), enabled: view && ReadAloudState.available },
+        { id: "present", title: @tr("Present"), group: g-view, shortcut: "F5", icon: @image-url("icons/present.svg"), enabled: view },
+        { id: "bookmarks", title: @tr("Bookmarks"), group: g-view, shortcut: "Ctrl+B", icon: @image-url("icons/bookmark.svg"), enabled: view },
+        { id: "sidebar", title: @tr("Show sidebar"), group: g-view, icon: @image-url("icons/sidebar.svg"), enabled: view },
+        { id: "inspector", title: @tr("Inspector"), group: g-view, icon: @image-url("icons/panel-right.svg"), enabled: view },
+        { id: "theme", title: Theme.dark ? @tr("Switch to light mode") : @tr("Switch to dark mode"), group: g-view, icon: Theme.dark ? @image-url("icons/sun.svg") : @image-url("icons/moon.svg"), enabled: true },
+        { id: "vim", title: AppState.vim-keys ? @tr("Turn vim keys off") : @tr("Turn vim keys on"), group: g-view, icon: @image-url("icons/keyboard.svg"), enabled: true },
+        { id: "shortcuts", title: @tr("Keyboard shortcuts"), group: AppState.app-name, shortcut: "F1", icon: @image-url("icons/keyboard.svg"), enabled: true },
+        { id: "settings", title: @tr("Settings"), group: AppState.app-name, shortcut: "Ctrl+,", icon: @image-url("icons/gear.svg"), enabled: true },
+        { id: "discord", title: @tr("Join the community on Discord"), group: AppState.app-name, icon: @image-url("icons/chat.svg"), enabled: AppState.discord-available },
+        { id: "about", title: @tr("About {}", AppState.app-name), group: AppState.app-name, icon: @image-url("icons/info.svg"), enabled: true },
+    ];
+    property <[PaletteItem]> shown: PaletteState.filter(root.items, input.text);
+    property <int> cursor;
+    property <length> row-h: Theme.row-height + 2px;
+    property <length> head-h: 28px;
+
+    function close() {
+        Chrome.palette-open = false;
+    }
+    function move(to: int) {
+        if shown.length == 0 {
+            return;
+        }
+        cursor = max(0, min(shown.length - 1, to));
+        // Keeps the chosen row, and the heading over it, in view.
+        let bottom = cursor * row-h + shown[cursor].heads * head-h + row-h;
+        let top = bottom - row-h - (shown[cursor].heading ? head-h : 0px);
+        if top < -list.content-y {
+            list.content-y = -top;
+        } else if bottom > -list.content-y + list.height {
+            list.content-y = list.height - bottom;
+        }
+    }
+    function run(id: string) {
+        close();
+        if id == "open" {
+            AppState.open-file();
+        } else if id == "library" {
+            LibraryState.show(true);
+        } else if id == "save" {
+            AppState.save();
+        } else if id == "save-as" {
+            AppState.save-as(false);
+        } else if id == "save-small" {
+            AppState.save-as(true);
+        } else if id == "print" {
+            PrintState.open();
+        } else if id == "properties" {
+            AppState.show-dialog(DialogKind.properties);
+        } else if id == "close" {
+            AppState.close-tab(-1);
+        } else if id == "tool-1" {
+            Chrome.set-tool(1);
+        } else if id == "tool-2" {
+            Chrome.set-tool(2);
+        } else if id == "tool-3" || id == "note" {
+            if AppState.text-mode != (id == "note" ? 1 : 0) {
+                AppState.text-mode = id == "note" ? 1 : 0;
+                AppState.option-changed("text-mode");
+            }
+            Chrome.set-tool(3);
+        } else if id == "tool-4" {
+            Chrome.set-tool(4);
+        } else if id == "tool-5" {
+            Chrome.set-tool(5);
+        } else if id == "tool-6" {
+            Chrome.set-tool(6);
+        } else if id == "tool-7" {
+            Chrome.set-tool(7);
+        } else if id == "tool-8" {
+            Chrome.set-tool(8);
+        } else if id == "organize" {
+            Chrome.choose(4);
+        } else if id == "ocr" {
+            OcrState.action("open");
+        } else if id == "protect" {
+            AppState.show-dialog(DialogKind.protect);
+        } else if id == "signatures" {
+            SigningState.panel-open = true;
+        } else if id == "sign-cert" {
+            SigningState.action("open-sign", "");
+        } else if id == "optimize" {
+            AppState.show-dialog(DialogKind.optimize);
+        } else if id == "pdfa" {
+            AppState.show-dialog(DialogKind.pdfa);
+        } else if id == "access" {
+            AppState.show-dialog(DialogKind.access-check);
+        } else if id == "pro-1" {
+            ProState.action("open", "1");
+        } else if id == "pro-2" {
+            ProState.action("open", "2");
+        } else if id == "pro-3" {
+            ProState.action("open", "3");
+        } else if id == "pro-4" {
+            ProState.action("open", "4");
+        } else if id == "pro-5" {
+            ProState.action("open", "5");
+        } else if id == "reflow" {
+            ReadingState.toggle-reflow();
+        } else if id == "read-aloud" {
+            ReadAloudState.show(!ReadAloudState.visible);
+        } else if id == "present" {
+            ReadingState.present();
+        } else if id == "bookmarks" {
+            ReadingState.show-bookmarks(!ReadingState.bookmarks-visible);
+        } else if id == "sidebar" {
+            AppState.toggle-sidebar();
+        } else if id == "inspector" {
+            Chrome.toggle-inspector();
+        } else if id == "theme" {
+            AppState.set-theme(Theme.high-contrast ? (Theme.dark ? 4 : 3) : Theme.dark ? 1 : 2);
+        } else if id == "vim" {
+            AppState.set-vim-keys(!AppState.vim-keys);
+        } else if id == "shortcuts" {
+            AppState.show-dialog(DialogKind.shortcuts);
+        } else if id == "settings" {
+            AppState.show-dialog(DialogKind.settings);
+        } else if id == "discord" {
+            AppState.open-discord();
+        } else if id == "about" {
+            AppState.about();
+        } else if id == "recent-0" {
+            AppState.open-recent(0);
+        } else if id == "recent-1" {
+            AppState.open-recent(1);
+        } else if id == "recent-2" {
+            AppState.open-recent(2);
+        } else if id == "recent-3" {
+            AppState.open-recent(3);
+        }
+    }
+
+    background: Theme.scrim.with-alpha(0.25);
+    accessible-role: none;
+
+    // A click outside the card closes it.
+    TouchArea {
+        clicked => {
+            root.close();
+        }
+    }
+
+    card := Rectangle {
+        y: min(88px, root.height * 0.1);
+        width: min(580px, root.width - 32px);
+        height: min(50px + (shown.length == 0 ? 56px : body.preferred-height + 12px), root.height - self.y - 24px);
+        background: Theme.chrome;
+        border-radius: 12px;
+        border-width: Theme.high-contrast ? 2px : 1px;
+        border-color: Theme.high-contrast ? Theme.text : Theme.border;
+        drop-shadow-blur: 24px;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-color: #00000040;
+        clip: true;
+        accessible-role: groupbox;
+        accessible-label: @tr("All tools");
+
+        TouchArea { }
+
+        scope := FocusScope {
+            capture-key-pressed(e) => {
+                if e.text == Key.Escape || (e.modifiers.control && (e.text == "k" || e.text == "K")) {
+                    root.close();
+                    return accept;
+                }
+                if e.text == Key.DownArrow {
+                    root.move(root.cursor + 1);
+                    return accept;
+                }
+                if e.text == Key.UpArrow {
+                    root.move(root.cursor - 1);
+                    return accept;
+                }
+                if e.text == Key.Return {
+                    if root.cursor >= 0 && root.cursor < root.shown.length {
+                        root.run(root.shown[root.cursor].id);
+                    }
+                    return accept;
+                }
+                if e.text == Key.Tab || e.text == Key.Backtab {
+                    return accept;
+                }
+                reject
+            }
+
+            Image {
+                x: Theme.rtl ? parent.width - 34px : 18px;
+                y: 17px;
+                source: @image-url("icons/search.svg");
+                width: 16px;
+                height: 16px;
+                colorize: Theme.muted;
+                accessible-role: none;
+            }
+            input := TextInput {
+                x: 46px;
+                y: 0px;
+                width: parent.width - 92px;
+                height: 50px;
+                vertical-alignment: center;
+                color: Theme.text;
+                selection-background-color: Theme.accent-soft;
+                selection-foreground-color: Theme.text;
+                font-size: Theme.font-title;
+                single-line: true;
+                accessible-label: @tr("All tools");
+                accessible-placeholder-text: @tr("Search the tools and commands");
+                init => {
+                    self.focus();
+                }
+                edited => {
+                    root.cursor = 0;
+                    list.content-y = 0px;
+                }
+            }
+            if input.text == "": Text {
+                x: Theme.rtl ? parent.width - 46px - self.width : 46px;
+                y: 0px;
+                height: 50px;
+                text: @tr("Search the tools and commands");
+                color: Theme.faint;
+                font-size: Theme.font-title;
+                vertical-alignment: center;
+                accessible-role: none;
+            }
+            Rectangle {
+                y: 49px;
+                height: 1px;
+                background: Theme.border;
+            }
+            if root.shown.length == 0: Text {
+                y: 50px;
+                height: 56px;
+                text: @tr("Nothing matches “{}”.", input.text);
+                color: Theme.muted;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            list := Flickable {
+                x: 0px;
+                y: 50px;
+                width: parent.width;
+                height: parent.height - 50px;
+                content-width: self.width;
+                content-height: body.preferred-height + 12px;
+                body := VerticalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    padding-top: 4px;
+                    for item[i] in root.shown: Rectangle {
+                        height: root.row-h + (item.heading ? root.head-h : 0px);
+                        if item.heading: Text {
+                            x: Theme.rtl ? parent.width - 10px - self.width : 10px;
+                            y: 8px;
+                            height: root.head-h - 8px;
+                            text: item.group;
+                            color: Theme.muted;
+                            font-size: Theme.font-small;
+                            font-weight: 600;
+                            vertical-alignment: center;
+                            accessible-role: none;
+                        }
+                        Rectangle {
+                            y: parent.height - root.row-h;
+                            height: root.row-h - 2px;
+                            border-radius: Theme.radius-small;
+                            background: i == root.cursor ? Theme.accent-soft : touch.has-hover ? Theme.hover : transparent;
+                            border-width: i == root.cursor && Theme.high-contrast ? 2px : 0px;
+                            border-color: Theme.focus;
+                            accessible-role: list-item;
+                            accessible-label: item.title;
+                            accessible-description: item.group;
+                            accessible-item-selectable: true;
+                            accessible-item-selected: i == root.cursor;
+                            accessible-item-index: i;
+                            accessible-item-count: root.shown.length;
+                            accessible-action-default => {
+                                root.run(item.id);
+                            }
+                            RowLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                spacing: 10px;
+                                cross-axis-alignment: center;
+                                Rectangle {
+                                    width: 16px;
+                                    height: 16px;
+                                    if item.icon.width > 0: Image {
+                                        source: item.icon;
+                                        width: 16px;
+                                        height: 16px;
+                                        colorize: i == root.cursor ? Theme.accent-fg : Theme.muted;
+                                        accessible-role: none;
+                                    }
+                                }
+                                Text {
+                                    horizontal-stretch: 1;
+                                    text: item.title;
+                                    horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+                                    color: Theme.text;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                    accessible-role: none;
+                                }
+                                if item.shortcut != "": Text {
+                                    text: Keys.label(item.shortcut, false);
+                                    color: Theme.faint;
+                                    font-size: Theme.font-small;
+                                    vertical-alignment: center;
+                                    accessible-role: none;
+                                }
+                            }
+                            touch := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    root.run(item.id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

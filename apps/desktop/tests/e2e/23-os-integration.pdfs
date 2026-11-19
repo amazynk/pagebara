@@ -1,0 +1,99 @@
+# Desktop integration: later launches hand their files to this window (a new tab, the
+# page from file.pdf#page=N or --page, --search, file:// URIs; a file already open is
+# shown again); a tab dragged off the bar opens a window of its own; files dropped on
+# the page thumbnails are inserted where they land; opened files go to the system's
+# recent list, unless turned off; Settings > System integration switches each item on
+# and off. The recent list, xdg-mime's choice and every registration live in the test
+# profile (its own XDG folders).
+assert os.instance == primary
+open "$SAMPLES/lease.pdf"
+assert tabs == 1
+await os.recent contains /lease.pdf 5000
+assert os.recent contains <bookmark:application name=
+call launch "$SAMPLES/form.pdf"
+await tabs == 2 10000
+assert title == form.pdf
+call launch "file://$SAMPLES/lease.pdf#page=3"
+await page == 3 10000
+assert tabs == 2
+assert title == lease.pdf
+call launch --page 2 --search Revenue "$SAMPLES/report.pdf"
+await tabs == 3 10000
+await search.hits > 0 10000
+assert title == report.pdf
+screenshot 23-forwarded.png
+# A PNG dropped on the right half of page 2's thumbnail goes in after page 2.
+click "lease.pdf" 300
+wait 300
+assert title == lease.pdf
+assert pages == 4
+move "Page 2" 300
+call drop "$SAMPLES/chart.png" here
+await pages == 5 5000
+assert undo contains chart.png
+screenshot 23-dropped.png
+# A tab dragged off the tab bar would open in a window of its own; with unsaved changes
+# it stays, and says why.
+drag "lease.pdf" 300,500 600
+await message contains Save your changes 3000
+assert tabs == 3
+# Settings > System integration: each item on and off on its own, with its status. A
+# stand-in `nautilus` on PATH (from run.sh) makes the file-manager menu items available.
+call show-dialog settings
+wait 300
+click "System" 200
+click "Manage…" 300
+await os.integration contains thumbnails=off 30000
+await os.integration contains preview=n/a 30000
+await os.integration contains single-instance=on 30000
+await os.integration-busy == false 30000
+click "Page thumbnails" 300
+await os.integration contains thumbnails=on 30000
+assert os.registered contains .thumbnailer
+await os.integration-busy == false 30000
+click "Default app for PDF documents" 300
+await os.mimeapps contains application/x-pdf= 30000
+await os.integration contains default-pdf=on 30000
+await os.integration contains open-with=on 30000
+move "Page thumbnails" 200
+scroll 450 400
+await os.integration-busy == false 30000
+click "Merge into one PDF" 300
+await os.integration contains action-merge=on 30000
+assert os.registered contains nautilus/scripts/
+screenshot 23-integration.png
+# One item off removes only its own files.
+scroll -450 400
+await os.integration-busy == false 30000
+click "Page thumbnails" 300
+await os.integration contains thumbnails=off 30000
+assert os.registered !contains .thumbnailer
+assert os.registered contains nautilus/scripts/
+# Recent files off: the entries this app added go too.
+move "Page thumbnails" 200
+scroll 1350 400
+await os.integration-busy == false 30000
+click "Recent files" 300
+await os.recent !contains lease.pdf 30000
+assert os.setting.report_recent == false
+move "Recent files" 200
+scroll 1500 600
+scroll 1500 600
+await os.integration-busy == false 30000
+click "Notifications" 300
+assert os.setting.notifications == true
+await os.integration-busy == false 30000
+click "Remove all system integration" 300
+await os.integration-status contains removed 30000
+assert os.registered !contains nautilus
+assert os.mimeapps !contains application/x-pdf=
+await os.integration contains default-pdf=off 30000
+screenshot 23-integration-removed.png
+await os.integration-busy == false 30000
+click #IntegrationDialog::close-button 300
+assert dialog == settings
+click "Done" 300
+key ctrl+w
+open "$SAMPLES/flyer.pdf"
+wait 500
+assert os.recent !contains flyer.pdf

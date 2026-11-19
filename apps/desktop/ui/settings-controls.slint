@@ -1,0 +1,80 @@
+// Keyboard navigation shared by the section list and the appearance previews.
+import { Theme } from "theme.slint";
+import { Pressable, Reveal } from "components/button.slint";
+import { RowLayout } from "components/row.slint";
+import { Body } from "components/dialog-parts.slint";
+
+export component SettingsChoices inherits FocusScope {
+    in property <int> selected;
+    in property <int> count;
+    callback choose(int);
+    changed has-focus => {
+        if self.has-focus { Reveal.show(self.absolute-position.x, self.absolute-position.y, self.height); }
+    }
+    key-pressed(e) => {
+        if e.text == Key.Home { root.choose(0); return accept; }
+        if e.text == Key.End { root.choose(root.count - 1); return accept; }
+        if e.text == Key.UpArrow || e.text == (Theme.rtl ? Key.RightArrow : Key.LeftArrow) {
+            root.choose(max(0, root.selected - 1));
+            return accept;
+        }
+        if e.text == Key.DownArrow || e.text == (Theme.rtl ? Key.LeftArrow : Key.RightArrow) {
+            root.choose(min(root.count - 1, root.selected + 1));
+            return accept;
+        }
+        reject
+    }
+}
+
+export component SettingsSwitch inherits Pressable {
+    in property <bool> checked;
+    callback toggled(bool);
+    arrows: false;
+    accessible-role: switch;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    min-height: max(Theme.control-height, line.preferred-height + 8px);
+    border-radius: Theme.radius-small;
+    background: self.has-hover ? Theme.hover : transparent;
+    clicked => { root.toggled(!root.checked); }
+    line := RowLayout {
+        spacing: 12px;
+        Body {
+            text: root.label;
+            color: Theme.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            accessible-role: none;
+        }
+        track := Rectangle {
+            width: 32px;
+            height: 20px;
+            border-radius: 10px;
+            cross-axis-self-alignment: center;
+            background: root.checked ? Theme.accent : Theme.control-border;
+            Rectangle {
+                x: root.checked != Theme.rtl ? parent.width - self.width - 3px : 3px;
+                y: 3px;
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                background: root.checked ? Theme.on-accent : Theme.chrome;
+            }
+        }
+    }
+}
+
+export component PreferenceCard inherits Rectangle {
+    min-height: content.preferred-height;
+    border-radius: Theme.radius;
+    border-color: Theme.high-contrast ? Theme.control-border : Theme.border;
+    border-width: 1px;
+    background: Theme.chrome;
+    content := VerticalLayout {
+        padding: 12px;
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 8px;
+        @children
+    }
+}

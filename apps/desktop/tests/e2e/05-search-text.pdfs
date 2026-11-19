@@ -1,0 +1,32 @@
+# Find (Ctrl+F) across pages with a count, next/previous; text selection by dragging,
+# double-click (word), triple-click (line); copy; select all on the page.
+cursor on
+open "$SAMPLES/report.pdf"
+zoom 75 0
+key ctrl+f
+type "revenue" 600
+assert search.done == true
+assert search.hits > 20
+assert find.status contains of
+key return
+assert search.current == 2
+click "Previous match" 300
+assert search.current == 1
+screenshot 05-search.png
+key escape
+assert search.hits == 0
+page 3
+dblclick text 3 "Revenue grew" 300
+assert selection.text == Revenue
+key ctrl+c
+assert clipboard == Revenue
+wait 600
+tripleclick text 3 "Revenue grew" 300
+assert selection.text contains Revenue grew in every region
+drag text 3 "Costs rose" text-end 3 "shipping prices." 600
+assert selection.text == Costs rose with shipping prices.
+key ctrl+a
+assert selection.text contains Revenue
+screenshot 05-selection.png
+key escape
+assert selection.text == ""

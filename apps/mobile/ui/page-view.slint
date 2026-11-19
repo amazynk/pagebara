@@ -1,0 +1,274 @@
+// The pages. Rust decides what exists (only visible pages and tiles) and where it goes;
+// this file draws it and forwards touches and pinches.
+
+import { Theme } from "theme.slint";
+import { ViewState, Mark, TileSlot } from "state.slint";
+
+component MarkItem inherits Rectangle {
+    in property <Mark> m;
+    property <float> x0: ViewState.lx(m.bx);
+    property <float> y0: ViewState.ly(m.di, m.by);
+    x: x0 * 1px;
+    y: y0 * 1px;
+    width: max(1px, (ViewState.lx(m.bx + m.w) - x0) * 1px);
+    height: max(1px, (ViewState.ly(m.di, m.by + m.h) - y0) * 1px);
+    accessible-role: none;
+
+    if m.kind == 0 && !m.halo: Rectangle {
+        background: m.fill;
+    }
+    if m.kind == 0 && m.halo: Rectangle {
+        x: -1px;
+        y: -1px;
+        width: parent.width + 2px;
+        height: parent.height + 2px;
+        border-radius: 1px;
+        background: Theme.accent-halo;
+        Rectangle {
+            width: root.width;
+            height: root.height;
+            background: Theme.accent;
+        }
+    }
+    if m.kind == 1: Rectangle {
+        Rectangle {
+            x: -1px;
+            y: -1px;
+            width: parent.width + 2px;
+            height: parent.height + 2px;
+            border-width: 4px;
+            border-color: Theme.accent-halo;
+        }
+        Rectangle {
+            border-width: 2px;
+            border-color: Theme.accent;
+            background: Theme.accent.with-alpha(0.06);
+        }
+        for c in [0, 1, 2, 3]: Rectangle {
+            x: (mod(c, 2) == 0 ? 0px : parent.width) - 8px;
+            y: (c < 2 ? 0px : parent.height) - 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            background: Theme.accent-halo;
+            Rectangle {
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                background: #FFFFFF;
+                border-width: 2px;
+                border-color: Theme.accent;
+            }
+        }
+    }
+    if m.kind == 2 && m.halo: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: max(m.w, 0.01);
+        viewbox-height: max(m.h, 0.01);
+        commands: m.commands;
+        stroke: Theme.accent-halo;
+        stroke-width: max(1px, m.width * ViewState.k * 1px) + 2px;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+    }
+    if m.kind == 2: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: max(m.w, 0.01);
+        viewbox-height: max(m.h, 0.01);
+        commands: m.commands;
+        fill: m.fill;
+        stroke: m.halo ? Theme.accent : m.stroke;
+        stroke-width: max(1px, m.width * ViewState.k * 1px);
+        stroke-line-cap: round;
+        stroke-line-join: round;
+    }
+    if m.kind == 5: Image {
+        width: parent.width;
+        height: parent.height;
+        source: m.image;
+        image-fit: fill;
+        transform-rotation: m.angle * 1deg;
+    }
+    if m.kind == 4 && !m.halo: Rectangle {
+        x: -1px;
+        width: 2px;
+        background: Theme.accent;
+        Rectangle {
+            x: -6px;
+            y: parent.height;
+            width: 14px;
+            height: 14px;
+            border-radius: 7px;
+            background: Theme.accent;
+        }
+    }
+    if m.kind == 4 && m.halo: Rectangle {
+        x: -2px;
+        width: 4px;
+        background: Theme.accent-halo;
+        Rectangle {
+            x: -6px;
+            y: parent.height - 1px;
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            background: Theme.accent-halo;
+        }
+        Rectangle {
+            width: 2px;
+            background: Theme.accent;
+        }
+        Rectangle {
+            x: -5px;
+            y: parent.height;
+            width: 14px;
+            height: 14px;
+            border-radius: 7px;
+            background: Theme.accent;
+        }
+    }
+    if m.kind == 3 && !m.halo: Rectangle {
+        border-width: 1px;
+        border-color: Theme.accent.with-alpha(0.7);
+        background: Theme.accent.with-alpha(0.08);
+        border-radius: 2px;
+    }
+    if m.kind == 3 && m.halo: Rectangle {
+        Rectangle {
+            x: -1px;
+            y: -1px;
+            width: parent.width + 2px;
+            height: parent.height + 2px;
+            border-width: 3px;
+            border-color: Theme.accent-halo;
+            border-radius: 3px;
+        }
+        Rectangle {
+            border-width: 1px;
+            border-color: Theme.accent;
+            background: Theme.accent.with-alpha(0.08);
+            border-radius: 2px;
+        }
+    }
+}
+
+// No background of its own: the window's (the same colour) is cleared for free.
+export component PageView inherits Rectangle {
+    clip: true;
+    accessible-role: main;
+    accessible-label: @tr("Document pages");
+
+    changed width => {
+        ViewState.resized(self.width / 1px, self.height / 1px);
+    }
+    changed height => {
+        ViewState.resized(self.width / 1px, self.height / 1px);
+    }
+    init => {
+        ViewState.resized(self.width / 1px, self.height / 1px);
+    }
+
+    // Everything drawn on the pages, in one layer: scrolling moves only the layer.
+    Rectangle {
+        x: ViewState.ox() * 1px;
+        y: ViewState.oy-px() * 1px;
+
+        for p[i] in ViewState.pages: Rectangle {
+            property <float> x0: ViewState.lx(p.bx);
+            property <float> y0: ViewState.ly(p.di, p.by);
+            visible: p.visible;
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: (ViewState.lx(p.bx + p.w) - x0) * 1px;
+            height: (ViewState.ly(p.di, p.by + p.h) - y0) * 1px;
+            drop-shadow-blur: 6px;
+            drop-shadow-color: Theme.shadow;
+            // Paper only while neither tiles nor the (opaque) preview cover the page.
+            background: ViewState.page-covered[i] || p.preview.width > 0 ? transparent : ViewState.paper;
+            accessible-role: image;
+            accessible-label: @tr("Page {}", p.number);
+            // Under the tiles only while they do not cover the page.
+            Image {
+                visible: !ViewState.page-covered[i];
+                width: parent.width;
+                height: parent.height;
+                source: p.preview;
+                image-fit: fill;
+                accessible-role: none;
+            }
+        }
+
+        // Tiles repeat over their images: an image is then the item's own data, and a new
+        // one uploads only its texture. Indexing an image model from every item would make
+        // any change of it upload all of them again.
+        for img[i] in ViewState.fallback-images: Image {
+            property <TileSlot> t: ViewState.fallback[i];
+            property <float> x0: ViewState.lx(t.bx);
+            property <float> y0: ViewState.ly(t.di, t.by);
+            visible: t.visible;
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: (ViewState.lx(t.bx + t.w) - x0) * 1px;
+            height: (ViewState.ly(t.di, t.by + t.h) - y0) * 1px;
+            source: img;
+            image-fit: fill;
+            accessible-role: none;
+        }
+
+        for img[i] in ViewState.tile-images: Image {
+            property <TileSlot> t: ViewState.tiles[i];
+            property <float> x0: ViewState.lx(t.bx);
+            property <float> y0: ViewState.ly(t.di, t.by);
+            visible: t.visible;
+            x: x0 * 1px;
+            y: y0 * 1px;
+            width: (ViewState.lx(t.bx + t.w) - x0) * 1px;
+            height: (ViewState.ly(t.di, t.by + t.h) - y0) * 1px;
+            source: img;
+            image-fit: fill;
+            accessible-role: none;
+        }
+
+        for m in ViewState.marks: MarkItem {
+            m: m;
+        }
+    }
+
+    ScaleRotateGestureHandler {
+        started => {
+            ViewState.pinch-start();
+        }
+        updated => {
+            ViewState.pinch-rotation(self.rotation / 1deg);
+            ViewState.pinch(self.scale, self.center.x / 1px, self.center.y / 1px);
+        }
+        ended => {
+            ViewState.pinch-end();
+        }
+        cancelled => {
+            ViewState.pinch-end();
+        }
+
+        TouchArea {
+            accessible-role: none;
+            pointer-event(e) => {
+                if e.kind == PointerEventKind.down {
+                    ViewState.pointer(0, self.mouse-x / 1px, self.mouse-y / 1px);
+                } else if e.kind == PointerEventKind.up {
+                    ViewState.pointer(2, self.mouse-x / 1px, self.mouse-y / 1px);
+                } else if e.kind == PointerEventKind.cancel {
+                    ViewState.pointer(3, self.mouse-x / 1px, self.mouse-y / 1px);
+                }
+            }
+            moved => {
+                ViewState.pointer(1, self.mouse-x / 1px, self.mouse-y / 1px);
+            }
+        }
+    }
+}

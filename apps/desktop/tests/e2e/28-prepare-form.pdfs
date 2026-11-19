@@ -1,0 +1,191 @@
+# Prepare form: place every kind of field (a click, a drag, the panel), change their
+# properties, rename, duplicate, delete, copy to every page, move and resize with the
+# handles, align several, set the tab order; detect the fields of a printed form and
+# accept them; save, reopen and fill in what was made; FDF and XFDF out and back in;
+# reset and clear; a reset button works when filling in.
+cursor on
+open "$SAMPLES/lease.pdf"
+zoom 100 0
+wait 500
+assert page.size:1 == 595x842
+tool prepare
+assert tool == 8
+assert message contains Prepare form
+# A text field placed with a click: the panel's field type, then the page.
+click "Text field" 300
+assert prep.placing == 0
+click page 1 100,600 500
+assert form.names == Text1
+assert prep.count == 1
+assert prep.kind == text
+assert undo == Add text field
+assert message contains Added text field
+assert field.rect:Text1 == 100,220,260,242
+screenshot 28-text-field.png
+# A check box drawn with a drag.
+click "Check box" 300
+drag page 1 300,600 page 1 318,618 500
+assert field.kind:CheckBox1 == check
+assert field.rect:CheckBox1 == 300,224,318,242
+# The other kinds from the panel's list of types.
+call prep-add radio 1 300 120 314 134
+call prep add-radio
+assert field.widgets:Group1 == 2
+call prep-add combo 1 100 120 240 142
+call prep-add list 1 110 40 250 100
+call prep-add button 1 300 40 390 64
+call prep-add signature 1 400 100 580 144
+call prep-add date 1 400 170 500 192
+assert form.names == Text1,CheckBox1,Group1,Dropdown1,ListBox1,Button1,Signature1,Date1
+assert field.prop:Date1,format == date yyyy-mm-dd
+# Properties of the text field.
+call prep select Text1
+assert prep.summary contains Text field
+call prep-set tooltip "Tenant's full name"
+assert undo == Change field properties
+call prep-set required true
+call prep-set max-len 40
+call prep-set size 6
+call prep-set background 7
+call prep-set align 1
+assert field.prop:Text1,tooltip == Tenant's full name
+assert field.prop:Text1,required == true
+assert field.prop:Text1,max-len == 40
+assert field.prop:Text1,size == 14
+assert field.prop:Text1,align == 1
+screenshot 28-properties.png
+call prep-set name tenant
+assert undo == Rename field
+assert form.names contains tenant
+assert prep.name == tenant
+# Choice options, a comb, the check mark, a button that resets the form.
+call prep select Dropdown1
+call prep-set options "Monthly|m; Quarterly|q; Yearly|y"
+call prep-set editable true
+assert field.prop:Dropdown1,options == Monthly,Quarterly,Yearly
+assert field.prop:Dropdown1,editable == true
+call prep select ListBox1
+call prep-set options "Garden; Garage; Cellar"
+call prep-set multi-select true
+call prep select CheckBox1
+call prep-set check 2
+call prep-set export Agreed
+assert field.prop:CheckBox1,check == 8
+assert field.prop:CheckBox1,export == Agreed
+call prep select Button1
+call prep-set caption "Start again"
+call prep-set action 1
+assert field.prop:Button1,action == reset
+assert field.prop:Button1,caption == Start again
+call prep select Date1
+call prep-set comb true
+call prep-set max-len 8
+assert field.prop:Date1,comb == true
+call prep-set comb false
+# Duplicate (Ctrl+D) and delete (Delete) with the keyboard.
+call prep select tenant
+key ctrl+d
+assert undo == Duplicate field
+assert form.names contains tenant1
+assert prep.name == tenant1
+key delete
+assert undo == Delete field
+assert form.names !contains tenant1
+# Arrows nudge; a handle resizes; dragging moves (snapping to the page and other fields).
+call prep select tenant
+key right
+assert field.rect:tenant == 101,220,261,242
+assert undo == Move field
+drag handle r page 1 300,600 600
+assert undo == Resize field
+assert field.rect:tenant == 101,220,297,242
+drag page 1 150,600 page 1 150,560 600
+assert undo == Move field
+assert field.rect:tenant == 102,260,298,282
+key ctrl+z
+assert field.rect:tenant == 101,220,297,242
+# Several fields lined up: a box selects them, then align their left edges.
+drag page 1 80,690 page 1 262,810 600
+assert prep.count == 2
+screenshot 28-several.png
+call prep align left
+assert undo == Align fields
+assert field.rect:ListBox1 == 100,40,240,100
+call prep select tenant
+# Copies on every page show the same value.
+call prep copy-pages
+assert field.widgets:tenant == 4
+assert undo == Copy field to all pages
+# Tab order: row by row, then a manual order.
+key escape
+assert prep.count == 0
+call prep-tab-order rows
+assert prep.tab-mode == 1
+assert prep.tab-order contains tenant,CheckBox1
+call prep tab-select 0
+call prep tab-down
+assert prep.tab-mode == 3
+assert prep.tab-order contains CheckBox1,tenant
+screenshot 28-panel.png
+# Save, reopen, and fill in what was made.
+call save-as "$OUT/prepared.pdf"
+await dirty == false 15000
+key ctrl+w
+open "$OUT/prepared.pdf"
+zoom 100 0
+wait 500
+tool forms
+assert fields == 8
+click page 1 150,610 400
+assert field.editing == true
+type "Ada Lovelace" 400
+key return
+assert field:tenant == Ada Lovelace
+click page 1 309,609 400
+assert field:CheckBox1 == true
+call prep-export-fdf "$OUT/values.fdf"
+assert file.exists:$OUT/values.fdf == true
+call prep-export-xfdf "$OUT/values.xfdf"
+assert file.exists:$OUT/values.xfdf == true
+screenshot 28-filled.png
+# The reset button empties the form; FDF brings the values back, XFDF too.
+click page 1 345,790 400
+assert undo == Reset form
+assert field:tenant == ""
+call prep-import "$OUT/values.fdf"
+assert undo == Import form data
+assert field:tenant == Ada Lovelace
+assert field:CheckBox1 == true
+assert message contains Imported
+click "Empty all fields" 300
+assert undo == Clear form
+assert field:tenant == ""
+call prep-import "$OUT/values.xfdf"
+assert field:tenant == Ada Lovelace
+wait 600
+assert ink:1,101,600,196,22 > 20
+# A printed form: detected fields, accepted in one step.
+open "$SAMPLES/printed-form.pdf"
+zoom 100 0
+wait 500
+tool prepare
+click "Detect fields" 300
+assert prep.suggestions == 10
+assert prep.suggestions.text contains Full name
+screenshot 28-detected.png
+call prep suggestion 1
+call prep dismiss
+assert prep.suggestions == 9
+click "Accept all" 300
+assert undo == Add detected fields
+assert prep.suggestions == 0
+assert form.names contains Full name
+assert form.names contains Postcode
+assert field.prop:Postcode,comb == true
+screenshot 28-accepted.png
+call save-as "$OUT/printed-fields.pdf"
+await dirty == false 15000
+key ctrl+w
+open "$OUT/printed-fields.pdf"
+tool forms
+assert fields == 9

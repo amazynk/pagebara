@@ -1,0 +1,149 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button, Pressable } from "components/button.slint";
+import { RowLayout } from "components/row.slint";
+import { LibraryState } from "library.slint";
+
+// Shown with no document open: open a file, or pick a recent one.
+export component Welcome inherits Rectangle {
+    background: Theme.canvas;
+
+    VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            alignment: center;
+            VerticalLayout {
+                width: min(440px, root.width - 32px);
+                spacing: 14px;
+                Text {
+                    text: @tr("Open a PDF to get started");
+                    color: Theme.text;
+                    font-size: 22px;
+                    font-weight: 600;
+                }
+                Text {
+                    text: @tr("Everything stays on this device.");
+                    color: Theme.muted;
+                    wrap: word-wrap;
+                    line-height-factor: 1.15;
+                }
+                HorizontalLayout {
+                    alignment: start;
+                    spacing: 8px;
+                    Button {
+                        text: @tr("Open file…");
+                        icon: @image-url("icons/folder.svg");
+                        primary: true;
+                        clicked => {
+                            AppState.open-file();
+                        }
+                    }
+                    Button {
+                        text: @tr("Library");
+                        icon: @image-url("icons/library.svg");
+                        clicked => {
+                            LibraryState.show(true);
+                        }
+                    }
+                }
+                // Once, until used or closed: never comes back on its own.
+                if AppState.setup-card-visible: Rectangle {
+                    background: Theme.accent-soft;
+                    border-radius: Theme.radius;
+                    border-width: 1px;
+                    border-color: Theme.high-contrast ? Theme.accent-fg : Theme.accent-fg.with-alpha(0.45);
+                    accessible-role: groupbox;
+                    accessible-label: @tr("Set up system integration");
+                    VerticalLayout {
+                        padding: 16px;
+                        spacing: 10px;
+                        Text {
+                            text: @tr("Set up system integration");
+                            color: Theme.text;
+                            font-size: Theme.font-heading;
+                            font-weight: 600;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: @tr("Optional: thumbnails, file manager menus, the default PDF app and more. Change it any time in Settings.");
+                            color: Theme.text;
+                            font-size: Theme.font-body;
+                            wrap: word-wrap;
+                            line-height-factor: 1.15;
+                        }
+                        RowLayout {
+                            alignment: start;
+                            spacing: 8px;
+                            Button {
+                                text: @tr("Set up…");
+                                icon: @image-url("icons/gear.svg");
+                                primary: true;
+                                clicked => {
+                                    AppState.integration-action("", "open");
+                                }
+                            }
+                            Button {
+                                text: @tr("Not now");
+                                clicked => {
+                                    AppState.integration-action("", "dismiss-card");
+                                }
+                            }
+                        }
+                    }
+                }
+                if AppState.recent.length > 0: Text {
+                    text: @tr("Recent");
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    font-weight: 600;
+                }
+                if AppState.recent.length > 0: Rectangle {
+                    background: Theme.chrome;
+                    border-radius: Theme.radius;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    VerticalLayout {
+                        padding: 4px;
+                        for f[i] in AppState.recent: Pressable {
+                            height: Theme.touch ? 52px : 44px;
+                            border-radius: Theme.radius-small;
+                            background: self.has-hover ? Theme.hover : transparent;
+                            label: @tr("Open {}", f.name);
+                            description: f.folder;
+                            clicked => {
+                                AppState.open-recent(i);
+                            }
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                spacing: 10px;
+                                Image {
+                                    accessible-role: none;
+                                    source: @image-url("icons/file.svg");
+                                    width: 18px;
+                                    height: 18px;
+                                    y: (parent.height - self.height) / 2;
+                                    colorize: Theme.muted;
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    Text {
+                                        text: f.name;
+                                        color: Theme.text;
+                                        overflow: elide;
+                                    }
+                                    Text {
+                                        text: f.folder;
+                                        color: Theme.faint;
+                                        font-size: Theme.font-small;
+                                        overflow: elide;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

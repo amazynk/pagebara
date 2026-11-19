@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Chat on Discord
+    url: https://amazynk.com/discord/
+    about: Talk with other users and the developers.
+  - name: Report a security problem
+    url: https://github.com/amazynk/pagebara/security/advisories/new
+    about: Please report vulnerabilities privately.
+  - name: What Pagebara is
+    url: https://amazynk.com/pagebara/
+    about: The site, with screenshots and a demo that runs in the browser.

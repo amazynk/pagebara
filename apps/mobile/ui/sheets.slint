@@ -1,0 +1,867 @@
+// Page thumbnails, the signature library, the More menu, the drawing pad and the editor of
+// form fields.
+
+import { RowLayout } from "row.slint";
+import { Theme } from "theme.slint";
+import { AppState, Sheet, Tool, ViewState } from "state.slint";
+import { Button, IconButton, MenuRow } from "controls.slint";
+import { SpellState, SpellMarks } from "../../../crates/ui/slint/spell.slint";
+
+// The pages as a grid of thumbnails; a tap goes to the page.
+export component ThumbGrid inherits Rectangle {
+    in property <int> columns: 2;
+    callback picked();
+    property <length> gap: 12px;
+    property <length> cell-w: (self.width - gap * (columns + 1)) / max(1, columns);
+    // Room for the tallest common page (A4 upright) and its label.
+    property <length> cell-h: cell-w * 1.42 + 26px;
+    property <int> rows: (AppState.thumbs.length + columns - 1) / max(1, columns);
+    accessible-role: list;
+    accessible-label: @tr("Pages");
+
+    function report() {
+        AppState.thumbs-shown(floor(-flick.content-y / (cell-h + gap)) * columns, ceil((-flick.content-y + flick.height) / (cell-h + gap)) * columns);
+    }
+
+    flick := Flickable {
+        content-height: rows * (cell-h + gap) + gap;
+        changed content-y => {
+            root.report();
+        }
+        changed height => {
+            root.report();
+        }
+        init => {
+            root.report();
+        }
+
+        for t in AppState.thumbs: Rectangle {
+            x: gap + mod(t.index, columns) * (cell-w + gap);
+            y: gap + floor(t.index / columns) * (cell-h + gap);
+            width: cell-w;
+            height: cell-h;
+            accessible-role: button;
+            accessible-label: @tr("Page {}", t.label);
+            accessible-action-default => {
+                AppState.go-to-page(t.index);
+                root.picked();
+            }
+
+            property <length> img-h: min(cell-w * t.aspect, cell-h - 26px);
+            property <length> img-w: img-h / max(0.01, t.aspect);
+            Rectangle {
+                x: (parent.width - img-w) / 2;
+                y: (cell-h - 26px - img-h) / 2;
+                width: img-w;
+                height: img-h;
+                background: ViewState.paper;
+                border-width: t.current ? 3px : 1px;
+                border-color: t.current ? Theme.accent : Theme.border;
+                Image {
+                    x: parent.border-width;
+                    y: parent.border-width;
+                    width: parent.width - 2 * parent.border-width;
+                    height: parent.height - 2 * parent.border-width;
+                    source: t.image;
+                    image-fit: fill;
+                    accessible-role: none;
+                }
+            }
+            Text {
+                y: cell-h - 22px;
+                height: 20px;
+                width: parent.width;
+                text: t.label;
+                horizontal-alignment: center;
+                font-size: Theme.font-small;
+                font-weight: t.current ? 600 : 400;
+                color: t.current ? Theme.accent-fg : Theme.muted;
+                accessible-role: none;
+            }
+            TouchArea {
+                clicked => {
+                    AppState.go-to-page(t.index);
+                    root.picked();
+                }
+            }
+        }
+    }
+}
+
+component DrawButton inherits Button {
+    text: @tr("Draw with finger");
+    icon: @image-url("icons/pen.svg");
+    primary: true;
+    clicked => {
+        AppState.sig-draw(3, 0, 0);
+        AppState.sheet = Sheet.draw-pad;
+        AppState.sheet-changed();
+    }
+}
+
+component PhotoButton inherits Button {
+    text: @tr("From photo…");
+    icon: @image-url("icons/upload.svg");
+    clicked => {
+        AppState.sig-from-photo();
+    }
+}
+
+// "My signatures": cards to pick from, then drawing a new one or importing a photo.
+export component SignatureLibrary inherits VerticalLayout {
+    in property <bool> narrow;
+    spacing: 12px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 12px;
+
+    if AppState.signatures.length == 0: Text {
+        text: @tr("No signatures yet.");
+        color: Theme.muted;
+        font-size: Theme.font-body;
+        height: 40px;
+        vertical-alignment: center;
+    }
+
+    if AppState.signatures.length > 0: Flickable {
+        height: narrow ? 300px : 104px;
+        content-width: narrow ? self.width : AppState.signatures.length * 164px;
+        content-height: narrow ? AppState.signatures.length * 112px : self.height;
+        for s[i] in AppState.signatures: Rectangle {
+            x: narrow ? 0px : i * 164px;
+            y: narrow ? i * 112px : 0px;
+            width: narrow ? parent.width : 152px;
+            height: 100px;
+            border-radius: Theme.radius;
+            background: #FFFFFF;
+            border-width: s.selected ? 2px : 1px;
+            border-color: s.selected ? Theme.accent : Theme.border;
+            accessible-role: button;
+            accessible-label: @tr("Signature {}", s.name);
+            accessible-checkable: true;
+            accessible-checked: s.selected;
+            accessible-action-default => {
+                AppState.sig-select(i);
+            }
+            Image {
+                x: 12px;
+                y: 10px;
+                width: parent.width - 24px;
+                height: parent.height - 38px;
+                source: s.image;
+                image-fit: contain;
+                accessible-role: none;
+            }
+            Text {
+                x: 12px;
+                y: parent.height - 24px;
+                width: parent.width - 48px;
+                text: s.name;
+                font-size: Theme.font-small;
+                color: #52525B;
+                overflow: elide;
+                accessible-role: none;
+            }
+            TouchArea {
+                clicked => {
+                    AppState.sig-select(i);
+                }
+            }
+            if s.selected: Rectangle {
+                x: parent.width - 36px;
+                y: parent.height - 36px;
+                width: 34px;
+                height: 34px;
+                accessible-role: button;
+                accessible-label: @tr("Delete signature {}", s.name);
+                accessible-action-default => {
+                    AppState.sig-delete(i);
+                }
+                Image {
+                    width: 18px;
+                    height: 18px;
+                    source: @image-url("icons/trash.svg");
+                    colorize: #B91C1C;
+                    accessible-role: none;
+                }
+                TouchArea {
+                    clicked => {
+                        AppState.sig-delete(i);
+                    }
+                }
+            }
+        }
+    }
+
+    RowLayout {
+        spacing: 10px;
+        property <bool> stacked: root.narrow || self.width < draw-button.preferred-width + photo-button.preferred-width + self.spacing;
+        flex-direction: stacked ? FlexboxLayoutDirection.column : Theme.rtl ? FlexboxLayoutDirection.row-reverse : FlexboxLayoutDirection.row;
+        height: stacked ? 2 * Theme.touch + self.spacing : Theme.touch;
+        draw-button := DrawButton {
+            horizontal-stretch: 1;
+        }
+        photo-button := PhotoButton {
+            horizontal-stretch: 1;
+        }
+    }
+    placement-hint := Text {
+        text: AppState.sig-hint;
+        wrap: word-wrap;
+        font-size: Theme.font-small;
+        color: Theme.muted;
+    }
+}
+
+// One of the page colour choices: a swatch of paper with a line of ink, and its name.
+component PageThemeChoice inherits Rectangle {
+    in property <string> name;
+    in property <color> paper;
+    in property <color> ink;
+    in property <bool> chosen;
+    callback clicked();
+    horizontal-stretch: 1;
+    height: 64px;
+    border-radius: 10px;
+    background: touch.pressed ? Theme.pressed : transparent;
+    accessible-role: button;
+    // TRANSLATORS: a page colour choice, e.g. "Sepia pages"
+    accessible-label: @tr("{} pages", root.name);
+    accessible-checkable: true;
+    accessible-checked: root.chosen;
+    accessible-action-default => {
+        root.clicked();
+    }
+    VerticalLayout {
+        padding: 4px;
+        spacing: 4px;
+        alignment: center;
+        Rectangle {
+            width: 40px;
+            height: 30px;
+            border-radius: 6px;
+            background: root.paper;
+            border-width: root.chosen ? 2.5px : 1px;
+            border-color: root.chosen ? Theme.accent : Theme.border;
+            Text {
+                text: "Aa";
+                color: root.ink;
+                font-size: 13px;
+                font-weight: 600;
+                accessible-role: none;
+            }
+        }
+        Text {
+            text: root.name;
+            horizontal-alignment: center;
+            font-size: Theme.font-small;
+            color: root.chosen ? Theme.accent-fg : Theme.muted;
+            accessible-role: none;
+        }
+    }
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component MoreMenu inherits VerticalLayout {
+    RowLayout {
+        padding-left: 20px;
+        height: 24px;
+        Text {
+            text: @tr("Page colours");
+            font-size: Theme.font-small;
+            color: Theme.muted;
+            accessible-role: none;
+        }
+    }
+    RowLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: 4px;
+        height: 72px;
+        for t[i] in [
+            // TRANSLATORS: page colours
+            { name: @tr("Normal"), paper: #FFFFFF, ink: #18181B },
+            { name: @tr("Dark"), paper: #1C1C1C, ink: #DEDEDE },
+            { name: @tr("Sepia"), paper: #F4ECD8, ink: #5B4636 },
+            { name: @tr("High contrast"), paper: #000000, ink: #FFFFFF },
+        ]: PageThemeChoice {
+            name: t.name;
+            paper: t.paper;
+            ink: t.ink;
+            chosen: AppState.page-theme == i;
+            clicked => {
+                AppState.set-page-theme(i);
+            }
+        }
+    }
+    MenuRow {
+        text: @tr("Undo");
+        icon: @image-url("icons/undo.svg");
+        enabled: AppState.can-undo;
+        clicked => {
+            AppState.sheet = Sheet.none;
+            AppState.undo();
+        }
+    }
+    MenuRow {
+        text: @tr("Redo");
+        icon: @image-url("icons/redo.svg");
+        enabled: AppState.can-redo;
+        clicked => {
+            AppState.sheet = Sheet.none;
+            AppState.redo();
+        }
+    }
+    MenuRow {
+        text: @tr("Save");
+        icon: @image-url("icons/save.svg");
+        clicked => {
+            AppState.sheet = Sheet.none;
+            AppState.save();
+        }
+    }
+    MenuRow {
+        text: @tr("Save a copy…");
+        icon: @image-url("icons/file.svg");
+        clicked => {
+            AppState.sheet = Sheet.none;
+            AppState.save-copy();
+        }
+    }
+    MenuRow {
+        text: @tr("Tools…");
+        icon: @image-url("icons/file.svg");
+        clicked => {
+            AppState.sheet = Sheet.tools;
+        }
+    }
+    if AppState.can-share: MenuRow {
+        text: @tr("Share…");
+        icon: @image-url("icons/upload.svg");
+        clicked => {
+            AppState.sheet = Sheet.none;
+            AppState.share();
+        }
+    }
+    MenuRow {
+        text: SpellState.enabled ? @tr("Turn off spell checking") : @tr("Turn on spell checking");
+        icon: @image-url("icons/check.svg");
+        clicked => {
+            AppState.sheet = Sheet.none;
+            SpellState.action("enabled", SpellState.enabled ? "off" : "on");
+        }
+    }
+    MenuRow {
+        text: @tr("Licences");
+        icon: @image-url("icons/file.svg");
+        clicked => {
+            AppState.sheet = Sheet.licences;
+        }
+    }
+    MenuRow {
+        text: @tr("Close document");
+        icon: @image-url("icons/close.svg");
+        clicked => {
+            AppState.sheet = Sheet.none;
+            AppState.back();
+        }
+    }
+}
+
+// Drawing a new signature with a finger.
+export component DrawPad inherits Rectangle {
+    in property <length> top-inset;
+    in property <length> bottom-inset;
+    background: Theme.chrome;
+    accessible-role: groupbox;
+    accessible-label: @tr("Draw your signature");
+
+    VerticalLayout {
+        padding-top: root.top-inset + 8px;
+        padding-bottom: root.bottom-inset + 12px;
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 12px;
+
+        RowLayout {
+            height: Theme.touch;
+            IconButton {
+                icon: @image-url("icons/close.svg");
+                label: @tr("Cancel");
+                clicked => {
+                    AppState.sheet = Sheet.signatures;
+                    AppState.sheet-changed();
+                }
+            }
+            Text {
+                horizontal-stretch: 1;
+                text: @tr("Draw your signature");
+                font-size: Theme.font-title;
+                font-weight: 600;
+                color: Theme.text;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+            Rectangle {
+                width: Theme.touch;
+            }
+        }
+
+        pad := Rectangle {
+            vertical-stretch: 1;
+            background: #FFFFFF;
+            border-radius: Theme.radius;
+            border-width: 1px;
+            border-color: Theme.border;
+            clip: true;
+            accessible-role: image;
+            accessible-label: @tr("Signature canvas");
+
+            Rectangle {
+                x: 24px;
+                y: parent.height * 0.7;
+                width: parent.width - 48px;
+                height: 1px;
+                background: #D4D4D8;
+            }
+            Path {
+                width: parent.width;
+                height: parent.height;
+                viewbox-x: 0;
+                viewbox-y: 0;
+                viewbox-width: parent.width / 1px;
+                viewbox-height: parent.height / 1px;
+                commands: AppState.draw-path;
+                stroke: #10101A;
+                stroke-width: 3px;
+                stroke-line-cap: round;
+                stroke-line-join: round;
+            }
+            canvas := TouchArea {
+                pointer-event(e) => {
+                    if e.kind == PointerEventKind.down {
+                        AppState.sig-draw(0, self.mouse-x / 1px, self.mouse-y / 1px);
+                    } else if e.kind == PointerEventKind.up {
+                        AppState.sig-draw(2, self.mouse-x / 1px, self.mouse-y / 1px);
+                    }
+                }
+                moved => {
+                    AppState.sig-draw(1, self.mouse-x / 1px, self.mouse-y / 1px);
+                }
+            }
+        }
+
+        RowLayout {
+            spacing: 10px;
+            Button {
+                horizontal-stretch: 1;
+                // TRANSLATORS: verb, wipes the signature drawing
+                text: @tr("Clear");
+                clicked => {
+                    AppState.sig-draw(3, 0, 0);
+                }
+            }
+            Button {
+                horizontal-stretch: 1;
+                text: @tr("Save signature");
+                primary: true;
+                enabled: AppState.draw-path != "";
+                clicked => {
+                    AppState.sig-draw-save();
+                }
+            }
+        }
+    }
+}
+
+// Corrections of the misspelled word the caret is in, with Add to dictionary and Ignore.
+export component SpellBar inherits Rectangle {
+    height: Theme.touch + 12px;
+    background: Theme.chrome;
+    accessible-role: groupbox;
+    accessible-label: @tr("Spelling of “{}”", SpellState.word);
+    Flickable {
+        content-width: max(self.width, row.preferred-width);
+        row := HorizontalLayout {
+            padding: 6px;
+            spacing: 6px;
+            alignment: start;
+            for w in SpellState.suggestions: Button {
+                text: w;
+                primary: true;
+                clicked => {
+                    SpellState.action("pick", w);
+                }
+            }
+            Button {
+                text: @tr("Add to dictionary");
+                clicked => {
+                    SpellState.action("add", SpellState.word);
+                }
+            }
+            Button {
+                // TRANSLATORS: ignore a misspelled word until the app quits
+                text: @tr("Ignore");
+                clicked => {
+                    SpellState.action("ignore", SpellState.word);
+                }
+            }
+        }
+    }
+}
+
+// Typing into a text field, docked above the keyboard.
+export component FieldEditor inherits Rectangle {
+    background: Theme.chrome;
+    border-width: 1px;
+    border-color: Theme.border;
+    height: layout.preferred-height;
+    accessible-role: groupbox;
+    accessible-label: AppState.field-label;
+
+    layout := VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        Text {
+            text: AppState.field-label;
+            font-size: Theme.font-small;
+            color: Theme.muted;
+            overflow: elide;
+        }
+        if SpellState.word != "": SpellBar { }
+        HorizontalLayout {
+            spacing: 8px;
+            Rectangle {
+                horizontal-stretch: 1;
+                min-height: AppState.field-multiline ? 96px : 44px;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: Theme.accent;
+                background: Theme.bg;
+                if SpellState.enabled: field-marks := SpellMarks {
+                    x: input.x;
+                    y: input.y;
+                    width: input.width;
+                    height: input.height;
+                    words: SpellState.field;
+                    text: input.text;
+                    font-size: input.font-size;
+                    wrap: input.wrap;
+                    single-line: input.single-line;
+                }
+                input := TextInput {
+                    x: 10px;
+                    y: AppState.field-multiline ? 10px : (parent.height - self.height) / 2;
+                    width: parent.width - 20px;
+                    height: AppState.field-multiline ? parent.height - 20px : self.preferred-height;
+                    single-line: !AppState.field-multiline;
+                    wrap: AppState.field-multiline ? word-wrap : no-wrap;
+                    font-size: Theme.font-body;
+                    color: Theme.text;
+                    accessible-label: AppState.field-label;
+                    text <=> AppState.field-text;
+                    init => {
+                        self.focus();
+                        self.select-all();
+                        SpellState.text-changed(1, self.text);
+                    }
+                    edited => {
+                        SpellState.text-changed(1, self.text);
+                    }
+                    // The caret in a misspelled word shows its corrections.
+                    changed cursor-position-byte-offset => {
+                        SpellState.action("caret", self.cursor-position-byte-offset);
+                    }
+                    accepted => {
+                        AppState.field-done(true);
+                    }
+                }
+            }
+            VerticalLayout {
+                alignment: start;
+                Button {
+                    text: @tr("Done");
+                    primary: true;
+                    min-width: 72px;
+                    clicked => {
+                        AppState.field-done(true);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The options of a choice field.
+export component ChoiceList inherits Flickable {
+    content-height: AppState.field-options.length * 52px;
+    for o[i] in AppState.field-options: Rectangle {
+        y: i * 52px;
+        height: 52px;
+        width: parent.width;
+        background: touch.pressed ? Theme.pressed : i == AppState.field-selected ? Theme.accent-soft : transparent;
+        accessible-role: button;
+        accessible-label: o;
+        accessible-checkable: true;
+        accessible-checked: i == AppState.field-selected;
+        accessible-action-default => {
+            AppState.field-pick(i);
+        }
+        Text {
+            x: 20px;
+            width: parent.width - 40px;
+            height: parent.height;
+            text: o;
+            vertical-alignment: center;
+            font-size: Theme.font-body;
+            color: i == AppState.field-selected ? Theme.accent-fg : Theme.text;
+            overflow: elide;
+            accessible-role: none;
+        }
+        touch := TouchArea {
+            clicked => {
+                AppState.field-pick(i);
+            }
+        }
+    }
+}
+
+// Asking for the password of a protected document.
+export component PasswordPanel inherits Rectangle {
+    background: Theme.scrim;
+    accessible-role: none;
+    TouchArea { }
+    Rectangle {
+        x: 16px;
+        width: parent.width - 32px;
+        y: max(24px, (parent.height - self.height) / 3);
+        height: col.preferred-height;
+        border-radius: 16px;
+        background: Theme.chrome;
+        accessible-role: groupbox;
+        accessible-label: @tr("Password");
+        col := VerticalLayout {
+            padding: 20px;
+            spacing: 12px;
+            Text {
+                text: @tr("“{}” is protected", AppState.password-title);
+                font-size: Theme.font-title;
+                font-weight: 600;
+                color: Theme.text;
+                wrap: word-wrap;
+            }
+            Text {
+                text: @tr("Enter its password to open it.");
+                font-size: Theme.font-body;
+                color: Theme.muted;
+                wrap: word-wrap;
+            }
+            Rectangle {
+                height: 44px;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: Theme.accent;
+                background: Theme.bg;
+                pw := TextInput {
+                    x: 12px;
+                    width: parent.width - 24px;
+                    input-type: password;
+                    single-line: true;
+                    font-size: Theme.font-body;
+                    color: Theme.text;
+                    accessible-label: @tr("Password");
+                    init => {
+                        self.focus();
+                    }
+                    accepted => {
+                        AppState.unlock(self.text);
+                    }
+                }
+            }
+            if AppState.password-error != "": Text {
+                text: AppState.password-error;
+                color: Theme.danger;
+                font-size: Theme.font-small;
+            }
+            RowLayout {
+                spacing: 10px;
+                alignment: end;
+                Button {
+                    text: @tr("Cancel");
+                    clicked => {
+                        AppState.unlock-cancel();
+                    }
+                }
+                Button {
+                    // TRANSLATORS: verb, opens the document with the password
+                    text: @tr("Open");
+                    primary: true;
+                    clicked => {
+                        AppState.unlock(pw.text);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Output tools: page numbers, a draft watermark and flattening; smaller copies by preset,
+// a PDF/A copy and the accessibility check; preparing forms and form data.
+export component ToolsMenu inherits Flickable {
+    content-height: rows.preferred-height;
+    rows := VerticalLayout {
+        MenuRow {
+            text: @tr("Prepare form");
+            icon: @image-url("icons/form.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.form-tool("prepare");
+            }
+        }
+        MenuRow {
+            text: @tr("Import form data…");
+            icon: @image-url("icons/folder.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.form-tool("import");
+            }
+        }
+        MenuRow {
+            text: @tr("Export form data (FDF)");
+            icon: @image-url("icons/upload.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.form-tool("export-fdf");
+            }
+        }
+        MenuRow {
+            text: @tr("Export form data (XFDF)");
+            icon: @image-url("icons/upload.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.form-tool("export-xfdf");
+            }
+        }
+        MenuRow {
+            text: @tr("Reset form");
+            icon: @image-url("icons/undo.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.form-tool("reset");
+            }
+        }
+        MenuRow {
+            text: @tr("Clear form");
+            icon: @image-url("icons/trash.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.form-tool("clear");
+            }
+        }
+        MenuRow {
+            text: @tr("Add page numbers");
+            icon: @image-url("icons/text.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.output-tool("page-numbers");
+            }
+        }
+        MenuRow {
+            text: @tr("Mark as draft");
+            icon: @image-url("icons/opacity.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.output-tool("watermark");
+            }
+        }
+        MenuRow {
+            text: @tr("Flatten comments and forms");
+            icon: @image-url("icons/layers.svg");
+            clicked => {
+                AppState.sheet = Sheet.none;
+                AppState.output-tool("flatten");
+            }
+        }
+        MenuRow {
+            text: @tr("Smaller copy, pages unchanged");
+            icon: @image-url("icons/file.svg");
+            clicked => {
+                AppState.optimize(0);
+            }
+        }
+        MenuRow {
+            text: @tr("Smaller copy for screen and print");
+            icon: @image-url("icons/file.svg");
+            clicked => {
+                AppState.optimize(1);
+            }
+        }
+        MenuRow {
+            text: @tr("Smallest copy for sharing");
+            icon: @image-url("icons/file.svg");
+            clicked => {
+                AppState.optimize(2);
+            }
+        }
+        MenuRow {
+            text: @tr("PDF/A copy for archiving");
+            icon: @image-url("icons/save.svg");
+            clicked => {
+                AppState.save-pdfa();
+            }
+        }
+        MenuRow {
+            text: @tr("Check accessibility");
+            icon: @image-url("icons/file.svg");
+            clicked => {
+                AppState.check-access();
+            }
+        }
+        if AppState.access-fixable: MenuRow {
+            text: @tr("Fix accessibility automatically");
+            icon: @image-url("icons/file.svg");
+            clicked => {
+                AppState.fix-access();
+            }
+        }
+    }
+}
+
+// The UI languages; the first row follows the system.
+export component LanguageList inherits Flickable {
+    content-height: AppState.languages.length * 52px;
+    for o[i] in AppState.languages: Rectangle {
+        y: i * 52px;
+        height: 52px;
+        width: parent.width;
+        background: touch.pressed ? Theme.pressed : i == AppState.language-index ? Theme.accent-soft : transparent;
+        accessible-role: button;
+        accessible-label: o;
+        accessible-checkable: true;
+        accessible-checked: i == AppState.language-index;
+        accessible-action-default => {
+            AppState.set-language(i);
+        }
+        Text {
+            x: 20px;
+            width: parent.width - 40px;
+            height: parent.height;
+            text: o;
+            vertical-alignment: center;
+            horizontal-alignment: Theme.rtl ? right : left;
+            font-size: Theme.font-body;
+            color: i == AppState.language-index ? Theme.accent-fg : Theme.text;
+            overflow: elide;
+            accessible-role: none;
+        }
+        touch := TouchArea {
+            clicked => {
+                AppState.set-language(i);
+            }
+        }
+    }
+}

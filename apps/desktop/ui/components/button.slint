@@ -1,0 +1,321 @@
+import { RowLayout } from "row.slint";
+import { Theme } from "../theme.slint";
+
+// Keyboard focus between controls. `step` moves it like Tab and Shift+Tab (arrow keys in
+// lists and menus); `request` focuses a region of the window (F6).
+export global FocusNav {
+    callback step(forward: bool);
+    // 1 toolbar, 2 sidebar, 3 pages, 4 side panel, 5 the page number, 6 the search field,
+    // 7 read aloud, 8 the tools.
+    in-out property <int> region;
+    in-out property <int> serial;
+    // Tells the app which region has the focus now.
+    callback entered(region: int);
+    public function request(r: int) {
+        region = r;
+        serial += 1;
+        entered(r);
+    }
+}
+
+// Shown around a control focused from the keyboard.
+export component FocusRing inherits Rectangle {
+    in property <bool> show;
+    in property <length> radius: Theme.radius-small;
+    border-radius: radius + 3px;
+    border-width: show ? Theme.focus-width : 0px;
+    border-color: Theme.focus;
+}
+
+// A small label shown while hovering, for controls that only show an icon.
+export component Tip inherits Rectangle {
+    in property <string> text;
+    border-radius: 5px;
+    background: Theme.high-contrast ? Theme.chrome : #18181BEE;
+    border-width: Theme.high-contrast ? 1px : 0px;
+    border-color: Theme.text;
+    accessible-role: none;
+    RowLayout {
+        padding: 5px;
+        padding-left: 8px;
+        padding-right: 8px;
+        Text {
+            text: root.text;
+            color: Theme.high-contrast ? Theme.text : #FFFFFF;
+            font-size: Theme.font-small;
+            accessible-role: none;
+        }
+    }
+}
+
+// Shortcut names as this system writes them (Rust: keys::label): on macOS ⇧⌘S for the
+// Ctrl+Shift+S of other systems. `physical`: Ctrl is the Control key itself (vim keys).
+export global Keys {
+    in property <bool> macos;
+    pure callback label(text: string, physical: bool) -> string;
+    out property <string> find-next: macos ? "Ctrl+G" : "F3";
+    out property <string> find-previous: macos ? "Ctrl+Shift+G" : "Shift+F3";
+    out property <string> find-case: macos ? "Ctrl+Alt+C" : "Alt+C";
+    out property <string> find-words: macos ? "Ctrl+Alt+W" : "Alt+W";
+}
+
+// Where the keyboard focus went (in window or popup coordinates), so that scrolling menus
+// and dialogs (KeepInView) can bring it into view.
+export global Reveal {
+    out property <int> serial;
+    out property <length> x;
+    out property <length> y;
+    out property <length> height;
+    public function show(x: length, y: length, height: length) {
+        self.x = x;
+        self.y = y;
+        self.height = height;
+        self.serial += 1;
+    }
+}
+
+// Anything that acts like a button or a list row: focusable, Enter or Space activates it,
+// Up and Down move to the previous or next control (when `arrows`).
+export component Pressable inherits Rectangle {
+    in property <string> label;
+    in property <string> description;
+    in property <bool> enabled: true;
+    in property <bool> arrows: true;
+    in property <length> ring-radius: Theme.radius-small;
+    in property <MouseCursor> cursor: MouseCursor.pointer;
+    out property <bool> has-focus: focus.has-focus;
+    out property <bool> has-hover: touch.has-hover;
+    out property <bool> pressed: touch.pressed;
+    callback clicked;
+    callback double-clicked;
+    callback pointer(event: PointerEvent);
+    callback moved(x: length, y: length, pressed-x: length, pressed-y: length, pressed: bool);
+
+    public function focus-row() {
+        focus.focus();
+    }
+
+    accessible-role: button;
+    accessible-label: label;
+    accessible-description: description;
+    accessible-enabled: enabled;
+    accessible-action-default => {
+        if enabled {
+            clicked();
+        }
+    }
+    forward-focus: focus;
+    changed has-focus => {
+        if self.has-focus {
+            Reveal.show(self.absolute-position.x, self.absolute-position.y, self.height);
+        }
+    }
+
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) && !e.modifiers.control && !e.modifiers.alt {
+                root.clicked();
+                return accept;
+            }
+            if root.arrows && e.text == Key.DownArrow && !e.modifiers.control {
+                FocusNav.step(true);
+                return accept;
+            }
+            if root.arrows && e.text == Key.UpArrow && !e.modifiers.control {
+                FocusNav.step(false);
+                return accept;
+            }
+            reject
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.cursor;
+        clicked => {
+            root.clicked();
+        }
+        double-clicked => {
+            root.double-clicked();
+        }
+        pointer-event(e) => {
+            root.pointer(e);
+        }
+        moved => {
+            root.moved(self.mouse-x, self.mouse-y, self.pressed-x, self.pressed-y, self.pressed);
+        }
+    }
+
+    @children
+
+    FocusRing {
+        x: 1px;
+        y: 1px;
+        width: root.width - 2px;
+        height: root.height - 2px;
+        radius: max(0px, root.ring-radius - 3px);
+        show: focus.has-focus;
+    }
+}
+
+// A text button, optionally with an icon. `primary` is the accent-filled call to action.
+export component Button inherits Rectangle {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> primary;
+    in property <bool> enabled: true;
+    in property <string> description;
+    callback clicked;
+
+    public function focus-button() {
+        focus.focus();
+    }
+
+    property <color> fg: !enabled ? Theme.faint : primary ? Theme.on-accent : Theme.text;
+
+    accessible-role: button;
+    accessible-label: text;
+    accessible-description: description;
+    accessible-enabled: enabled;
+    accessible-action-default => {
+        if enabled {
+            clicked();
+        }
+    }
+    forward-focus: focus;
+    min-height: Theme.control-height;
+    min-width: Theme.control-height;
+    border-radius: Theme.radius-small;
+    background: primary ? (touch.pressed ? Theme.accent-hover.darker(0.1) : touch.has-hover ? Theme.accent-hover : Theme.accent).with-alpha(enabled ? 1 : 0.5) : touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : Theme.chrome;
+    border-width: primary ? 0px : 1px;
+    border-color: Theme.high-contrast ? Theme.control-border : Theme.border;
+
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) && !e.modifiers.control {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    RowLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 6px;
+        alignment: center;
+        if root.icon.width > 0: Image {
+            source: root.icon;
+            colorize: root.fg;
+            width: 16px;
+            height: 16px;
+            cross-axis-self-alignment: center;
+            accessible-role: none;
+        }
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: Theme.font-body;
+            font-weight: 500;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    FocusRing {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        show: focus.has-focus;
+    }
+}
+
+// A square button with an icon. `checked` shows a toggled state. The label is its name for
+// screen readers and its tooltip.
+export component IconButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <string> description;
+    in property <bool> enabled: true;
+    in property <bool> checkable;
+    in property <bool> checked;
+    in property <length> icon-size: 18px;
+    callback clicked;
+
+    public function focus-button() {
+        focus.focus();
+    }
+
+    accessible-role: button;
+    accessible-label: label;
+    accessible-description: description;
+    accessible-enabled: enabled;
+    accessible-checkable: checkable;
+    accessible-checked: checked;
+    accessible-action-default => {
+        if enabled {
+            clicked();
+        }
+    }
+    forward-focus: focus;
+    width: Theme.control-height;
+    height: Theme.control-height;
+    border-radius: Theme.radius-small;
+    background: checked ? Theme.accent-soft : touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
+    border-width: checked && Theme.high-contrast ? 1px : 0px;
+    border-color: Theme.accent-fg;
+
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) && !e.modifiers.control {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    Image {
+        source: root.icon;
+        width: root.icon-size;
+        height: root.icon-size;
+        colorize: !root.enabled ? Theme.faint : root.checked ? Theme.accent-fg : Theme.text;
+        accessible-role: none;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    // Also shown when disabled, to say why.
+    Tooltip {
+        Tip {
+            text: root.description != "" ? root.label + " · " + Keys.label(root.description, false) : root.label;
+        }
+    }
+
+    FocusRing {
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        show: focus.has-focus;
+    }
+}

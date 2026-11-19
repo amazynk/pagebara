@@ -1,0 +1,79 @@
+# Set options before typing, then change them from the field and the results.
+open "$SAMPLES/lease.pdf"
+key ctrl+f
+assert find.match-case == false
+assert find.whole-words == false
+key alt+c|ctrl+alt+c
+assert find.match-case == true
+type "re"
+key alt+w|ctrl+alt+w
+assert find.whole-words == true
+type "nt"
+await find.status == 1 of 2 5000
+key down
+assert focus.region == 2
+key down
+await find.status == 2 of 2 3000
+await page == 2 3000
+# The same lowercase occurrence stays selected as the other rows come back.
+key alt+c|ctrl+alt+c
+await find.status == 4 of 4 5000
+key alt+w|ctrl+alt+w
+await find.status == 6 of 6 5000
+key home
+await find.status == 1 of 6 3000
+click "Page 1 — … in Schedule A. Rent paid more than five days late incurs" 200
+assert search.current == 4
+# Whole words is the preceding Tab stop. Space preserves this third whole-word hit.
+key shift+tab
+key space
+await find.status == 3 of 4 5000
+key tab
+key home
+assert search.current == 1
+click "Whole words" 200
+await find.status == 2 of 6 5000
+click "Whole words" 200
+await find.status == 1 of 4 5000
+click "Match case" 200
+await find.status == 1 of 2 5000
+click "Page 2 — …to one month of rent is due on signing. It is returned within thirty" 200
+assert search.current == 2
+await page == 2 3000
+wait 300
+screenshot 35-filtered-find.png
+# Filtering to zero keeps the list focused so the shortcut can recover it.
+key ctrl+f
+type "currently"
+await search.hits == 1 5000
+key ctrl+f
+type "curr"
+await find.status == No matches 5000
+key alt+w|ctrl+alt+w
+await find.status == 1 of 1 5000
+key down
+key alt+w|ctrl+alt+w
+await find.status == No matches 5000
+key alt+w|ctrl+alt+w
+await find.status == 1 of 1 5000
+assert focus.region == 2
+# A dialog owns its keys. A second document opens with its own filters.
+key ctrl+p
+assert print.visible == true
+key alt+w|ctrl+alt+w
+assert find.whole-words == false
+key escape
+open "$SAMPLES/report.pdf"
+key ctrl+f
+assert find.match-case == false
+assert find.whole-words == false
+type "revenue"
+await search.hits == 53 5000
+key physical-ctrl+tab
+assert find.match-case == true
+assert find.whole-words == false
+await find.status == 1 of 1 3000
+key escape
+key ctrl+f
+assert find.match-case == true
+assert find.whole-words == false

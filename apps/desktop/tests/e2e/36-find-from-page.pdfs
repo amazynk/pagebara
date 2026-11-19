@@ -1,0 +1,74 @@
+# With no query, the page shortcut focuses Find so a search can start immediately.
+open "$SAMPLES/lease.pdf"
+key f3|ctrl+g
+assert find.visible == true
+assert focus.region == 6
+type "rent"
+await find.status == 1 of 6 5000
+key alt+c|ctrl+alt+c
+key alt+w|ctrl+alt+w
+await find.status == 1 of 2 5000
+key down
+key return
+assert focus.region == 3
+call vim-keys on
+assert vim.active == true
+
+# The page, the count, and the result announced by the list all move together.
+key f3|ctrl+g
+await page == 2 3000
+assert find.status == 2 of 2
+await find.selected-result contains to one month of rent 3000
+key f3|ctrl+g
+await page == 1 3000
+assert find.status == 1 of 2
+await find.selected-result contains pay the monthly rent 3000
+key shift+f3|ctrl+shift+g
+await page == 2 3000
+assert find.status == 2 of 2
+assert focus.region == 3
+assert vim.active == true
+call vim-keys off
+
+# Collapse the list, keep reading, and reopen it at the match reached from the page.
+click "Show sidebar"
+assert find.results-visible == false
+key shift+f3|ctrl+shift+g
+await page == 1 3000
+assert find.results-visible == false
+click "Show sidebar"
+assert find.results-visible == true
+await find.selected-result contains pay the monthly rent 3000
+
+# A dialog keeps its shortcuts. A different PDF starts its own search.
+key ctrl+p
+assert print.visible == true
+key shift+f3|ctrl+shift+g
+assert search.current == 1
+key escape
+open "$SAMPLES/report.pdf"
+key shift+f3|ctrl+shift+g
+type "absent-search-term"
+await find.status == No matches 5000
+key f3|ctrl+g
+assert search.current == 0
+assert find.match-case == false
+# Wrap far enough to scroll the results list while the keyboard stays on the page.
+key ctrl+f
+type "revenue"
+await find.status == 1 of 53 5000
+key down
+key return
+key shift+f3|ctrl+shift+g
+await page == 12 3000
+assert find.status == 53 of 53
+await find.selected-result contains Page 12 (10) 3000
+key f3|ctrl+g
+await find.status == 1 of 53 3000
+await find.selected-result contains Page 2 (ii) 3000
+key physical-ctrl+tab
+assert find.match-case == true
+assert find.whole-words == true
+key f3|ctrl+g
+await find.status == 2 of 2 3000
+await find.selected-result contains to one month of rent 3000

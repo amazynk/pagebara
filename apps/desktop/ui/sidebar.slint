@@ -1,0 +1,460 @@
+import { RowLayout } from "components/row.slint";
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState, SidebarTab, Thumb } from "state.slint";
+import { Panel } from "components/panel.slint";
+import { FocusRing, FocusNav } from "components/button.slint";
+import { SegmentedControl } from "components/segmented.slint";
+
+export component ThumbCell inherits Rectangle {
+    in property <Thumb> thumb;
+    in property <length> box-height: 160px;
+    in property <bool> ring;
+    callback clicked;
+
+    accessible-role: list-item;
+    accessible-label: @tr("Page {}", thumb.label != "" ? thumb.label : thumb.index + 1);
+    accessible-item-selectable: true;
+    accessible-item-selected: ring;
+    accessible-action-default => {
+        clicked();
+    }
+
+    VerticalLayout {
+        spacing: 6px;
+        alignment: start;
+        Rectangle {
+            height: root.box-height;
+            sheet := Rectangle {
+                property <length> avail-w: parent.width - 12px;
+                property <length> avail-h: parent.height - 12px;
+                width: min(self.avail-w, self.avail-h / max(root.thumb.aspect, 0.01));
+                height: self.width * root.thumb.aspect;
+                background: Theme.page;
+                border-width: 1px;
+                border-color: Theme.border;
+                drop-shadow-blur: 3px;
+                drop-shadow-offset-y: 1px;
+                drop-shadow-color: Theme.shadow-near;
+                Image {
+                    accessible-role: none;
+                    x: 1px;
+                    y: 1px;
+                    width: parent.width - 2px;
+                    height: parent.height - 2px;
+                    source: root.thumb.image;
+                    image-fit: fill;
+                }
+            }
+            if root.ring: Rectangle {
+                x: sheet.x - 4px;
+                y: sheet.y - 4px;
+                width: sheet.width + 8px;
+                height: sheet.height + 8px;
+                border-radius: 4px;
+                border-width: 2px;
+                border-color: Theme.accent-fg;
+            }
+        }
+        Text {
+            text: root.thumb.label != "" ? root.thumb.label : root.thumb.index + 1;
+            horizontal-alignment: center;
+            font-size: Theme.font-small;
+            font-weight: root.ring ? 600 : 400;
+            color: root.ring ? Theme.accent-fg : Theme.muted;
+            accessible-role: none;
+        }
+    }
+
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+// Thumbnails, one to a row and large enough to tell the pages apart. Focused, the arrows
+// go to another page, Home and End to the first and last, Enter to the page itself.
+component PagesTab inherits Rectangle {
+    property <length> row-height: AppState.pages-row-height;
+    property <int> current: AppState.current-page;
+    accessible-role: list;
+    accessible-label: @tr("Pages");
+    accessible-value: @tr("Page {}, {} of {}", AppState.page-label, AppState.current-page + 1, AppState.page-count);
+    forward-focus: keys;
+
+    // Keeps the current page's row in view.
+    changed current => {
+        root.reveal();
+    }
+    function reveal() {
+        if AppState.current-page < 0 {
+            return;
+        }
+        let top = AppState.current-page * root.row-height;
+        if top < -lv.content-y {
+            lv.content-y = -top;
+        } else if top + root.row-height > -lv.content-y + lv.visible-height {
+            lv.content-y = -(top + root.row-height - lv.visible-height);
+        }
+    }
+    function go(page: int) {
+        AppState.go-to-page(max(0, min(AppState.page-count - 1, page)));
+    }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if e.modifiers.control || e.modifiers.alt {
+                return reject;
+            }
+            if e.text == Key.RightArrow || e.text == Key.DownArrow {
+                root.go(AppState.current-page + 1);
+                return accept;
+            }
+            if e.text == Key.LeftArrow || e.text == Key.UpArrow {
+                root.go(AppState.current-page - 1);
+                return accept;
+            }
+            if e.text == Key.Home {
+                root.go(0);
+                return accept;
+            }
+            if e.text == Key.End {
+                root.go(AppState.page-count - 1);
+                return accept;
+            }
+            if e.text == Key.Return || e.text == " " {
+                FocusNav.request(3);
+                return accept;
+            }
+            reject
+        }
+    }
+
+    lv := ListView {
+        accessible-role: none;
+        changed content-y => {
+            root.report();
+        }
+        changed visible-height => {
+            root.report();
+        }
+        changed absolute-position => {
+            root.report();
+        }
+        changed width => {
+            root.report();
+        }
+        for t in AppState.thumbs: Rectangle {
+            height: root.row-height;
+            ThumbCell {
+                y: 8px;
+                width: min(148px, parent.width - 24px);
+                height: parent.height - 8px;
+                thumb: t;
+                ring: t.current;
+                clicked => {
+                    AppState.go-to-page(t.index);
+                }
+            }
+        }
+    }
+
+    FocusRing {
+        x: 2px;
+        y: 2px;
+        width: root.width - 4px;
+        height: root.height - 4px;
+        show: keys.has-focus;
+    }
+
+    function report() {
+        AppState.thumbs-scrolled(floor(-lv.content-y / root.row-height), ceil((-lv.content-y + lv.visible-height) / root.row-height));
+        // For files dropped on the list.
+        AppState.pages-list-x = lv.absolute-position.x;
+        AppState.pages-list-y = lv.absolute-position.y;
+        AppState.pages-list-width = lv.visible-width;
+        AppState.pages-list-height = lv.visible-height;
+        AppState.pages-list-scroll = -lv.content-y;
+    }
+    init => {
+        report();
+        reveal();
+    }
+}
+
+// The document's outline. Focused, Up and Down move through it and Enter goes there.
+component OutlineTab inherits Rectangle {
+    property <int> cursor: -1;
+    property <length> row-h: Theme.row-height;
+    accessible-role: list;
+    accessible-label: @tr("Outline");
+    accessible-value: cursor >= 0 && cursor < AppState.outline.length ? AppState.outline[cursor].title : "";
+    forward-focus: keys;
+
+    function move-to(i: int) {
+        if AppState.outline.length == 0 {
+            return;
+        }
+        cursor = max(0, min(AppState.outline.length - 1, i));
+        let top = cursor * row-h;
+        if top < -lv.content-y {
+            lv.content-y = -top;
+        } else if top + row-h > -lv.content-y + lv.visible-height {
+            lv.content-y = -(top + row-h - lv.visible-height);
+        }
+    }
+
+    keys := FocusScope {
+        changed has-focus => {
+            if self.has-focus && root.cursor < 0 {
+                root.move-to(0);
+            }
+        }
+        key-pressed(e) => {
+            if e.text == Key.DownArrow {
+                root.move-to(root.cursor + 1);
+                return accept;
+            }
+            if e.text == Key.UpArrow {
+                root.move-to(root.cursor - 1);
+                return accept;
+            }
+            if e.text == Key.Home {
+                root.move-to(0);
+                return accept;
+            }
+            if e.text == Key.End {
+                root.move-to(AppState.outline.length - 1);
+                return accept;
+            }
+            if (e.text == Key.Return || e.text == " ") && root.cursor >= 0 && root.cursor < AppState.outline.length {
+                AppState.go-to-page(AppState.outline[root.cursor].page);
+                return accept;
+            }
+            reject
+        }
+    }
+
+    if AppState.outline.length == 0: Text {
+        x: 16px;
+        y: 12px;
+        width: parent.width - 32px;
+        text: @tr("This document has no outline.");
+        color: Theme.muted;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+    }
+    lv := ListView {
+        accessible-role: none;
+        for item[i] in AppState.outline: Rectangle {
+            height: root.row-h;
+            accessible-role: list-item;
+            accessible-label: item.title;
+            accessible-description: item.page >= 0 ? @tr("Page {}", item.page + 1) : "";
+            accessible-item-selectable: true;
+            accessible-item-selected: item.current;
+            accessible-item-index: i;
+            accessible-item-count: AppState.outline.length;
+            accessible-action-default => {
+                AppState.go-to-page(item.page);
+            }
+            Rectangle {
+                x: 8px;
+                width: parent.width - 16px;
+                border-radius: Theme.radius-small;
+                background: item.current ? Theme.accent-soft : touch.has-hover || (keys.has-focus && i == root.cursor) ? Theme.hover : transparent;
+                border-width: keys.has-focus && i == root.cursor ? Theme.focus-width : 0px;
+                border-color: Theme.focus;
+            }
+            Text {
+                x: 16px + item.depth * 14px;
+                width: parent.width - self.x - 16px;
+                text: item.title;
+                color: item.current ? Theme.accent-fg : Theme.text;
+                font-weight: item.current ? 600 : 400;
+                overflow: elide;
+                vertical-alignment: center;
+                accessible-role: none;
+            }
+            touch := TouchArea {
+                mouse-cursor: pointer;
+                enabled: item.page >= 0;
+                clicked => {
+                    root.cursor = i;
+                    AppState.go-to-page(item.page);
+                }
+            }
+        }
+    }
+}
+
+// Annotations of the document. Focused, Up and Down select the previous or next one and
+// Enter goes to its properties.
+component CommentsTab inherits Rectangle {
+    property <int> cursor: -1;
+    accessible-role: list;
+    accessible-label: @tr("Comments");
+    forward-focus: keys;
+
+    function move-to(i: int) {
+        if AppState.comments.length == 0 {
+            return;
+        }
+        cursor = max(0, min(AppState.comments.length - 1, i));
+        AppState.comment-clicked(AppState.comments[cursor].index);
+    }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if e.text == Key.DownArrow {
+                root.move-to(root.cursor + 1);
+                return accept;
+            }
+            if e.text == Key.UpArrow {
+                root.move-to(root.cursor - 1);
+                return accept;
+            }
+            if e.text == Key.Home {
+                root.move-to(0);
+                return accept;
+            }
+            if e.text == Key.End {
+                root.move-to(AppState.comments.length - 1);
+                return accept;
+            }
+            if (e.text == Key.Return || e.text == " ") && root.cursor >= 0 {
+                AppState.comment-clicked(AppState.comments[root.cursor].index);
+                FocusNav.request(4);
+                return accept;
+            }
+            reject
+        }
+    }
+
+    if AppState.comments.length == 0: VerticalLayout {
+        padding: 16px;
+        spacing: 6px;
+        alignment: start;
+        Text {
+            text: @tr("No comments yet");
+            color: Theme.text;
+            font-weight: 600;
+        }
+        Text {
+            text: @tr("Highlights, notes and drawings in this document will be listed here.");
+            color: Theme.muted;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+        }
+    }
+    ListView {
+        accessible-role: none;
+        for c[i] in AppState.comments: Rectangle {
+            height: body.preferred-height + 20px;
+            accessible-role: list-item;
+            accessible-label: c.body != "" ? @tr("{} on page {}: {}", c.kind, c.page, c.body) : @tr("{} on page {}", c.kind, c.page);
+            accessible-description: (c.author != "" ? @tr("By {}.", c.author) + " " : "") + (c.replies > 0 ? @tr("{n} reply" | "{n} replies" % c.replies) : "");
+            accessible-item-index: i;
+            accessible-item-count: AppState.comments.length;
+            accessible-item-selectable: true;
+            accessible-item-selected: c.selected;
+            accessible-action-default => {
+                AppState.comment-clicked(c.index);
+            }
+            Rectangle {
+                x: 8px;
+                y: 3px;
+                width: parent.width - 16px;
+                height: parent.height - 6px;
+                border-radius: Theme.radius-small;
+                background: c.selected ? Theme.accent-soft : touch.has-hover ? Theme.hover : transparent;
+                border-width: keys.has-focus && i == root.cursor ? Theme.focus-width : 0px;
+                border-color: Theme.focus;
+            }
+            body := VerticalLayout {
+                x: 16px;
+                y: 8px;
+                width: parent.width - 32px;
+                spacing: 2px;
+                RowLayout {
+                    spacing: 6px;
+                    Text {
+                        text: c.kind;
+                        color: Theme.text;
+                        font-weight: 600;
+                        overflow: elide;
+                    }
+                    Text {
+                        text: @tr("p. {}", c.page);
+                        color: Theme.faint;
+                        font-size: Theme.font-small;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                }
+                if c.author != "" || c.when != "": Text {
+                    text: c.author + (c.author != "" && c.when != "" ? " · " : "") + c.when;
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    overflow: elide;
+                }
+                if c.body != "": Text {
+                    text: c.body;
+                    color: Theme.text;
+                    wrap: word-wrap;
+                    line-height-factor: 1.15;
+                    max-height: 54px;
+                    overflow: elide;
+                }
+                if c.replies > 0: Text {
+                    text: @tr("{n} reply" | "{n} replies" % c.replies);
+                    color: Theme.accent-fg;
+                    font-size: Theme.font-small;
+                }
+            }
+            touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.cursor = i;
+                    AppState.comment-clicked(c.index);
+                }
+            }
+        }
+    }
+}
+
+export component Sidebar inherits Panel {
+    width: Theme.sidebar-width;
+    accessible-label: @tr("Sidebar");
+
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 2 {
+            tabs.focus();
+        }
+    }
+
+    VerticalLayout {
+        padding: 12px;
+        padding-bottom: 0px;
+        tabs := SegmentedControl {
+            stretch: true;
+            name: @tr("Sidebar view");
+            items: [{ label: @tr("Pages") }, { label: @tr("Outline") }, { label: @tr("Comments") }];
+            selected: AppState.sidebar-tab == SidebarTab.pages ? 0 : AppState.sidebar-tab == SidebarTab.outline ? 1 : 2;
+            activated(i) => {
+                AppState.sidebar-tab = i == 0 ? SidebarTab.pages : i == 1 ? SidebarTab.outline : SidebarTab.comments;
+            }
+        }
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+        if AppState.sidebar-tab == SidebarTab.pages: PagesTab { }
+        if AppState.sidebar-tab == SidebarTab.outline: OutlineTab { }
+        if AppState.sidebar-tab == SidebarTab.comments: CommentsTab { }
+    }
+}

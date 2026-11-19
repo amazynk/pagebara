@@ -1,0 +1,16 @@
+[package]
+name = "pagebara-forms"
+description = "Interactive forms: field model, filling with generated appearances, signature info, flattening, FDF/XFDF/JSON, native AF scripts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-annot.workspace = true
+pagebara-pages.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

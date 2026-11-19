@@ -1,0 +1,44 @@
+[package]
+name = "pagebara-shell-win"
+description = "Windows Explorer extensions: thumbnails, the preview pane and Windows Search text, drawn and read with pagebara's own engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# The DLL (pagebara_identity::SHELL_DLL) goes next to the executable; pagebara-integration
+# registers it per user from the app's settings.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-content.workspace = true
+pagebara-render.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+pagebara-identity.workspace = true
+windows-core = "0.62"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Storage_IndexServer",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+# The workspace lints, except that unsafe code is denied rather than forbidden: the COM
+# glue modules (src/win/*.rs) allow it, and only there.
+[lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

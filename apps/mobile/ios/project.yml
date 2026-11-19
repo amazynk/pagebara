@@ -1,0 +1,45 @@
+# XcodeGen spec of the iOS app (Slint's recommended setup): the app's executable is the
+# Rust binary `pagebara-mobile`, built by build-rust.sh for the device or simulator Xcode
+# builds for. Generate the project with ./generate.sh, which sets PAGEBARA_APP_NAME.
+name: pagebara
+options:
+  bundleIdPrefix: com.amazynk
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    # The build script runs cargo, which reads and writes outside the project.
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  pagebara:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: Assets.xcassets
+      - path: Info.plist
+        buildPhase: none
+    settings:
+      base:
+        PRODUCT_NAME: pagebara
+        PRODUCT_BUNDLE_IDENTIFIER: com.amazynk.pagebara
+        PRODUCT_DISPLAY_NAME: ${PAGEBARA_APP_NAME}
+        INFOPLIST_FILE: Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        # The executable comes from cargo, there is nothing for Xcode to compile.
+        EXECUTABLE_NAME: pagebara
+    postCompileScripts:
+      - name: Build the Rust app
+        script: ./build-rust.sh
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
+schemes:
+  pagebara:
+    build:
+      targets:
+        pagebara: all

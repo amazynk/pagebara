@@ -1,0 +1,24 @@
+[package]
+name = "pagebara-typeset"
+description = "Text engine for editing PDFs: encoding text in a document's fonts (adding codes, embedding fallbacks), paragraph layout, hyphenation and style matching"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-font.workspace = true
+pagebara-content.workspace = true
+miniz_oxide.workspace = true
+unicode-bidi.workspace = true
+unicode-normalization.workspace = true
+
+[build-dependencies]
+miniz_oxide.workspace = true
+
+[dev-dependencies]
+pagebara-render.workspace = true
+pagebara-pages.workspace = true
+
+[lints]
+workspace = true

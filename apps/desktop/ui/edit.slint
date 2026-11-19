@@ -1,0 +1,486 @@
+// The Edit tool's panel: what is selected on the page and what can be done with it
+// (colours, opacity, text size, arrangement, images), or how to start.
+import { RowLayout } from "components/row.slint";
+import { Theme } from "theme.slint";
+import { Button, IconButton, Keys } from "components/button.slint";
+import { Divider, MenuCard, MenuItem } from "components/panel.slint";
+import { Check, ColourRow, SectionLabel, LabeledSlider } from "components/controls.slint";
+import { TextField } from "components/text-field.slint";
+
+export global EditState {
+    // Objects selected on the page; their description for the panel and screen readers.
+    in property <int> count;
+    in property <string> summary;
+    in property <bool> is-text;
+    in property <bool> is-image;
+    in property <bool> has-fill;
+    in property <bool> has-stroke;
+    // Nearest palette swatches of the colours, -1 for none.
+    in property <int> fill: -1;
+    in property <int> stroke: -1;
+    in property <float> opacity: 100;
+    in property <float> line-width;
+    in property <bool> dashed;
+    out property <[float]> size-presets: [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72];
+    in property <string> font;
+    in property <float> font-size: 12;
+    in property <bool> text-editing;
+    in property <bool> cropping;
+    // What the text's layout reports while editing (characters no font has, overflow).
+    in property <string> warning;
+    // The style of the selected text: -1 mixed, 0 off, 1 on; size 0 when mixed.
+    in property <int> style-bold: -1;
+    in property <int> style-italic: -1;
+    in property <float> style-size;
+    in property <int> style-fill: -1;
+    in property <string> style-family;
+    in property <[string]> families;
+    callback action(what: string, value: string);
+}
+
+component Hint inherits Text {
+    color: Theme.muted;
+    font-size: Theme.font-small;
+    wrap: word-wrap;
+    line-height-factor: 1.15;
+}
+
+// Bold and italic toggles; `prefix` names the actions ("text-" while typing).
+component StyleRow inherits RowLayout {
+    in property <string> prefix;
+    spacing: 4px;
+    alignment: start;
+    IconButton {
+        icon: @image-url("icons/bold.svg");
+        label: @tr("Bold");
+        // TRANSLATORS: {} is a keyboard shortcut; mixed: the selection is partly bold or italic
+        description: EditState.style-bold < 0 ? @tr("{}, mixed", "Ctrl+B") : "Ctrl+B";
+        checkable: true;
+        checked: EditState.style-bold == 1;
+        clicked => {
+            EditState.action(root.prefix + "bold", EditState.style-bold == 1 ? "0" : "1");
+        }
+    }
+    IconButton {
+        icon: @image-url("icons/italic.svg");
+        label: @tr("Italic");
+        description: EditState.style-italic < 0 ? @tr("{}, mixed", "Ctrl+I") : "Ctrl+I";
+        checkable: true;
+        checked: EditState.style-italic == 1;
+        clicked => {
+            EditState.action(root.prefix + "italic", EditState.style-italic == 1 ? "0" : "1");
+        }
+    }
+    families := Button {
+        text: EditState.style-family != "" ? EditState.style-family : "Font";
+        description: @tr("Choose the font family");
+        clicked => {
+            menu.show();
+        }
+        menu := PopupWindow {
+            y: families.height + 4px;
+            width: 220px;
+            MenuCard {
+                for f[i] in EditState.families: MenuItem {
+                    text: f;
+                    initial-focus: i == 0;
+                    clicked => {
+                        // Before the menu goes: its rows cannot reach `root` after it.
+                        EditState.action(root.prefix + "family", f);
+                        menu.close();
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A size in points: typed in (Enter applies), a step down or up, or a common size from
+// the list. `value` 0 shows as mixed.
+component PointsField inherits VerticalLayout {
+    in property <string> label;
+    in property <float> value;
+    in property <float> minimum: 1;
+    in property <float> maximum: 999;
+    in property <float> step: 1;
+    in property <[float]> presets;
+    callback picked(value: float);
+    function shown() -> string {
+        return root.value > 0 ? round(root.value * 10) / 10 : "";
+    }
+    function apply(v: float) {
+        root.picked(max(root.minimum, min(root.maximum, round(v * 10) / 10)));
+    }
+    changed value => {
+        field.text = root.shown();
+    }
+    spacing: 4px;
+    SectionLabel {
+        text: root.label;
+    }
+    RowLayout {
+        spacing: 4px;
+        alignment: start;
+        IconButton {
+            icon: @image-url("icons/minus.svg");
+            label: @tr("Smaller");
+            enabled: root.value > root.minimum;
+            clicked => {
+                root.apply((root.value > 0 ? root.value : 12) - root.step);
+            }
+        }
+        field := TextField {
+            width: 76px;
+            text: root.shown();
+            // TRANSLATORS: placeholder when the selected texts have different sizes
+            placeholder: @tr("Mixed");
+            label: @tr("{} in points", root.label);
+            accepted(t) => {
+                if t.is-float() && t.to-float() > 0 {
+                    root.apply(t.to-float());
+                } else {
+                    self.text = root.shown();
+                }
+            }
+            Text {
+                // TRANSLATORS: abbreviation of points, the unit of font size
+                text: @tr("pt");
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                vertical-alignment: center;
+            }
+        }
+        IconButton {
+            icon: @image-url("icons/plus.svg");
+            // TRANSLATORS: a button that makes the font size larger
+            label: @tr("Larger");
+            enabled: root.value < root.maximum;
+            clicked => {
+                root.apply((root.value > 0 ? root.value : 12) + root.step);
+            }
+        }
+        sizes := IconButton {
+            icon: @image-url("icons/chevron-down.svg");
+            label: @tr("Common sizes");
+            clicked => {
+                menu.show();
+            }
+            menu := PopupWindow {
+                y: sizes.height + 4px;
+                x: sizes.width - 120px;
+                width: 120px;
+                MenuCard {
+                    for p[i] in root.presets: MenuItem {
+                        text: @tr("{} pt", p);
+                        initial-focus: p == root.value || (i == 0 && root.value <= 0);
+                        clicked => {
+                            // Before the menu goes: its rows cannot reach `root` after it.
+                            root.apply(p);
+                            menu.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+component ArrangeRow inherits RowLayout {
+    spacing: 4px;
+    alignment: start;
+    IconButton {
+        icon: @image-url("icons/to-front.svg");
+        label: @tr("Bring to front");
+        description: "Ctrl+Shift+]";
+        clicked => {
+            EditState.action("front", "");
+        }
+    }
+    IconButton {
+        icon: @image-url("icons/forward.svg");
+        label: @tr("Bring forward");
+        description: "Ctrl+]";
+        clicked => {
+            EditState.action("forward", "");
+        }
+    }
+    IconButton {
+        icon: @image-url("icons/backward.svg");
+        label: @tr("Send backward");
+        description: "Ctrl+[";
+        clicked => {
+            EditState.action("backward", "");
+        }
+    }
+    IconButton {
+        icon: @image-url("icons/to-back.svg");
+        label: @tr("Send to back");
+        description: "Ctrl+Shift+[";
+        clicked => {
+            EditState.action("back", "");
+        }
+    }
+}
+
+export component EditPanel inherits VerticalLayout {
+    spacing: 12px;
+
+    if EditState.text-editing: VerticalLayout {
+        spacing: 10px;
+        Text {
+            text: @tr("Editing text");
+            color: Theme.text;
+            font-weight: 600;
+        }
+        Hint {
+            text: Keys.label(@tr("Type to change the text. Shift with the arrows selects, Ctrl+X, C and V cut, copy and paste. Escape or a click outside finishes; Ctrl+Z undoes typing."), false);
+        }
+        StyleRow {
+            prefix: "text-";
+        }
+        PointsField {
+            label: @tr("Font size");
+            value: EditState.style-size;
+            minimum: 2;
+            maximum: 400;
+            presets: EditState.size-presets;
+            picked(v) => {
+                EditState.action("text-size", v);
+            }
+        }
+        VerticalLayout {
+            spacing: 6px;
+            SectionLabel {
+                text: @tr("Text colour");
+            }
+            ColourRow {
+                name: @tr("Text colour");
+                selected: EditState.style-fill;
+                picked(i) => {
+                    EditState.action("text-fill", i);
+                }
+            }
+        }
+        if EditState.warning != "": Hint {
+            text: EditState.warning;
+            color: Theme.danger;
+        }
+        RowLayout {
+            alignment: start;
+            Button {
+                text: @tr("Done");
+                primary: true;
+                clicked => {
+                    EditState.action("text-done", "");
+                }
+            }
+        }
+    }
+
+    if EditState.cropping: VerticalLayout {
+        spacing: 10px;
+        Text {
+            text: @tr("Cropping the image");
+            color: Theme.text;
+            font-weight: 600;
+        }
+        Hint {
+            text: @tr("Drag the handles to choose what stays. Enter applies, Escape cancels.");
+        }
+        RowLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: @tr("Apply crop");
+                primary: true;
+                clicked => {
+                    EditState.action("crop-apply", "");
+                }
+            }
+            Button {
+                text: @tr("Cancel");
+                clicked => {
+                    EditState.action("crop-cancel", "");
+                }
+            }
+        }
+    }
+
+    if !EditState.text-editing && !EditState.cropping && EditState.count == 0: VerticalLayout {
+        spacing: 12px;
+        Hint {
+            text: Keys.label(@tr("Click text, a picture or a drawing on the page to select it. Shift+click or drag a box selects several; Tab moves from object to object. Double-click text to change it."), false);
+        }
+        RowLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: @tr("Add text");
+                icon: @image-url("icons/text.svg");
+                description: @tr("Click on the page where the text goes");
+                clicked => {
+                    EditState.action("add-text", "");
+                }
+            }
+            Button {
+                text: @tr("Add image…");
+                icon: @image-url("icons/upload.svg");
+                clicked => {
+                    EditState.action("add-image", "");
+                }
+            }
+        }
+    }
+
+    if !EditState.text-editing && !EditState.cropping && EditState.count > 0: VerticalLayout {
+        spacing: 12px;
+        Text {
+            text: EditState.summary;
+            color: Theme.text;
+            font-weight: 600;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+        }
+        if EditState.is-text: RowLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: @tr("Edit text");
+                icon: @image-url("icons/text.svg");
+                description: "Enter";
+                clicked => {
+                    EditState.action("edit-text", "");
+                }
+            }
+        }
+        if EditState.is-text: Hint {
+            text: @tr("Font: {}", EditState.font);
+        }
+        if EditState.is-text: StyleRow {
+            prefix: "";
+        }
+        if EditState.is-text: PointsField {
+            label: @tr("Font size");
+            value: EditState.font-size;
+            minimum: 2;
+            maximum: 400;
+            presets: EditState.size-presets;
+            picked(v) => {
+                EditState.action("font-size", v);
+            }
+        }
+        if EditState.has-fill || EditState.is-text: VerticalLayout {
+            spacing: 6px;
+            SectionLabel {
+                text: EditState.is-text ? @tr("Text colour") : @tr("Fill colour");
+            }
+            ColourRow {
+                name: EditState.is-text ? @tr("Text colour") : @tr("Fill colour");
+                selected: EditState.fill;
+                picked(i) => {
+                    EditState.action("fill", i);
+                }
+            }
+        }
+        if EditState.has-stroke: VerticalLayout {
+            spacing: 6px;
+            SectionLabel {
+                text: @tr("Line colour");
+            }
+            ColourRow {
+                name: @tr("Line colour");
+                selected: EditState.stroke;
+                picked(i) => {
+                    EditState.action("stroke", i);
+                }
+            }
+        }
+        if EditState.has-stroke: PointsField {
+            label: @tr("Line width");
+            value: EditState.line-width;
+            minimum: 0.1;
+            maximum: 100;
+            step: 0.5;
+            presets: [0.5, 1, 1.5, 2, 3, 4, 6, 8, 12];
+            picked(v) => {
+                EditState.action("line-width", v);
+            }
+        }
+        if EditState.has-stroke: Check {
+            text: @tr("Dashed line");
+            checked: EditState.dashed;
+            toggled => {
+                EditState.action("dashed", self.checked ? "1" : "0");
+            }
+        }
+        LabeledSlider {
+            label: @tr("Opacity");
+            value-text: round(EditState.opacity) + "%";
+            value: EditState.opacity;
+            minimum: 0;
+            maximum: 100;
+            released(v) => {
+                EditState.action("opacity", v);
+            }
+        }
+        SectionLabel {
+            // TRANSLATORS: heading of the buttons that change the stacking order
+            text: @tr("Arrange");
+        }
+        ArrangeRow { }
+        if EditState.is-image: VerticalLayout {
+            spacing: 6px;
+            SectionLabel {
+                // TRANSLATORS: heading of the actions for a selected image
+                text: @tr("Image");
+            }
+            RowLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    text: @tr("Replace…");
+                    clicked => {
+                        EditState.action("replace-image", "");
+                    }
+                }
+                Button {
+                    // TRANSLATORS: verb, on a button that crops the image
+                    text: @tr("Crop");
+                    icon: @image-url("icons/crop.svg");
+                    clicked => {
+                        EditState.action("crop", "");
+                    }
+                }
+                Button {
+                    text: @tr("Save…");
+                    icon: @image-url("icons/extract.svg");
+                    description: @tr("Save the image as a PNG file");
+                    clicked => {
+                        EditState.action("extract-image", "");
+                    }
+                }
+            }
+        }
+        Divider { }
+        RowLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: @tr("Duplicate");
+                icon: @image-url("icons/duplicate.svg");
+                description: "Ctrl+D";
+                clicked => {
+                    EditState.action("duplicate", "");
+                }
+            }
+            Button {
+                text: @tr("Delete");
+                icon: @image-url("icons/trash.svg");
+                description: "Delete";
+                clicked => {
+                    EditState.action("delete", "");
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,695 @@
+// Digital signatures: the banner over the pages, the signatures panel, signing with a
+// certificate, making a self-signed ID, and the trusted certificates.
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button, IconButton, Pressable } from "components/button.slint";
+import { Dialog, Divider, Panel } from "components/panel.slint";
+import { TextField } from "components/text-field.slint";
+import { Check, SectionLabel } from "components/controls.slint";
+import { Heading, Body, Hint, ErrorText, Buttons, Field, Note, Verdicts, Choice, PathText } from "components/dialog-parts.slint";
+
+export struct ChangeRow {
+    text: string,
+    allowed: bool,
+}
+
+export struct SigCard {
+    summary: string,
+    kind: string,
+    field: string,
+    page: int,
+    // 0 valid, 1 untrusted, 2 unknown, 3 invalid.
+    level: int,
+    signer: string,
+    time: string,
+    timestamp: string,
+    reason: string,
+    location: string,
+    trust: string,
+    chain: [string],
+    revocation: string,
+    revision: string,
+    ltv: string,
+    changes: [ChangeRow],
+    problems: [string],
+    warnings: [string],
+    can-trust: bool,
+    expanded: bool,
+}
+
+export struct TrustRow {
+    name: string,
+    detail: string,
+    fingerprint: string,
+}
+
+// A certificate with its key in the system's key store.
+export struct StoreId {
+    subject: string,
+    issuer: string,
+    expires: string,
+    location: string,
+}
+
+export global SigningState {
+    // The banner: -1 without signatures, else the worst level.
+    in property <int> level: -1;
+    in property <string> banner;
+    in property <bool> checking;
+    in-out property <bool> panel-open;
+    in property <[SigCard]> cards;
+
+    // Trusted certificates.
+    in property <[TrustRow]> trusted;
+    in property <int> system-count;
+
+    // Signing with a certificate.
+    in-out property <string> id-path;
+    in-out property <string> id-password;
+    // 0 signs with the ID file, i > 0 with store-ids[i - 1].
+    in-out property <int> id-source;
+    in property <[string]> id-choices;
+    in property <[StoreId]> store-ids;
+    in property <bool> store-loading;
+    in property <[string]> saved-ids;
+    in property <[string]> field-choices;
+    in-out property <int> field-choice;
+    in property <bool> has-ink;
+    in property <string> ink-name;
+    in-out property <bool> show-ink;
+    in-out property <string> reason;
+    in-out property <string> location;
+    in-out property <int> certify;
+    in-out property <int> lock;
+    in-out property <bool> timestamp;
+    in-out property <string> tsa-url;
+    in-out property <bool> ltv;
+    in property <bool> busy;
+    in property <string> busy-text;
+
+    callback action(what: string, value: string);
+    callback card-clicked(index: int);
+    callback card-toggled(index: int);
+}
+
+// A strip over the pages with the overall verdict of the document's signatures.
+export component SignatureBanner inherits Rectangle {
+    height: 36px;
+    background: SigningState.level < 0 ? Theme.track : Verdicts.soft[SigningState.level];
+    accessible-role: none;
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 8px;
+        spacing: 10px;
+        Rectangle {
+            width: 18px;
+            height: 18px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 9px;
+            background: SigningState.checking ? Theme.faint : Verdicts.colours[max(0, SigningState.level)];
+            Text {
+                text: SigningState.checking ? "…" : Verdicts.marks[max(0, SigningState.level)];
+                color: Theme.dark ? #000000 : #FFFFFF;
+                font-size: 11px;
+                font-weight: 700;
+            }
+        }
+        Text {
+            text: SigningState.checking ? @tr("Checking the signatures…") : SigningState.banner;
+            color: Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+            accessible-role: text;
+            accessible-label: @tr("Signature status: {}", self.text);
+            accessible-live-region: polite;
+        }
+        Button {
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+            text: SigningState.panel-open ? @tr("Hide signatures") : @tr("Signature details");
+            clicked => {
+                SigningState.panel-open = !SigningState.panel-open;
+            }
+        }
+    }
+    Rectangle {
+        y: root.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+}
+
+component Detail inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    spacing: 8px;
+    visible: value != "";
+    height: value != "" ? self.preferred-height : 0px;
+    Text {
+        text: root.label;
+        color: Theme.muted;
+        font-size: Theme.font-small;
+        width: 72px;
+    }
+    Text {
+        text: root.value;
+        color: Theme.text;
+        font-size: Theme.font-small;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+        horizontal-stretch: 1;
+        accessible-role: text;
+        accessible-label: root.label + ": " + root.value;
+    }
+}
+
+component Card inherits Rectangle {
+    in property <SigCard> card;
+    in property <int> index;
+    border-radius: 9px;
+    border-width: 1px;
+    border-color: Theme.border;
+    background: Theme.chrome;
+    height: body.preferred-height;
+    body := VerticalLayout {
+        padding: 10px;
+        spacing: 6px;
+        head := Pressable {
+            height: head-row.preferred-height;
+            label: root.card.summary;
+            description: @tr("Show the signed area");
+            clicked => {
+                SigningState.card-clicked(root.index);
+            }
+            head-row := HorizontalLayout {
+                spacing: 8px;
+                Rectangle {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 9px;
+                    background: Verdicts.colours[root.card.level];
+                    Text {
+                        text: Verdicts.marks[root.card.level];
+                        color: Theme.dark ? #000000 : #FFFFFF;
+                        font-size: 11px;
+                        font-weight: 700;
+                    }
+                }
+                VerticalLayout {
+                    spacing: 2px;
+                    Text {
+                        text: root.card.summary;
+                        color: Theme.text;
+                        font-weight: 600;
+                        wrap: word-wrap;
+                        line-height-factor: 1.15;
+                    }
+                    Text {
+                        text: root.card.page > 0 ? @tr("{} · page {} · {}", root.card.kind, root.card.page, root.card.field) : root.card.kind + " · " + root.card.field;
+                        color: Theme.muted;
+                        font-size: Theme.font-small;
+                        wrap: word-wrap;
+                        line-height-factor: 1.15;
+                    }
+                }
+            }
+        }
+        for p in root.card.problems: Text {
+            text: p;
+            color: Theme.danger;
+            font-size: Theme.font-small;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+        }
+        Detail {
+            label: @tr("Signer");
+            value: root.card.signer;
+        }
+        Detail {
+            // TRANSLATORS: label before the date and time of signing
+            label: @tr("Signed");
+            value: root.card.time;
+        }
+        if root.card.expanded: VerticalLayout {
+            spacing: 6px;
+            Detail {
+                label: @tr("Timestamp");
+                value: root.card.timestamp;
+            }
+            Detail {
+                label: @tr("Reason");
+                value: root.card.reason;
+            }
+            Detail {
+                label: @tr("Location");
+                value: root.card.location;
+            }
+            Detail {
+                // TRANSLATORS: noun, whether the signer's certificate is trusted
+                label: @tr("Trust");
+                value: root.card.trust;
+            }
+            Detail {
+                label: @tr("Revocation");
+                value: root.card.revocation;
+            }
+            Detail {
+                // TRANSLATORS: label before which part of the document the signature covers
+                label: @tr("Covers");
+                value: root.card.revision;
+            }
+            Detail {
+                label: @tr("LTV");
+                value: root.card.ltv;
+            }
+            if root.card.chain.length > 0: SectionLabel {
+                text: @tr("Certificate chain");
+            }
+            for c[i] in root.card.chain: Text {
+                x: i * 8px;
+                text: (i > 0 ? "↳ " : "") + c;
+                color: Theme.text;
+                font-size: Theme.font-small;
+                wrap: word-wrap;
+                line-height-factor: 1.15;
+            }
+            SectionLabel {
+                text: root.card.changes.length == 0 ? @tr("No changes since signing") : @tr("Changes since signing");
+            }
+            for ch in root.card.changes: HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: ch.allowed ? "✓" : "✕";
+                    color: ch.allowed ? Verdicts.colours[0] : Theme.danger;
+                    font-size: Theme.font-small;
+                    width: 12px;
+                }
+                Text {
+                    text: ch.allowed ? @tr("{} (allowed)", ch.text) : @tr("{} (not allowed)", ch.text);
+                    color: Theme.text;
+                    font-size: Theme.font-small;
+                    wrap: word-wrap;
+                    line-height-factor: 1.15;
+                    horizontal-stretch: 1;
+                }
+            }
+            for w in root.card.warnings: Text {
+                text: w;
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                wrap: word-wrap;
+                line-height-factor: 1.15;
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                text: root.card.expanded ? @tr("Fewer details") : @tr("More details");
+                clicked => {
+                    SigningState.card-toggled(root.index);
+                }
+            }
+            if root.card.can-trust: Button {
+                text: @tr("Trust this certificate");
+                clicked => {
+                    SigningState.action("trust-card", root.index);
+                }
+            }
+        }
+    }
+}
+
+// Every signature of the document, with what was checked.
+export component SignaturesPanel inherits Panel {
+    width: 320px;
+    title: @tr("Signatures");
+    closable: true;
+    border-left: true;
+    region: 4;
+    close => {
+        SigningState.panel-open = false;
+    }
+    sv := ScrollView {
+        vertical-stretch: 1;
+        VerticalLayout {
+            width: sv.visible-width;
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: 16px;
+            spacing: 10px;
+            alignment: start;
+            if SigningState.checking: Hint {
+                text: @tr("Checking the signatures…");
+            }
+            if !SigningState.checking && SigningState.cards.length == 0: Hint {
+                text: @tr("This document has no signatures.");
+            }
+            for c[i] in SigningState.cards: Card {
+                card: c;
+                index: i;
+            }
+            Divider { }
+            Button {
+                text: @tr("Sign with a certificate…");
+                icon: @image-url("icons/sign.svg");
+                clicked => {
+                    SigningState.action("open-sign", "");
+                }
+            }
+            if SigningState.cards.length > 0: Button {
+                text: @tr("Add validation info…");
+                clicked => {
+                    SigningState.action("ltv", "");
+                }
+            }
+            Button {
+                text: @tr("Trusted certificates…");
+                icon: @image-url("icons/shield.svg");
+                clicked => {
+                    SigningState.action("open-trust", "");
+                }
+            }
+            if SigningState.cards.length > 0: Hint {
+                text: @tr("Validation info embeds the certificates and their revocation status, fetched from the issuers' servers, so the signatures can be checked in years to come.");
+            }
+        }
+    }
+}
+
+export component SignCertDialog inherits Dialog {
+    title: @tr("Sign with a certificate");
+    card-width: 520px;
+    Heading {
+        text: @tr("Sign with a certificate");
+    }
+    Body {
+        text: @tr("A digital signature proves who signed and that nothing changed since. The signed copy is saved as a new file.");
+    }
+    if SigningState.store-ids.length > 0: Field {
+        label: @tr("Sign with");
+        Choice {
+            model: SigningState.id-choices;
+            current-index <=> SigningState.id-source;
+            label: @tr("Digital ID");
+        }
+    }
+    if SigningState.store-loading: Hint {
+        text: @tr("Looking for certificates on this computer…");
+    }
+    if SigningState.id-source > 0: VerticalLayout {
+        spacing: 6px;
+        Detail {
+            label: @tr("Issued to");
+            value: SigningState.store-ids[SigningState.id-source - 1].subject;
+        }
+        Detail {
+            label: @tr("Issued by");
+            value: SigningState.store-ids[SigningState.id-source - 1].issuer;
+        }
+        Detail {
+            label: @tr("Valid until");
+            value: SigningState.store-ids[SigningState.id-source - 1].expires;
+        }
+        Detail {
+            label: @tr("Kept in");
+            value: SigningState.store-ids[SigningState.id-source - 1].location;
+        }
+        Hint {
+            text: @tr("The key stays there: the system may ask for your PIN or permission when you sign.");
+        }
+    }
+    if SigningState.id-source == 0: VerticalLayout {
+        spacing: 12px;
+        Field {
+            label: @tr("Digital ID (.p12, .pfx or .pem)");
+            HorizontalLayout {
+                spacing: 8px;
+                PathText {
+                    horizontal-stretch: 1;
+                    path: SigningState.id-path;
+                    placeholder: @tr("No ID chosen");
+                }
+                Button {
+                    text: @tr("Choose…");
+                    clicked => {
+                        SigningState.action("choose-id", "");
+                    }
+                }
+            }
+        }
+        if SigningState.saved-ids.length > 0: HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            Text {
+                text: @tr("Your IDs:");
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                vertical-alignment: center;
+            }
+            for id[i] in SigningState.saved-ids: Button {
+                height: 26px;
+                text: id;
+                clicked => {
+                    SigningState.action("use-id", i);
+                }
+            }
+        }
+        Field {
+            label: @tr("Password of the ID");
+            TextField {
+                password: true;
+                text <=> SigningState.id-password;
+                placeholder: @tr("Password");
+                label: @tr("ID password");
+            }
+        }
+    }
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Create a self-signed ID…");
+            clicked => {
+                SigningState.action("open-create-id", "");
+            }
+        }
+    }
+    Divider { }
+    Field {
+        label: @tr("Where");
+        Choice {
+            model: SigningState.field-choices;
+            current-index <=> SigningState.field-choice;
+            label: @tr("Signature field");
+        }
+    }
+    if SigningState.has-ink && SigningState.field-choice != 1: Check {
+        text: @tr("Show my handwritten signature (“{}”)", SigningState.ink-name);
+        checked <=> SigningState.show-ink;
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        Field {
+            horizontal-stretch: 1;
+            label: @tr("Reason (optional)");
+            TextField {
+                text <=> SigningState.reason;
+                placeholder: @tr("I approve this document");
+                label: @tr("Reason");
+            }
+        }
+        Field {
+            horizontal-stretch: 1;
+            label: @tr("Location (optional)");
+            TextField {
+                text <=> SigningState.location;
+                placeholder: @tr("City");
+                label: @tr("Location");
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        Field {
+            horizontal-stretch: 1;
+            // TRANSLATORS: field choosing whether the signature certifies the document
+            label: @tr("Certify");
+            Choice {
+                model: [@tr("Don't certify"), @tr("Certify: no changes"), @tr("Certify: allow form filling"), @tr("Certify: allow forms and comments")];
+                current-index <=> SigningState.certify;
+                label: @tr("Certify");
+            }
+        }
+        Field {
+            horizontal-stretch: 1;
+            label: @tr("Lock fields");
+            Choice {
+                model: [@tr("Don't lock"), @tr("Lock this field"), @tr("Lock all fields")];
+                current-index <=> SigningState.lock;
+                label: @tr("Lock fields");
+            }
+        }
+    }
+    Check {
+        text: @tr("Add a trusted timestamp from a server");
+        checked <=> SigningState.timestamp;
+    }
+    if SigningState.timestamp: Field {
+        label: @tr("Timestamp server address (RFC 3161); the document's hash is sent there");
+        TextField {
+            text <=> SigningState.tsa-url;
+            placeholder: "https://";
+            label: @tr("Timestamp server");
+        }
+    }
+    Check {
+        text: SigningState.timestamp ? @tr("Add validation info and a document timestamp (long-term validation)") : @tr("Add validation info (long-term validation)");
+        checked <=> SigningState.ltv;
+    }
+    if SigningState.busy: Hint {
+        text: SigningState.busy-text;
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Cancel");
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+        Button {
+            text: SigningState.field-choice == 0 ? @tr("Place and sign…") : @tr("Sign and save as…");
+            primary: true;
+            enabled: !SigningState.busy && (SigningState.id-source > 0 || SigningState.id-path != "");
+            clicked => {
+                SigningState.action("sign", "");
+            }
+        }
+    }
+}
+
+export component CreateIdDialog inherits Dialog {
+    title: @tr("Create a self-signed ID");
+    card-width: 460px;
+    Heading {
+        text: @tr("Create a self-signed ID");
+    }
+    Body {
+        text: @tr("Your ID is kept on this device, protected by its password. Others see your signatures as intact, but trust them only once they trust your certificate.");
+    }
+    Field {
+        label: @tr("Your name");
+        name := TextField {
+            label: @tr("Name");
+            placeholder: @tr("Name");
+        }
+    }
+    Field {
+        label: @tr("E-mail (optional)");
+        email := TextField {
+            label: @tr("E-mail");
+            placeholder: "name@example.org";
+        }
+    }
+    Field {
+        label: @tr("Password");
+        pw := TextField {
+            password: true;
+            label: @tr("New ID password");
+            placeholder: @tr("Password");
+        }
+    }
+    Field {
+        label: @tr("Repeat the password");
+        pw2 := TextField {
+            password: true;
+            label: @tr("Repeat password");
+            placeholder: @tr("Password");
+            error: pw2.text != "" && pw2.text != pw.text;
+        }
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Cancel");
+            clicked => {
+                SigningState.action("open-sign", "");
+            }
+        }
+        Button {
+            text: @tr("Create ID");
+            primary: true;
+            enabled: name.text != "" && pw.text != "" && pw.text == pw2.text && !SigningState.busy;
+            clicked => {
+                SigningState.action("create-id", name.text + "\u{1f}" + email.text + "\u{1f}" + pw.text);
+            }
+        }
+    }
+}
+
+export component TrustDialog inherits Dialog {
+    title: @tr("Trusted certificates");
+    card-width: 540px;
+    Heading {
+        text: @tr("Trusted certificates");
+    }
+    Body {
+        text: @tr("Signatures are trusted when their certificates lead to one of these, or to one of the {} root certificates of this computer.", SigningState.system-count);
+    }
+    if SigningState.trusted.length == 0: Hint {
+        text: @tr("You have not added any certificates.");
+    }
+    for r[i] in SigningState.trusted: HorizontalLayout {
+        spacing: 8px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            Text {
+                text: r.name;
+                color: Theme.text;
+                font-weight: 500;
+                overflow: elide;
+            }
+            Text {
+                text: r.detail;
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                overflow: elide;
+            }
+            Text {
+                text: "SHA-256 " + r.fingerprint;
+                color: Theme.faint;
+                font-size: 10px;
+                overflow: elide;
+            }
+        }
+        Button {
+            y: (parent.height - self.height) / 2;
+            text: @tr("Remove");
+            clicked => {
+                SigningState.action("untrust", r.fingerprint);
+            }
+        }
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Add certificate…");
+            clicked => {
+                SigningState.action("add-trust", "");
+            }
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+        }
+        Button {
+            text: @tr("Done");
+            primary: true;
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+    }
+}

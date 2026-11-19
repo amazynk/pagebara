@@ -1,0 +1,34 @@
+[package]
+name = "pagebara-actions"
+description = "Headless file actions for file-manager menus and scripts: merge, split, rotate, compress, pages to images, images to PDF, text recognition, PDF/A and conformance checks, form data and field detection"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-annot.workspace = true
+pagebara-render.workspace = true
+pagebara-png.workspace = true
+pagebara-signatures.workspace = true
+pagebara-ocr.workspace = true
+pagebara-forms.workspace = true
+pagebara-fdf.workspace = true
+pagebara-formdetect.workspace = true
+pagebara-os.workspace = true
+pagebara-optimize.workspace = true
+pagebara-conform.workspace = true
+pagebara-stamp.workspace = true
+pagebara-flatten.workspace = true
+pagebara-compare.workspace = true
+serde_json.workspace = true
+rayon.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+pagebara-thread.workspace = true
+pagebara-samples.workspace = true
+
+[lints]
+workspace = true

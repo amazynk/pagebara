@@ -1,0 +1,20 @@
+# size: 1180x820
+# Tablets: the tools in the header, page thumbnails beside the pages, the signature
+# library in a side panel.
+open "$SAMPLES/report.pdf"
+wait 600
+assert tablet == true
+click "Pages" 200
+assert sheet == pages
+wait 600
+screenshot 05-tablet-pages.png
+click "Sign" 200
+assert tool == sign
+assert sheet == pages
+wait 300
+assert gap-y:SignatureLibrary::draw-button,SignatureLibrary::photo-button >= 10
+assert gap-y:SignatureLibrary::photo-button,SignatureLibrary::placement-hint >= 12
+screenshot 05-tablet-sign.png
+click "Highlight" 200
+drag text 1 "Quarterly report" text-end 1 "Quarterly report" 400
+assert annotations == 1

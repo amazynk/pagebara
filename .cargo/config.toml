@@ -1,0 +1,8 @@
+# x86-64-v3 (AVX2/FMA/BMI2, Haswell 2013+ / Zen 1+) as the baseline: std::simd compiles to AVX2
+# without runtime dispatch or unsafe. aarch64 always has NEON.
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=x86-64-v3"]
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-cpu=x86-64-v3", "-C", "target-feature=+crt-static"]
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "target-cpu=x86-64-v3"]

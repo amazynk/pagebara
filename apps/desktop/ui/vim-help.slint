@@ -1,0 +1,198 @@
+import { AppState, DialogKind } from "state.slint";
+import { Theme } from "theme.slint";
+import { Pressable, Keys } from "components/button.slint";
+import { Dialog, Divider, KeepInView } from "components/panel.slint";
+import { RowLayout } from "components/row.slint";
+import { Body } from "components/dialog-parts.slint";
+import { VimGuide, VimGroup, VimKeycap } from "vim-bindings.slint";
+import { VimMotionPad } from "vim-motion-pad.slint";
+
+component BindingCard inherits Rectangle {
+    in property <VimGroup> group;
+    min-height: rows.preferred-height;
+    border-color: Theme.high-contrast ? Theme.control-border : Theme.border;
+    border-width: 1px; border-radius: Theme.radius; background: Theme.chrome;
+    rows := VerticalLayout {
+        padding: 13px; spacing: 2px;
+        Body {
+            text: root.group.title; font-size: Theme.font-title; font-weight: 700;
+            color: Theme.text; accessible-role: text;
+        }
+        Rectangle { height: 5px; }
+        for binding[i] in root.group.items: VerticalLayout {
+            if i > 0: Divider {}
+            line := RowLayout {
+                padding-top: 4px; padding-bottom: 4px; spacing: 7px;
+                accessible-role: text;
+                accessible-label: binding.action + ", " + Keys.label(binding.keys, true);
+                Body {
+                    horizontal-stretch: 1; min-width: 0px; line-height-factor: 1.15;
+                    text: binding.action; color: Theme.text; font-size: Theme.font-body;
+                    vertical-alignment: center; accessible-role: none;
+                }
+                VimKeycap { keys: binding.keys; cross-axis-self-alignment: center; }
+            }
+        }
+    }
+}
+
+export component VimHelp inherits Dialog {
+    title: @tr("Vim shortcuts");
+    card-width: 806px; content-padding: 1px; auto-focus: false;
+    property <length> sheet-width: min(root.width - 32px, root.card-width) - 2px;
+    property <length> gutter: root.sheet-width < 580px ? 14px : 22px;
+    property <length> body-width: root.sheet-width - 2 * root.gutter - 6px;
+    property <int> columns: root.body-width < 570px * min(Theme.text-scale, 1.3) ? 1 : 2;
+    property <int> topic;
+    function choose(index: int) {
+        root.topic = clamp(index, 0, VimGuide.topics.length - 1);
+        scroll.content-y = 0px;
+        tabs.focus();
+    }
+    cancel => {
+        if AppState.dialog == DialogKind.vim-help-from-shortcuts { AppState.show-dialog(DialogKind.shortcuts); }
+        else { AppState.dialog-action("cancel", ""); }
+    }
+
+    shell := FocusScope {
+        width: root.sheet-width; height: min(590px, root.height - 30px);
+        focus-on-tab-navigation: false;
+        capture-key-pressed(e) => {
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt { return reject; }
+            if e.text == "q" { root.cancel(); return accept; }
+            if e.text == Key.RightArrow || e.text == Key.LeftArrow {
+                root.choose(root.topic + ((e.text == Key.RightArrow) != Theme.rtl ? 1 : -1));
+                return accept;
+            }
+            reject
+        }
+        key-pressed(e) => {
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt { return reject; }
+            let step = Theme.font-body * 2;
+            let page = max(step, scroll.height - step);
+            let dy = e.text == "j" || e.text == Key.DownArrow ? step : e.text == "k" || e.text == Key.UpArrow ? -step
+                : e.text == Key.PageDown ? page : e.text == Key.PageUp ? -page : 0px;
+            if dy != 0px {
+                scroll.content-y = clamp(scroll.content-y - dy, min(0px, scroll.height - scroll.content-height), 0px);
+                return accept;
+            }
+            reject
+        }
+        VerticalLayout {
+            header := RowLayout {
+                padding-left: root.gutter; padding-right: root.gutter; spacing: 12px;
+                height: 64px * min(Theme.text-scale, 1.25); cross-axis-alignment: center;
+                Rectangle {
+                    width: 37px; height: 37px; border-radius: 9px;
+                    background: VimGuide.ink; border-color: Theme.control-border;
+                    border-width: Theme.high-contrast ? 1px : 0px;
+                    Image { width: 24px; height: 24px; colorize: VimGuide.mint; source: @image-url("icons/keyboard.svg"); }
+                }
+                Body {
+                    text: root.title; font-size: 23px * Theme.text-scale; font-weight: 700;
+                    color: Theme.text; horizontal-stretch: 1; accessible-role: text;
+                }
+                Pressable {
+                    width: 31px; height: 31px;
+                    label: @tr("Close"); border-radius: 6px;
+                    background: self.has-hover ? Theme.hover : transparent;
+                    clicked => { root.cancel(); }
+                    Image { width: 16px; height: 16px; source: @image-url("icons/close.svg"); colorize: Theme.muted; }
+                }
+            }
+            tabs := FocusScope {
+                accessible-role: tab-list; accessible-label: @tr("Vim topics");
+                height: max(38px, Theme.font-body + 18px);
+                init => { self.focus(); }
+                for item[i] in VimGuide.topics: Rectangle {
+                    width: (root.sheet-width - 2 * root.gutter) / 4; height: tabs.height;
+                    x: root.gutter + (Theme.rtl ? 3 - i : i) * self.width;
+                    accessible-role: tab; accessible-label: item.title;
+                    accessible-item-selectable: true; accessible-item-selected: root.topic == i;
+                    accessible-action-default => { root.choose(i); }
+                    background: root.topic == i ? (Theme.high-contrast ? Theme.accent-soft : VimGuide.green.with-alpha(0.10)) : hit.has-hover ? Theme.hover : transparent;
+                    border-radius: 5px;
+                    border-width: tabs.has-focus && root.topic == i ? 1px : 0px;
+                    border-color: VimGuide.green;
+                    RowLayout {
+                        alignment: center; cross-axis-alignment: center; spacing: 6px;
+                        if root.sheet-width > 460px * Theme.text-scale: Image {
+                            width: 15px; height: 15px; source: item.icon;
+                            colorize: root.topic == i ? VimGuide.green : Theme.muted;
+                        }
+                        Text {
+                            text: item.title; font-size: Theme.font-body; font-weight: root.topic == i ? 650 : 500;
+                            color: root.topic == i ? VimGuide.green : Theme.muted;
+                            accessible-role: none;
+                        }
+                    }
+                    hit := TouchArea { mouse-cursor: pointer; clicked => { root.choose(i); } }
+                }
+            }
+            Rectangle { height: 12px; }
+            Divider {}
+            scroll := KeepInView {
+                width: root.sheet-width;
+                vertical-stretch: 1; min-height: 0px;
+                inner-height: content.preferred-height;
+                Rectangle { width: root.sheet-width; height: scroll.content-height; background: Theme.canvas; }
+                content := VerticalLayout {
+                    y: 0px; x: root.gutter;
+                    width: root.body-width; height: self.preferred-height;
+                    padding-top: 15px; padding-bottom: 15px; spacing: 12px;
+                    alignment: start;
+                    if root.topic == 0: VimMotionPad { pad-width: root.body-width; }
+                    if root.topic != 0: Rectangle {
+                        background: VimGuide.ink; border-radius: Theme.radius;
+                        border-width: 1px; border-color: Theme.high-contrast ? Theme.control-border : #365248;
+                        min-height: example.preferred-height;
+                        example := VerticalLayout {
+                            padding: 16px; spacing: 10px;
+                            Body {
+                                text: VimGuide.topics[root.topic].example.title; color: VimGuide.paper;
+                                font-size: Theme.font-heading; font-weight: 700; accessible-role: text;
+                            }
+                            RowLayout {
+                                spacing: 10px; cross-axis-alignment: start;
+                                for step in VimGuide.topics[root.topic].example.items: VerticalLayout {
+                                    spacing: 5px; width: (root.body-width - 52px) / 3;
+                                    RowLayout {
+                                        alignment: start;
+                                        VimKeycap { keys: step.keys; inverse: true; }
+                                    }
+                                    Body {
+                                        text: step.action; color: VimGuide.paper; font-size: Theme.font-small;
+                                        accessible-role: text; accessible-label: step.keys + ", " + step.action;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    RowLayout {
+                        spacing: 12px; cross-axis-alignment: start;
+                        for col in root.columns: VerticalLayout {
+                            width: (root.body-width - (root.columns - 1) * 12px) / root.columns;
+                            spacing: 12px;
+                            for row in ceil((VimGuide.topics[root.topic].groups.length - col) / (root.columns * 1.0)): BindingCard {
+                                group: VimGuide.topics[root.topic].groups[row * root.columns + col];
+                            }
+                        }
+                    }
+                }
+            }
+            Divider {}
+            RowLayout {
+                padding-left: root.gutter; padding-right: root.gutter; spacing: 7px;
+                height: max(38px, Theme.font-small + 23px); cross-axis-alignment: center;
+                VimKeycap { keys: "← →"; }
+                Text { text: @tr("Topics"); color: Theme.muted; font-size: Theme.font-small; }
+                Rectangle { width: 6px; }
+                VimKeycap { keys: "j k"; }
+                Text { text: @tr("Scroll"); color: Theme.muted; font-size: Theme.font-small; }
+                Rectangle { horizontal-stretch: 1; }
+                VimKeycap { keys: "q"; }
+                Text { text: @tr("Close"); color: Theme.muted; font-size: Theme.font-small; }
+            }
+        }
+    }
+}

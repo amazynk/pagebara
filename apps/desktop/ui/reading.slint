@@ -1,0 +1,560 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button, IconButton, Pressable, Keys } from "components/button.slint";
+import { MenuCard, Divider } from "components/panel.slint";
+import { TextField } from "components/text-field.slint";
+
+// One block of the reading view. kind: 0 paragraph, 1-3 heading level, 4 image
+// placeholder, 5 the start of a page.
+export struct ReflowRow {
+    page: int,
+    kind: int,
+    text: string,
+}
+
+export struct BookmarkRow {
+    page: int,
+    title: string,
+    label: string,
+    current: bool,
+}
+
+// Reading modes: page layout and colours, the reading view, presenting, bookmarks.
+export global ReadingState {
+    // Index of the layout: continuous, single page, two pages, book, horizontal.
+    in property <int> layout;
+    // Index of the page colours: normal, dark, sepia, high contrast.
+    in property <int> page-theme;
+    in property <color> paper: #FFFFFF;
+    in property <color> ink: #18181B;
+
+    in property <bool> reflow;
+    in property <bool> reflow-busy;
+    in property <[ReflowRow]> reflow-rows;
+    in property <float> reflow-size: 17;
+
+    in property <bool> presenting;
+    in property <image> present-image;
+    in property <bool> present-black;
+    in property <string> present-label;
+
+    in property <bool> bookmarks-visible;
+    in property <[BookmarkRow]> bookmarks;
+    in property <bool> page-bookmarked;
+
+    callback set-layout(index: int);
+    callback set-page-theme(index: int);
+    callback toggle-reflow();
+    callback reflow-zoom(steps: int);
+    callback reflow-open(page: int);
+    callback present();
+    callback present-step(forward: bool);
+    callback present-resized(width: float, height: float);
+    callback toggle-bookmark();
+    callback show-bookmarks(visible: bool);
+    callback bookmark-open(index: int);
+    callback bookmark-rename(index: int, title: string);
+    callback bookmark-delete(index: int);
+    callback bookmarks-to-outline();
+}
+
+// A menu row that is one of a set of choices, ticked when chosen.
+component ChoiceItem inherits Pressable {
+    in property <string> text;
+    in property <bool> chosen;
+    in property <string> shortcut;
+    in property <bool> checkable: true;
+    in property <bool> initial-focus;
+    init => {
+        if initial-focus {
+            self.focus-row();
+        }
+    }
+    height: Theme.row-height;
+    border-radius: Theme.radius-small;
+    background: self.has-hover || self.has-focus ? Theme.hover : transparent;
+    label: text;
+    description: shortcut != "" ? @tr("Shortcut {}", shortcut) : "";
+    accessible-checkable: checkable;
+    accessible-checked: chosen;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 10px;
+        Rectangle {
+            width: 16px;
+            if root.chosen: Image {
+                source: @image-url("icons/check.svg");
+                width: 16px;
+                height: 16px;
+                colorize: Theme.accent-fg;
+                accessible-role: none;
+            }
+        }
+        Text {
+            text: root.text;
+            color: Theme.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            accessible-role: none;
+        }
+        if root.shortcut != "": Text {
+            text: root.shortcut;
+            color: Theme.faint;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+}
+
+component MenuHeading inherits Text {
+    color: Theme.muted;
+    font-size: Theme.font-small;
+    font-weight: 600;
+    height: 26px;
+    vertical-alignment: center;
+    x: 12px;
+}
+
+// The toolbar's reading options: layout, page colours, reading view, presenting.
+export component ViewMenu inherits Rectangle {
+    in property <bool> has-doc;
+    width: btn.width;
+    height: btn.height;
+
+    btn := IconButton {
+        icon: @image-url("icons/layout.svg");
+        label: @tr("Reading options");
+        enabled: root.has-doc;
+        clicked => {
+            menu.show();
+        }
+    }
+
+    menu := PopupWindow {
+        x: Theme.rtl ? 0px : root.width - 250px;
+        y: root.height + 6px;
+        width: 250px;
+        MenuCard {
+            MenuHeading {
+                text: @tr("Layout");
+            }
+            for name[i] in [@tr("Continuous"), @tr("Single page"), @tr("Two pages"), @tr("Book"), @tr("Horizontal")]: ChoiceItem {
+                text: name;
+                chosen: ReadingState.layout == i;
+                initial-focus: i == 0;
+                clicked => {
+                    menu.close();
+                    ReadingState.set-layout(i);
+                }
+            }
+            Divider { }
+            MenuHeading {
+                text: @tr("Page colours");
+            }
+            for name[i] in [@tr("Normal"), @tr("Dark"), @tr("Sepia"), @tr("High contrast")]: ChoiceItem {
+                text: name;
+                chosen: ReadingState.page-theme == i;
+                clicked => {
+                    menu.close();
+                    ReadingState.set-page-theme(i);
+                }
+            }
+            Divider { }
+            ChoiceItem {
+                text: @tr("Reading view");
+                chosen: ReadingState.reflow;
+                shortcut: "Ctrl+Shift+R";
+                clicked => {
+                    menu.close();
+                    ReadingState.toggle-reflow();
+                }
+            }
+            ChoiceItem {
+                text: @tr("Present");
+                shortcut: "F5";
+                checkable: false;
+                clicked => {
+                    menu.close();
+                    ReadingState.present();
+                }
+            }
+            ChoiceItem {
+                text: ReadingState.page-bookmarked ? @tr("Remove bookmark") : @tr("Bookmark this page");
+                shortcut: "Ctrl+D";
+                checkable: false;
+                clicked => {
+                    menu.close();
+                    ReadingState.toggle-bookmark();
+                }
+            }
+            ChoiceItem {
+                text: @tr("Bookmarks");
+                chosen: ReadingState.bookmarks-visible;
+                shortcut: "Ctrl+B";
+                clicked => {
+                    menu.close();
+                    ReadingState.show-bookmarks(!ReadingState.bookmarks-visible);
+                }
+            }
+        }
+    }
+}
+
+// The reading view: the text re-flowed into one comfortable column.
+export component ReflowView inherits Rectangle {
+    background: ReadingState.paper;
+    accessible-role: main;
+    accessible-label: @tr("Reading view");
+    forward-focus: keys;
+
+    property <length> column: min(root.width - 48px, ReadingState.reflow-size * 1px * 38);
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
+                return accept;
+            }
+            if e.text == Key.DownArrow || e.text == Key.PageDown || e.text == " " {
+                flick.content-y = max(flick.height - flick.content-height, flick.content-y - (e.text == Key.DownArrow ? 48px : flick.height - 48px));
+                return accept;
+            }
+            if e.text == Key.UpArrow || e.text == Key.PageUp {
+                flick.content-y = min(0px, flick.content-y + (e.text == Key.UpArrow ? 48px : flick.height - 48px));
+                return accept;
+            }
+            reject
+        }
+        init => {
+            self.focus();
+        }
+
+        VerticalLayout {
+            Rectangle {
+                height: 44px;
+                background: Theme.chrome;
+                HorizontalLayout {
+                    padding-left: 14px;
+                    padding-right: 10px;
+                    spacing: 4px;
+                    Text {
+                        text: ReadingState.reflow-busy ? @tr("Reading view · preparing…") : @tr("Reading view");
+                        color: Theme.muted;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    IconButton {
+                        y: (parent.height - self.height) / 2;
+                        icon: @image-url("icons/minus.svg");
+                        label: @tr("Smaller text");
+                        clicked => {
+                            ReadingState.reflow-zoom(-1);
+                        }
+                    }
+                    Text {
+                        text: @tr("{} pt", round(ReadingState.reflow-size));
+                        color: Theme.muted;
+                        font-size: Theme.font-small;
+                        vertical-alignment: center;
+                        width: 40px;
+                        horizontal-alignment: center;
+                    }
+                    IconButton {
+                        y: (parent.height - self.height) / 2;
+                        icon: @image-url("icons/plus.svg");
+                        label: @tr("Larger text");
+                        clicked => {
+                            ReadingState.reflow-zoom(1);
+                        }
+                    }
+                    Rectangle {
+                        width: 8px;
+                    }
+                    Button {
+                        y: (parent.height - self.height) / 2;
+                        height: Theme.control-height;
+                        text: @tr("Show pages");
+                        clicked => {
+                            ReadingState.toggle-reflow();
+                        }
+                    }
+                }
+                Rectangle {
+                    y: parent.height - 1px;
+                    height: 1px;
+                    background: Theme.border;
+                }
+            }
+
+            flick := Flickable {
+                vertical-stretch: 1;
+                content-height: col.preferred-height;
+                content-width: self.width;
+
+                col := VerticalLayout {
+                    x: (flick.width - root.column) / 2;
+                    width: root.column;
+                    padding-top: 28px;
+                    padding-bottom: 64px;
+                    spacing: ReadingState.reflow-size * 0.7px;
+
+                    if ReadingState.reflow-rows.length == 0 && !ReadingState.reflow-busy: Text {
+                        text: @tr("This document has no text to show. Scanned pages need text recognition first.");
+                        color: ReadingState.ink;
+                        font-size: ReadingState.reflow-size * 1px;
+                        wrap: word-wrap;
+                    }
+
+                    for r in ReadingState.reflow-rows: VerticalLayout {
+                        if r.kind <= 3: Text {
+                            accessible-role: text;
+                            accessible-label: r.text;
+                            accessible-description: r.kind == 0 ? "" : @tr("Heading level {}", r.kind);
+                            text: r.text;
+                            color: ReadingState.ink;
+                            wrap: word-wrap;
+                            font-size: ReadingState.reflow-size * (r.kind == 1 ? 1.6 : r.kind == 2 ? 1.35 : r.kind == 3 ? 1.15 : 1) * 1px;
+                            font-weight: r.kind == 0 ? 400 : 650;
+                            // Body text spaced for reading; headings a little tighter.
+                            line-height-factor: r.kind == 0 ? 1.5 : 1.2;
+                        }
+                        if r.kind == 4: Pressable {
+                            height: max(ReadingState.reflow-size * 3.2px, alt.preferred-height + 12px);
+                            label: r.text != "" ? @tr("Figure: {}", r.text) : @tr("Image");
+                            description: @tr("Shown on page {}. Enter shows the page", r.page);
+                            clicked => {
+                                ReadingState.reflow-open(r.page - 1);
+                            }
+                            border-radius: Theme.radius-small;
+                            border-width: 1px;
+                            border-color: ReadingState.ink.with-alpha(0.25);
+                            alt := Text {
+                                width: parent.width - 24px;
+                                text: (r.text != "" ? r.text + " · " : "") + @tr("Image (shown on page {})", r.page);
+                                color: ReadingState.ink.with-alpha(0.75);
+                                font-size: ReadingState.reflow-size * 0.8px;
+                                wrap: word-wrap;
+                                horizontal-alignment: center;
+                                accessible-role: none;
+                            }
+                        }
+                        if r.kind == 5: HorizontalLayout {
+                            spacing: 8px;
+                            Rectangle {
+                                height: 1px;
+                                y: parent.height / 2;
+                                horizontal-stretch: 1;
+                                background: ReadingState.ink.with-alpha(0.15);
+                            }
+                            Text {
+                                text: r.text;
+                                color: ReadingState.ink.with-alpha(0.5);
+                                font-size: ReadingState.reflow-size * 0.7px;
+                                vertical-alignment: center;
+                                TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        ReadingState.reflow-open(r.page - 1);
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                height: 1px;
+                                y: parent.height / 2;
+                                horizontal-stretch: 1;
+                                background: ReadingState.ink.with-alpha(0.15);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Presenting: one page fitted to the full screen. Click, arrows, Space and Page Up/Down
+// move through the pages, B blanks the screen, Esc stops.
+export component PresentationView inherits Rectangle {
+    background: #000000;
+    accessible-role: main;
+    accessible-label: @tr("Presentation");
+    forward-focus: keys;
+
+    changed width => {
+        ReadingState.present-resized(self.width / 1px, self.height / 1px);
+    }
+    changed height => {
+        ReadingState.present-resized(self.width / 1px, self.height / 1px);
+    }
+    init => {
+        ReadingState.present-resized(self.width / 1px, self.height / 1px);
+    }
+
+    Image {
+        source: ReadingState.present-image;
+        width: parent.width;
+        height: parent.height;
+        image-fit: contain;
+        accessible-role: image;
+        accessible-label: ReadingState.present-label;
+    }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
+                return accept;
+            }
+            reject
+        }
+        init => {
+            self.focus();
+        }
+        TouchArea {
+            mouse-cursor: ReadingState.present-black ? MouseCursor.none : MouseCursor.default;
+            pointer-event(e) => {
+                if e.kind == PointerEventKind.down {
+                    keys.focus();
+                }
+                if e.kind == PointerEventKind.up {
+                    ReadingState.present-step(e.button != PointerEventButton.right);
+                }
+            }
+        }
+    }
+
+    if ReadingState.present-black: Rectangle {
+        background: #000000;
+        accessible-role: none;
+    }
+}
+
+// The user's bookmarks for this document (not part of the file unless added to its
+// outline): click to go there, rename, delete.
+export component BookmarksPanel inherits Rectangle {
+    width: 300px;
+    height: min(480px, list.preferred-height + 140px);
+    border-radius: 10px;
+    background: Theme.chrome;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 14px;
+    drop-shadow-offset-y: 4px;
+    drop-shadow-color: #0000002a;
+    accessible-role: groupbox;
+    accessible-label: @tr("Bookmarks");
+
+    property <int> editing: -1;
+
+    VerticalLayout {
+        padding: 10px;
+        spacing: 8px;
+        HorizontalLayout {
+            Text {
+                text: @tr("Bookmarks");
+                color: Theme.text;
+                font-weight: 600;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            IconButton {
+                icon: @image-url("icons/close.svg");
+                label: @tr("Close bookmarks");
+                clicked => {
+                    ReadingState.show-bookmarks(false);
+                }
+            }
+        }
+        Button {
+            text: ReadingState.page-bookmarked ? @tr("Remove bookmark") : @tr("Bookmark this page");
+            icon: @image-url("icons/bookmark.svg");
+            clicked => {
+                ReadingState.toggle-bookmark();
+            }
+        }
+        if ReadingState.bookmarks.length == 0: Text {
+            text: Keys.label(@tr("No bookmarks yet. Press Ctrl+D to bookmark the page you are reading."), false);
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+        }
+        Flickable {
+            vertical-stretch: 1;
+            content-height: list.preferred-height;
+            list := VerticalLayout {
+                for b[i] in ReadingState.bookmarks: Pressable {
+                    height: 40px;
+                    border-radius: Theme.radius-small;
+                    background: b.current ? Theme.accent-soft : self.has-hover ? Theme.hover : transparent;
+                    accessible-role: list-item;
+                    label: b.title;
+                    description: @tr("Page {}", b.label);
+                    clicked => {
+                        ReadingState.bookmark-open(i);
+                    }
+                    double-clicked => {
+                        root.editing = i;
+                    }
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        spacing: 4px;
+                        if root.editing != i: Text {
+                            text: b.title;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                        }
+                        if root.editing == i: TextField {
+                            y: 4px;
+                            height: 32px;
+                            horizontal-stretch: 1;
+                            text: b.title;
+                            label: @tr("Bookmark name");
+                            init => {
+                                self.focus-input();
+                                self.select-all();
+                            }
+                            accepted(t) => {
+                                ReadingState.bookmark-rename(i, t);
+                                root.editing = -1;
+                            }
+                        }
+                        Text {
+                            text: b.label;
+                            color: Theme.faint;
+                            font-size: Theme.font-small;
+                            vertical-alignment: center;
+                        }
+                        IconButton {
+                            y: (parent.height - self.height) / 2;
+                            icon: @image-url("icons/pen.svg");
+                            label: @tr("Rename bookmark");
+                            icon-size: 15px;
+                            clicked => {
+                                root.editing = root.editing == i ? -1 : i;
+                            }
+                        }
+                        IconButton {
+                            y: (parent.height - self.height) / 2;
+                            icon: @image-url("icons/trash.svg");
+                            label: @tr("Delete bookmark");
+                            icon-size: 15px;
+                            clicked => {
+                                ReadingState.bookmark-delete(i);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if ReadingState.bookmarks.length > 0: Button {
+            text: @tr("Add to document outline");
+            clicked => {
+                ReadingState.bookmarks-to-outline();
+            }
+        }
+    }
+}

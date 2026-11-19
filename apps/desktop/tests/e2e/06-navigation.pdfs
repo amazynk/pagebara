@@ -1,0 +1,53 @@
+# Outline, internal links, external links with confirmation, page number entry, keys,
+# back and forward.
+cursor on
+open "$SAMPLES/lease.pdf"
+zoom 75 0
+call set sidebar outline
+wait 300
+click "Schedule A" 400
+wait 500
+assert page == 4
+click "Back" 300
+wait 500
+assert page == 1
+click "Forward" 300
+wait 500
+assert page == 4
+key home
+wait 400
+assert page == 1
+# The link to Schedule A (an explicit destination).
+click annot 1 1 400
+wait 500
+assert page == 4
+key alt+left
+wait 500
+assert page == 1
+# The web link asks first.
+click annot 1 2 400
+assert dialog == openlink
+assert dialog.text == https://example.org/renting-guide
+screenshot 06-link.png
+click "Cancel" 300
+assert dialog == none
+# Page number entry.
+click "Page number" 300
+type "3" 200
+key return
+wait 500
+assert page == 3
+key end
+wait 500
+assert page == 4
+open "$SAMPLES/report.pdf"
+call set sidebar outline
+click "Outlook" 400
+wait 500
+assert label == 9
+click "Page number" 300
+type "ii" 200
+key return
+wait 500
+assert label == ii
+screenshot 06-report.png

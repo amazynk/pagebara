@@ -1,0 +1,6 @@
+/target
+**/*.rs.bk
+/corpus
+
+# local tool settings
+/.claude/

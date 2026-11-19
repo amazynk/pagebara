@@ -1,0 +1,279 @@
+import { Theme } from "theme.slint";
+import { AppState, DialogKind } from "state.slint";
+import { Button, IconButton, Pressable } from "components/button.slint";
+import { Divider } from "components/panel.slint";
+import { ChoiceRow, SectionLabel, LabeledSlider, Check } from "components/controls.slint";
+
+// "My signatures": the library on this device, and the selected signature's settings.
+export component SignPanel inherits VerticalLayout {
+    spacing: 12px;
+
+    HorizontalLayout {
+        Text {
+            text: @tr("My signatures");
+            color: Theme.text;
+            font-weight: 600;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: @tr("On this device");
+            color: Theme.muted;
+            font-size: Theme.font-small;
+        }
+    }
+
+    if AppState.signatures.length == 0: Text {
+        text: @tr("No signatures yet. Import a photo or scan of your signature, or draw one.");
+        color: Theme.muted;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+    }
+
+    VerticalLayout {
+        spacing: 6px;
+        for s[i] in AppState.signatures: Pressable {
+            height: 54px;
+            border-radius: 9px;
+            border-width: s.selected ? 1.5px : 1px;
+            border-color: s.selected ? Theme.accent-fg : Theme.border;
+            background: s.selected ? Theme.accent-soft : self.has-hover ? Theme.hover : transparent;
+            accessible-role: list-item;
+            label: s.name;
+            description: s.meta;
+            accessible-item-selectable: true;
+            accessible-item-selected: s.selected;
+            clicked => {
+                AppState.sig-select(i);
+            }
+            HorizontalLayout {
+                padding: 8px;
+                spacing: 10px;
+                Rectangle {
+                    width: 84px;
+                    border-radius: 6px;
+                    background: #FFFFFF;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    Image {
+                        accessible-role: none;
+                        width: parent.width - 8px;
+                        height: parent.height - 6px;
+                        source: s.image;
+                        image-fit: contain;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 2px;
+                    Text {
+                        text: s.name;
+                        color: Theme.text;
+                        font-weight: 500;
+                        overflow: elide;
+                    }
+                    Text {
+                        text: s.meta;
+                        color: Theme.muted;
+                        font-size: 11px;
+                        overflow: elide;
+                    }
+                }
+            }
+        }
+    }
+
+    HorizontalLayout {
+        spacing: 8px;
+        Button {
+            horizontal-stretch: 1;
+            text: @tr("Import image…");
+            icon: @image-url("icons/upload.svg");
+            clicked => {
+                AppState.sig-action("import");
+            }
+        }
+        Button {
+            horizontal-stretch: 1;
+            text: @tr("Draw new");
+            icon: @image-url("icons/pen.svg");
+            clicked => {
+                AppState.sig-action("draw");
+            }
+        }
+    }
+
+    if AppState.sig-error != "": Text {
+        text: AppState.sig-error;
+        color: Theme.danger;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+        font-size: Theme.font-small;
+        accessible-role: text;
+        accessible-live-region: assertive;
+    }
+
+    if AppState.sig-selected >= 0: Divider { }
+
+    if AppState.sig-selected >= 0: VerticalLayout {
+        spacing: 11px;
+        HorizontalLayout {
+            spacing: 2px;
+            Text {
+                text: AppState.sig-name;
+                color: Theme.text;
+                font-weight: 600;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            IconButton {
+                icon: @image-url("icons/chevron-up.svg");
+                label: @tr("Move up");
+                width: 28px;
+                height: 28px;
+                icon-size: 15px;
+                enabled: AppState.sig-selected > 0;
+                clicked => {
+                    AppState.sig-move(AppState.sig-selected, AppState.sig-selected - 1);
+                }
+            }
+            IconButton {
+                icon: @image-url("icons/chevron-down.svg");
+                label: @tr("Move down");
+                width: 28px;
+                height: 28px;
+                icon-size: 15px;
+                enabled: AppState.sig-selected < AppState.signatures.length - 1;
+                clicked => {
+                    AppState.sig-move(AppState.sig-selected, AppState.sig-selected + 1);
+                }
+            }
+            IconButton {
+                icon: @image-url("icons/text.svg");
+                label: @tr("Rename");
+                width: 28px;
+                height: 28px;
+                icon-size: 15px;
+                clicked => {
+                    AppState.show-dialog(DialogKind.rename-signature);
+                }
+            }
+            IconButton {
+                icon: @image-url("icons/trash.svg");
+                label: @tr("Delete signature");
+                width: 28px;
+                height: 28px;
+                icon-size: 15px;
+                clicked => {
+                    AppState.sig-action("delete");
+                }
+            }
+        }
+
+        // The preview: a checkerboard shows what became transparent.
+        Rectangle {
+            height: 92px;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.border;
+            clip: true;
+            background: AppState.sig-imported && !AppState.sig-remove-bg ? #EFE8D8 : #FFFFFF;
+            if AppState.sig-imported && AppState.sig-remove-bg: Rectangle {
+                for i in 154: Rectangle {
+                    x: mod(i, 22) * 13px;
+                    y: floor(i / 22) * 13px;
+                    width: 13px;
+                    height: 13px;
+                    background: mod(i + floor(i / 22), 2) == 0 ? #E4E4E7 : #FFFFFF;
+                }
+            }
+            Image {
+                width: parent.width - 20px;
+                height: parent.height - 16px;
+                source: AppState.sig-preview;
+                image-fit: contain;
+                accessible-role: image;
+                accessible-label: @tr("Signature preview");
+            }
+            if AppState.sig-imported: Rectangle {
+                x: parent.width - self.width - 8px;
+                y: parent.height - self.height - 6px;
+                width: note.preferred-width + 12px;
+                height: 18px;
+                border-radius: 4px;
+                background: #FFFFFFD9;
+                note := Text {
+                    text: AppState.sig-preview-busy ? @tr("Updating…") : AppState.sig-remove-bg ? @tr("Transparent") : @tr("Original paper");
+                    font-size: 11px;
+                    color: #3F3F46;
+                }
+            }
+        }
+
+        if AppState.sig-imported: Check {
+            text: @tr("Remove background");
+            checked <=> AppState.sig-remove-bg;
+            toggled => {
+                AppState.sig-action("settings");
+            }
+        }
+        if AppState.sig-imported: LabeledSlider {
+            label: @tr("Background threshold");
+            value-text: round(AppState.sig-threshold);
+            value <=> AppState.sig-threshold;
+            enabled: AppState.sig-remove-bg;
+            changed-value => {
+                AppState.sig-action("preview");
+            }
+            released => {
+                AppState.sig-action("settings");
+            }
+        }
+        SectionLabel {
+            // TRANSLATORS: noun, heading above the choice of ink colour for a signature
+            text: @tr("Ink");
+        }
+        ChoiceRow {
+            height: 34px;
+            items: AppState.sig-imported ? [{ label: @tr("Original") }, { label: @tr("Black") }, { label: @tr("Dark blue") }] : [{ label: @tr("Black") }, { label: @tr("Dark blue") }];
+            selected: AppState.sig-imported ? AppState.sig-ink : max(0, AppState.sig-ink - 1);
+            picked(i) => {
+                AppState.sig-ink = AppState.sig-imported ? i : i + 1;
+                AppState.sig-action("settings");
+            }
+        }
+        LabeledSlider {
+            label: @tr("Width");
+            value-text: @tr("{} mm", round(AppState.sig-width-mm));
+            value <=> AppState.sig-width-mm;
+            minimum: 20;
+            maximum: 90;
+            released => {
+                AppState.sig-action("width");
+            }
+        }
+        Text {
+            text: @tr("Saved with the signature and used next time. Placed copies keep their own size.");
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            wrap: word-wrap;
+            line-height-factor: 1.15;
+        }
+    }
+
+    Divider { }
+    Check {
+        text: @tr("Flatten signatures when saving");
+        checked <=> AppState.flatten-signatures;
+        toggled => {
+            AppState.option-changed("flatten");
+        }
+    }
+    Text {
+        text: AppState.sig-hint != "" ? AppState.sig-hint : @tr("Click on the page to place the selected signature, or drag to choose its size. Drag a placed signature to move it, its corners to resize.");
+        color: Theme.muted;
+        font-size: Theme.font-small;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+    }
+}

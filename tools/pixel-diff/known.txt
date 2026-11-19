@@ -1,0 +1,20 @@
+# Known, intentional differences: a path substring, a tab, the reason. pixel-diff --known
+# leaves these files out of the "all but known" totals and the worst-page lists.
+differences/TextClipModeChanges/	MuPDF drops glyphs added to the clip after a text rendering mode change inside BT; we follow the standard
+differences/UnknownFilter/	MuPDF draws an image with an unknown filter as a black box; we leave it out
+differences/OverlappingGlyphClipping/	fonts that are not embedded: each reader substitutes its own
+differences/Negative-DashPhase/	zero-width lines: we draw solid one-pixel hairlines, MuPDF lighter anti-aliased ones
+pdfjs/test/pdfs/perf_paths_hairlines	zero-width lines: we draw solid one-pixel hairlines, MuPDF lighter anti-aliased ones
+pdfjs/test/pdfs/bitmap-	JBIG2 refinement and symbol test streams that MuPDF's decoder renders black; ours match the JBIG2 oracle tests
+pdfjs/test/pdfs/calgray	this MuPDF build has no ICC support: CalGray, CalRGB and ICCBased colours differ
+pdfjs/test/pdfs/calrgb	this MuPDF build has no ICC support: CalGray, CalRGB and ICCBased colours differ
+pdfjs/test/pdfs/axial_shading_many_inputs	invalid shading function (18 inputs for 1 output): MuPDF paints black, we paint nothing
+pdfjs/test/pdfs/bug2086012	PostScript function underflowing its stack: MuPDF paints a gradient, we paint nothing
+pdfjs/test/pdfs/xobject-image	MuPDF fails a DCT image with an empty /DecodeParms array and draws it black
+pdfium/resources/cropped_no_overlap	crop box outside the media box: we fall back to the media box, MuPDF to Letter
+pdfium/resources/pixel/transfer_function	transfer functions (/TR, device-dependent and deprecated in PDF 2.0) are not applied
+pdfium/resources/pixel/bug_1693	PDFium ignores the fill alpha when painting with a tiling pattern; MuPDF and we apply it
+pdfium/resources/pixel/xfa_specific/	XFA forms are not laid out; the PDF content is shown
+pdfium/resources/pixel/bug_40643646	PDFium generates annotation appearances its own way; MuPDF and we agree
+pdfium/resources/pixel/radial_shading_point_at_border	PDFium extends a radial shading from a degenerate circle differently; MuPDF and we agree
+pdfjs/test/pdfs/jbig2_file_header	a JBIG2 stream with a file header (not the embedded form): MuPDF draws black, we decode it

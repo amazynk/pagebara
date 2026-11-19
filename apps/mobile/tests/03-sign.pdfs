@@ -1,0 +1,47 @@
+# Signatures: the My signatures sheet, drawing one with a finger, adding one from a photo
+# (background removed), placing with a tap, moving with a drag, resizing with a pinch,
+# deleting; the library is kept.
+open "$SAMPLES/lease.pdf"
+wait 600
+page 3
+wait 300
+tool sign
+assert sheet == signatures
+assert signatures == 0
+assert gap-y:SignatureLibrary::photo-button,SignatureLibrary::placement-hint >= 12
+screenshot 03-sheet-empty.png
+click "Draw with finger" 300
+assert sheet == draw-pad
+stroke "Signature canvas" -120,20 -90,-30 -50,25 -10,-20 30,30 70,-25 110,15 1000
+wait 200
+screenshot 03-draw-pad.png
+click "Save signature" 200
+assert sheet == signatures
+assert signatures == 1
+# From a photo: the platform's picker hands over the file.
+call signature-photo "$SAMPLES/signature-photo.png"
+await signatures == 2 10000
+wait 300
+assert gap-y:SignatureLibrary::photo-button,SignatureLibrary::placement-hint >= 12
+screenshot 03-library.png
+# Place it with a tap: it is selected, with a Delete chip.
+click page 3 200,250 200
+assert annotations == 1
+assert selected == true
+wait 800
+screenshot 03-placed.png
+# Drag it somewhere else, then pinch it bigger.
+drag page 3 200,250 page 3 260,300 500
+assert undo contains Move
+call pinch 1.6
+assert undo contains Resize
+wait 800
+screenshot 03-resized.png
+click "Delete signature" 200
+assert annotations == 0
+call undo
+assert annotations == 1
+# Hiding the sheet keeps the tool.
+click "Hide signatures" 200
+assert sheet == none
+assert tool == sign

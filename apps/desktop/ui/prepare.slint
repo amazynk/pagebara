@@ -1,0 +1,643 @@
+// Prepare form: field types to place, the selected field's properties, aligning several
+// fields, tab order, suggested fields and form data.
+import { Theme } from "theme.slint";
+import { Button } from "components/button.slint";
+import { TextField } from "components/text-field.slint";
+import { Check, SectionLabel } from "components/controls.slint";
+import { Choice, Field, Hint } from "components/dialog-parts.slint";
+import { Pressable } from "components/button.slint";
+
+export struct PrepRow {
+    text: string,
+    detail: string,
+    selected: bool,
+}
+
+export global PrepState {
+    // The field type placed by the next click (form_prep::Tool order), -1 for none.
+    in property <int> placing: -1;
+    in property <[string]> tools: [@tr("Text field"), @tr("Date field"), @tr("Check box"), @tr("Radio button"), @tr("Drop-down list"), @tr("List box"), @tr("Button"), @tr("Signature field")];
+    // Widgets selected, and what they are.
+    in property <int> count;
+    in property <string> summary;
+    // "text", "check", "radio", "combo", "list", "button", "signature".
+    in property <string> kind;
+    in-out property <string> name;
+    in-out property <string> tooltip;
+    in-out property <bool> required;
+    in-out property <bool> read-only;
+    in-out property <string> default-value;
+    in property <[string]> fonts;
+    in-out property <int> font;
+    out property <[string]> sizes: [@tr("Auto"), "8", "9", "10", "11", "12", "14", "16", "18", "24"];
+    in-out property <int> size;
+    out property <[string]> colours: [@tr("None"), @tr("Black"), @tr("Dark grey"), @tr("Grey"), @tr("Light grey"), @tr("White"), @tr("Blue"), @tr("Light blue"), @tr("Red"), @tr("Green"), @tr("Yellow")];
+    in-out property <int> text-colour: 1;
+    in-out property <int> border-colour: 1;
+    in-out property <int> background;
+    out property <[string]> widths: [@tr("Thin"), @tr("Medium"), @tr("Thick")];
+    in-out property <int> border-width;
+    out property <[string]> styles: [@tr("Solid"), @tr("Dashed"), @tr("Beveled"), @tr("Inset"), @tr("Underline")];
+    in-out property <int> border-style;
+    out property <[string]> aligns: [@tr("Left"), @tr("Centre"), @tr("Right")];
+    in-out property <int> align;
+    in-out property <bool> multiline;
+    in-out property <bool> password;
+    in-out property <bool> comb;
+    in-out property <string> max-len;
+    in property <[string]> formats: [@tr("None"), @tr("Number"), @tr("Date")];
+    in-out property <int> format;
+    in-out property <string> date-format;
+    // Choice options, separated by semicolons; "Label|value" for a different value.
+    in-out property <string> options;
+    in-out property <bool> editable;
+    in-out property <bool> multi-select;
+    in-out property <string> caption;
+    in property <[string]> actions: [@tr("None"), @tr("Reset form"), @tr("Open a web address"), @tr("Next page"), @tr("Previous page"), @tr("First page"), @tr("Last page"), @tr("Print")];
+    in-out property <int> click-action;
+    in-out property <string> uri;
+    in property <bool> has-icon;
+    in property <[string]> check-styles;
+    in-out property <int> check-style;
+    in-out property <string> export-value;
+    // Tab order of the page: mode (0 structure, 1 rows, 2 columns, 3 manual) and fields.
+    in-out property <int> tab-mode: 3;
+    in property <[PrepRow]> tab-rows;
+    in property <int> tab-page;
+    // Suggested fields.
+    in property <[PrepRow]> suggestions;
+    in property <string> detect-status;
+    in-out property <bool> xfdf-annots: true;
+    callback action(what: string, value: string);
+}
+
+component ToolButton inherits Button {
+    in property <int> index;
+    text: PrepState.tools[index];
+    primary: PrepState.placing == index;
+    height: Theme.control-height;
+    horizontal-stretch: 1;
+    clicked => {
+        PrepState.action("tool", index);
+    }
+}
+
+// A text field that applies on Enter and when it loses the focus.
+component PropText inherits TextField {
+    in property <string> what: "prop";
+    accepted => {
+        PrepState.action(root.what, self.text);
+    }
+    changed has-focus => {
+        if !self.has-focus {
+            PrepState.action(root.what, self.text);
+        }
+    }
+}
+
+component PropChoice inherits Field {
+    in property <[string]> model;
+    in-out property <int> current-index;
+    horizontal-stretch: 1;
+    Choice {
+        label: root.label;
+        model: root.model;
+        current-index <=> root.current-index;
+        selected(i) => {
+            PrepState.action("prop", "");
+        }
+    }
+}
+
+component PropCheck inherits Check {
+    toggled => {
+        PrepState.action("prop", "");
+    }
+}
+
+component Row inherits HorizontalLayout {
+    spacing: 8px;
+}
+
+// Buttons side by side that wrap onto two lines when their labels are long (translations).
+component WrapRow inherits FlexboxLayout {
+    spacing: 8px;
+    flex-wrap: FlexboxLayoutWrap.wrap;
+    flex-direction: Theme.rtl ? FlexboxLayoutDirection.row-reverse : FlexboxLayoutDirection.row;
+    alignment: stretch;
+}
+
+component ListRow inherits Pressable {
+    in property <PrepRow> item;
+    callback picked();
+    height: 40px;
+    border-radius: Theme.radius-small;
+    background: item.selected ? Theme.accent-soft : self.has-hover ? Theme.hover : transparent;
+    accessible-role: list-item;
+    label: item.text;
+    description: item.detail;
+    clicked => {
+        root.picked();
+    }
+    VerticalLayout {
+        padding-left: 8px;
+        alignment: center;
+        Text {
+            text: item.text;
+            color: Theme.text;
+            overflow: elide;
+        }
+        Text {
+            text: item.detail;
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            overflow: elide;
+        }
+    }
+}
+
+component Properties inherits VerticalLayout {
+    spacing: 10px;
+    Field {
+        label: @tr("Name");
+        PropText {
+            what: "rename";
+            label: @tr("Field name");
+            text <=> PrepState.name;
+        }
+    }
+    Field {
+        label: @tr("Tooltip (read by screen readers)");
+        PropText {
+            label: @tr("Tooltip");
+            text <=> PrepState.tooltip;
+        }
+    }
+    Row {
+        PropCheck {
+            text: @tr("Required");
+            checked <=> PrepState.required;
+        }
+        PropCheck {
+            text: @tr("Read-only");
+            checked <=> PrepState.read-only;
+        }
+    }
+    if PrepState.kind != "button" && PrepState.kind != "signature": Field {
+        label: PrepState.kind == "check" || PrepState.kind == "radio" ? @tr("Checked by default (export value, or empty)") : @tr("Default value");
+        PropText {
+            label: @tr("Default value");
+            text <=> PrepState.default-value;
+        }
+    }
+    if PrepState.kind == "text": VerticalLayout {
+        spacing: 10px;
+        Row {
+            PropCheck {
+                text: @tr("Multiline");
+                checked <=> PrepState.multiline;
+            }
+            PropCheck {
+                text: @tr("Password");
+                checked <=> PrepState.password;
+            }
+        }
+        Row {
+            PropCheck {
+                text: @tr("Comb of characters");
+                checked <=> PrepState.comb;
+            }
+        }
+        Field {
+            label: @tr("Maximum length (empty for none)");
+            PropText {
+                label: @tr("Maximum length");
+                text <=> PrepState.max-len;
+            }
+        }
+        PropChoice {
+            label: @tr("Format");
+            model: PrepState.formats;
+            current-index <=> PrepState.format;
+        }
+        if PrepState.format == 2: Field {
+            label: @tr("Date format, e.g. yyyy-mm-dd or dd.mm.yyyy");
+            PropText {
+                label: @tr("Date format");
+                text <=> PrepState.date-format;
+            }
+        }
+    }
+    if PrepState.kind == "combo" || PrepState.kind == "list": VerticalLayout {
+        spacing: 10px;
+        Field {
+            label: @tr("Options, separated by ; (Label|value for another value)");
+            PropText {
+                label: @tr("Options");
+                text <=> PrepState.options;
+            }
+        }
+        if PrepState.kind == "combo": PropCheck {
+            text: @tr("Allow typing other text");
+            checked <=> PrepState.editable;
+        }
+        if PrepState.kind == "list": PropCheck {
+            text: @tr("Allow several choices");
+            checked <=> PrepState.multi-select;
+        }
+    }
+    if PrepState.kind == "button": VerticalLayout {
+        spacing: 10px;
+        Field {
+            label: @tr("Caption");
+            PropText {
+                label: @tr("Caption");
+                text <=> PrepState.caption;
+            }
+        }
+        PropChoice {
+            label: @tr("When clicked");
+            model: PrepState.actions;
+            current-index <=> PrepState.click-action;
+        }
+        if PrepState.click-action == 2: Field {
+            label: @tr("Web address");
+            PropText {
+                label: @tr("Web address");
+                text <=> PrepState.uri;
+            }
+        }
+        Row {
+            Button {
+                text: PrepState.has-icon ? @tr("Change icon…") : @tr("Icon…");
+                clicked => {
+                    PrepState.action("icon", "");
+                }
+            }
+            if PrepState.has-icon: Button {
+                text: @tr("Remove icon");
+                clicked => {
+                    PrepState.action("icon-remove", "");
+                }
+            }
+        }
+    }
+    if PrepState.kind == "check" || PrepState.kind == "radio": VerticalLayout {
+        spacing: 10px;
+        PropChoice {
+            // TRANSLATORS: noun, the symbol shown in a ticked check box or radio button
+            label: @tr("Mark");
+            model: PrepState.check-styles;
+            current-index <=> PrepState.check-style;
+        }
+        Field {
+            label: PrepState.kind == "radio" ? @tr("Value of this button") : @tr("Export value");
+            PropText {
+                what: "export";
+                label: @tr("Export value");
+                text <=> PrepState.export-value;
+            }
+        }
+        if PrepState.kind == "radio": HorizontalLayout {
+            alignment: start;
+            Button {
+                text: @tr("Add a button to this group");
+                clicked => {
+                    PrepState.action("add-radio", "");
+                }
+            }
+        }
+    }
+    if PrepState.kind != "check" && PrepState.kind != "radio" && PrepState.kind != "signature": VerticalLayout {
+        spacing: 10px;
+        PropChoice {
+            label: @tr("Font");
+            model: PrepState.fonts;
+            current-index <=> PrepState.font;
+        }
+        Row {
+            PropChoice {
+                label: @tr("Font size");
+                model: PrepState.sizes;
+                current-index <=> PrepState.size;
+            }
+            PropChoice {
+                label: @tr("Alignment");
+                model: PrepState.aligns;
+                current-index <=> PrepState.align;
+            }
+        }
+    }
+    PropChoice {
+        label: PrepState.kind == "check" || PrepState.kind == "radio" ? @tr("Mark colour") : @tr("Text colour");
+        model: PrepState.colours;
+        current-index <=> PrepState.text-colour;
+    }
+    Row {
+        PropChoice {
+            label: @tr("Border");
+            model: PrepState.colours;
+            current-index <=> PrepState.border-colour;
+        }
+        PropChoice {
+            label: @tr("Background");
+            model: PrepState.colours;
+            current-index <=> PrepState.background;
+        }
+    }
+    Row {
+        PropChoice {
+            label: @tr("Border width");
+            model: PrepState.widths;
+            current-index <=> PrepState.border-width;
+        }
+        PropChoice {
+            label: @tr("Border style");
+            model: PrepState.styles;
+            current-index <=> PrepState.border-style;
+        }
+    }
+    Row {
+        Button {
+            text: @tr("Duplicate");
+            clicked => {
+                PrepState.action("duplicate", "");
+            }
+        }
+        Button {
+            text: @tr("Copy to all pages");
+            clicked => {
+                PrepState.action("copy-pages", "");
+            }
+        }
+    }
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Delete field");
+            clicked => {
+                PrepState.action("delete", "");
+            }
+        }
+    }
+}
+
+component Several inherits VerticalLayout {
+    spacing: 10px;
+    SectionLabel {
+        // TRANSLATORS: verb, heading above buttons that line up the selected fields
+        text: @tr("Align");
+    }
+    Row {
+        for a[i] in [["left", @tr("Left")], ["centre", @tr("Centre")], ["right", @tr("Right")]]: Button {
+            text: a[1];
+            horizontal-stretch: 1;
+            clicked => {
+                PrepState.action("align", a[0]);
+            }
+        }
+    }
+    Row {
+        for a[i] in [["top", @tr("Top")], ["middle", @tr("Middle")], ["bottom", @tr("Bottom")]]: Button {
+            text: a[1];
+            horizontal-stretch: 1;
+            clicked => {
+                PrepState.action("align", a[0]);
+            }
+        }
+    }
+    SectionLabel {
+        text: @tr("Distribute and size");
+    }
+    Row {
+        Button {
+            // TRANSLATORS: spread the fields out horizontally
+            text: @tr("Across");
+            horizontal-stretch: 1;
+            clicked => {
+                PrepState.action("distribute", "h");
+            }
+        }
+        Button {
+            // TRANSLATORS: spread the fields out vertically
+            text: @tr("Down");
+            horizontal-stretch: 1;
+            clicked => {
+                PrepState.action("distribute", "v");
+            }
+        }
+    }
+    Row {
+        for a[i] in [["w", @tr("Same width")], ["h", @tr("Same height")]]: Button {
+            text: a[1];
+            horizontal-stretch: 1;
+            clicked => {
+                PrepState.action("size", a[0]);
+            }
+        }
+    }
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Same size");
+            clicked => {
+                PrepState.action("size", "both");
+            }
+        }
+    }
+    Row {
+        Button {
+            text: @tr("Duplicate");
+            clicked => {
+                PrepState.action("duplicate", "");
+            }
+        }
+        Button {
+            text: @tr("Delete fields");
+            clicked => {
+                PrepState.action("delete", "");
+            }
+        }
+    }
+}
+
+// Form data and reset, in Prepare form and Fill forms.
+export component FormDataButtons inherits VerticalLayout {
+    callback act(what: string);
+    spacing: 8px;
+    SectionLabel {
+        text: @tr("Form data");
+    }
+    WrapRow {
+        Button {
+            text: @tr("Import data…");
+            horizontal-stretch: 1;
+            clicked => {
+                root.act("import");
+            }
+        }
+        Button {
+            text: @tr("Reset to defaults");
+            description: @tr("Every field back to its default value");
+            horizontal-stretch: 1;
+            clicked => {
+                root.act("reset");
+            }
+        }
+    }
+    WrapRow {
+        Button {
+            text: @tr("Export FDF…");
+            horizontal-stretch: 1;
+            clicked => {
+                root.act("export-fdf");
+            }
+        }
+        Button {
+            text: @tr("Export XFDF…");
+            horizontal-stretch: 1;
+            clicked => {
+                root.act("export-xfdf");
+            }
+        }
+    }
+    Check {
+        text: @tr("XFDF with comments");
+        checked <=> PrepState.xfdf-annots;
+    }
+    HorizontalLayout {
+        alignment: start;
+        Button {
+            text: @tr("Empty all fields");
+            clicked => {
+                root.act("clear");
+            }
+        }
+    }
+}
+
+export component PreparePanel inherits VerticalLayout {
+    spacing: 10px;
+    SectionLabel {
+        text: @tr("Add a field");
+    }
+    for r in [0, 2, 4, 6]: Row {
+        ToolButton {
+            index: r;
+        }
+        ToolButton {
+            index: r + 1;
+        }
+    }
+    if PrepState.placing >= 0: Hint {
+        text: @tr("Click the page to place the field, or drag to draw it. Esc cancels.");
+    }
+    if PrepState.count > 0: Text {
+        text: PrepState.summary;
+        color: Theme.text;
+        font-weight: 600;
+        wrap: word-wrap;
+        line-height-factor: 1.15;
+    }
+    if PrepState.count == 1: Properties { }
+    if PrepState.count > 1: Several { }
+    if PrepState.count == 0: VerticalLayout {
+        spacing: 10px;
+        Hint {
+            text: @tr("Click a field to select it (Shift adds), drag to move it, drag its handles to resize it. Tab selects the next field; arrows nudge; Delete removes.");
+        }
+        SectionLabel {
+            text: @tr("Find fields");
+        }
+        Row {
+            Button {
+                text: @tr("Detect fields");
+                clicked => {
+                    PrepState.action("detect", "");
+                }
+            }
+            if PrepState.suggestions.length > 0: Button {
+                text: @tr("Accept all");
+                primary: true;
+                clicked => {
+                    PrepState.action("accept-all", "");
+                }
+            }
+        }
+        if PrepState.detect-status != "": Hint {
+            text: PrepState.detect-status;
+        }
+        for sg[i] in PrepState.suggestions: ListRow {
+            item: sg;
+            picked => {
+                PrepState.action("suggestion", i);
+            }
+        }
+        if PrepState.suggestions.length > 0: Row {
+            Button {
+                text: @tr("Accept");
+                clicked => {
+                    PrepState.action("accept", "");
+                }
+            }
+            Button {
+                text: @tr("Dismiss");
+                clicked => {
+                    PrepState.action("dismiss", "");
+                }
+            }
+            Button {
+                text: @tr("Dismiss all");
+                clicked => {
+                    PrepState.action("dismiss-all", "");
+                }
+            }
+        }
+        SectionLabel {
+            text: @tr("Tab order, page {}", PrepState.tab-page);
+        }
+        Choice {
+            label: @tr("Tab order");
+            model: [@tr("By structure"), @tr("Row by row"), @tr("Column by column"), @tr("Manual")];
+            current-index <=> PrepState.tab-mode;
+            selected(i) => {
+                PrepState.action("tab-mode", i);
+            }
+        }
+        for tr[i] in PrepState.tab-rows: ListRow {
+            item: tr;
+            picked => {
+                PrepState.action("tab-select", i);
+            }
+        }
+        if PrepState.tab-rows.length > 1: Row {
+            Button {
+                text: @tr("Move up");
+                clicked => {
+                    PrepState.action("tab-up", "");
+                }
+            }
+            Button {
+                text: @tr("Move down");
+                clicked => {
+                    PrepState.action("tab-down", "");
+                }
+            }
+        }
+        FormDataButtons {
+            act(w) => {
+                PrepState.action(w, "");
+            }
+        }
+        HorizontalLayout {
+            alignment: start;
+            Button {
+                text: @tr("Done: fill in the form");
+                primary: true;
+                clicked => {
+                    PrepState.action("done", "");
+                }
+            }
+        }
+    }
+}

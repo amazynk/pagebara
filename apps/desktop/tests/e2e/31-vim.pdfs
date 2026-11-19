@@ -1,0 +1,397 @@
+# Vim keys (Settings > Editing > Vim keys): off by default, then page numbers (by label, as the page
+# box goes), marks and jumps, page turns, the command line, search (/ ? n N, counts,
+# wrapping, :noh), visual mode with yank, and tabs.
+# report.pdf: pages i, ii, then 1-10; "revenue" is on page ii once (hit 1), then hits
+# 2-7 on the 3rd page, 8-11 on the 4th ... 23 is the last on the 6th, 44 the first on the
+# 11th, 53 the last on the 12th.
+open "$SAMPLES/report.pdf"
+wait 800
+# Off: letters do nothing.
+type "G"
+wait 300
+assert page == 1
+assert vim.active == false
+call vim-keys on
+assert vim.active == true
+# The badge and :help open the Vim reference. Scrolling it keeps the PDF in place.
+click "Vim shortcuts" 120
+assert dialog == vimhelp
+assert vim.active == false
+click "Pan down" 100
+type "hjkl"
+assert page == 1
+key right
+move "Next match, n" 80
+click "Select" 100
+move "Copy selection, y" 80
+click "Commands" 100
+move "Write a copy, :w FILE" 80
+key pagedown
+type "jkq"
+assert dialog == none
+assert vim.active == true
+assert page == 1
+type ":help"
+key return
+assert dialog == vimhelp
+call a11y-check
+screenshot 31-vim-help.png
+key escape
+assert vim.active == true
+type "2g"
+move "Go to document" 80
+key escape
+assert vim.line == ""
+type "z"
+move "Center page" 80
+screenshot 31-vim-prefix.png
+click "Center page" 100
+assert vim.line == ""
+type "gg"
+key f1
+click "Vim shortcuts" 100
+assert dialog == vimhelpfromshortcuts
+type "q"
+assert dialog == shortcuts
+key escape
+type "?"
+key return
+assert message contains No previous search
+# Dialog keys never reach the PDF. Escape returns focus to the pages.
+key ctrl+p
+await print.visible == true 3000
+assert vim.active == false
+type "G:q"
+key return
+key ctrl+w
+key f1
+key f6
+assert print.visible == true
+assert dialog == none
+assert page == 1
+assert tabs == 1
+key escape
+assert print.visible == false
+assert vim.active == true
+type ":unfinished"
+key ctrl+,
+assert dialog == settings
+assert vim.active == false
+assert vim.mode == NORMAL
+key ctrl+p
+key ctrl+w
+assert print.visible == false
+assert tabs == 1
+key escape
+assert dialog == none
+assert vim.active == true
+# The library and presentation own Tab, Escape and their own navigation.
+key ctrl+l
+assert library.visible == true
+assert vim.active == false
+type "G:q"
+key ctrl+w
+key ctrl+p
+assert print.visible == false
+assert tabs == 1
+key escape
+assert vim.active == true
+key f5
+await presenting == true 3000
+assert vim.active == false
+key tab
+key right
+await present.page == 2 3000
+key left
+key escape
+assert presenting == false
+assert vim.active == true
+call reflow on
+assert vim.active == false
+key escape
+assert reflow == false
+assert vim.active == true
+# Editing tools and focused text fields have their own keys.
+tool edit
+assert vim.active == false
+tool prepare
+assert vim.active == false
+tool select
+assert vim.active == true
+click "Find" 150
+assert vim.active == false
+type "G"
+key escape
+assert vim.active == true
+assert page == 1
+assert vim.mode == NORMAL
+type "G"
+wait 500
+assert page == 12
+type "gg"
+wait 500
+assert page == 1
+# Numbers are page labels when there are such: 5 is the 7th page, 12 the 12th.
+type "5G"
+wait 500
+assert page == 7
+type "12G"
+wait 500
+assert page == 12
+type "99G"
+wait 500
+assert page == 12
+type "1gg"
+wait 500
+assert page == 3
+# Marks and the jump back.
+type "ma"
+type "gg"
+wait 400
+type "'a"
+wait 500
+assert page == 3
+type "''"
+wait 500
+assert page == 1
+type "2J"
+wait 500
+assert page == 3
+type "K"
+wait 400
+assert page == 2
+type "1"
+assert vim.line == 1
+type "0G"
+wait 500
+assert page == 12
+key physical-ctrl+o
+wait 500
+assert page == 2
+type "gg"
+wait 400
+key physical-ctrl+f
+key physical-ctrl+f
+key physical-ctrl+f
+wait 600
+assert page > 1
+# Two pages side by side: J and K turn by spreads.
+call layout two-page
+wait 500
+type "gg"
+wait 400
+type "J"
+wait 400
+assert page == 3
+type "2J"
+wait 400
+assert page == 7
+type "K"
+wait 400
+assert page == 5
+call layout continuous
+wait 500
+# The command line.
+type ":3"
+assert vim.mode == COMMAND
+assert vim.line == :3
+key return
+wait 500
+assert page == 5
+assert vim.mode == NORMAL
+type ":frob"
+key return
+assert message contains Not a command
+type ":set zoom=150"
+key left
+key backspace
+type "2"
+assert vim.line == :set zoom=120
+key return
+wait 400
+assert zoom == 120
+type ":draft"
+key left
+key up
+assert vim.line == :set zoom=120
+key down
+type "X"
+assert vim.line == :drafXt
+key escape
+type "zw"
+wait 400
+assert zoom != 120
+# Search down from the top of the first page, then on and back.
+type "gg"
+wait 400
+type "/revenue"
+assert vim.line == /revenue
+screenshot 31-vim-search.png
+key return
+wait 1200
+assert find.status == 1 of 53
+assert page == 2
+type "n"
+wait 400
+assert find.status == 2 of 53
+type "3n"
+wait 400
+assert find.status == 5 of 53
+type "N"
+wait 400
+assert find.status == 4 of 53
+# Searching again from the hit on screen goes on to the next, as in vim.
+type "/revenue"
+key return
+wait 400
+assert find.status == 5 of 53
+# Moved away from the hit: n goes on from the top of the view, from where 9G is going
+# when typed at once.
+type "9Gn"
+wait 800
+assert find.status == 44 of 53
+assert page == 11
+# ? goes up from the top of the view, and then n goes up and N down.
+type "5G"
+wait 600
+assert page == 7
+type "?revenue"
+key return
+wait 800
+assert find.status == 23 of 53
+assert page == 6
+type "n"
+wait 400
+assert find.status == 22 of 53
+type "N"
+wait 400
+assert find.status == 23 of 53
+# Wrapping around, with a message.
+type "gg"
+wait 600
+type "?revenue"
+key return
+wait 800
+assert find.status == 53 of 53
+assert message contains continued from the end
+# Empty / and ? set the direction, including for subsequent n and N.
+type "/"
+key return
+await find.status == 1 of 53 3000
+type "n"
+await find.status == 2 of 53 3000
+type "?"
+key up
+assert vim.line == ?revenue
+key down
+assert vim.line == ?
+key return
+await find.status == 1 of 53 3000
+type "n"
+await find.status == 53 of 53 3000
+type "N"
+wait 400
+assert find.status == 1 of 53
+assert message contains continued from the start
+# :noh hides the hits and the find bar; n shows them and goes on from the hit.
+type "/revenue"
+key return
+wait 400
+assert find.status == 2 of 53
+type ":noh"
+key return
+wait 300
+assert find.visible == false
+type "n"
+wait 400
+assert find.visible == true
+assert find.status == 3 of 53
+# Nothing found.
+type "/zzzz"
+key return
+wait 1200
+assert message contains Not found: zzzz
+assert find.status == No matches
+key escape
+wait 300
+assert find.visible == false
+# Visual mode: the first word, then the first line, copied.
+open "$SAMPLES/lease.pdf"
+wait 900
+type "gg"
+wait 400
+type "v"
+assert vim.mode == VISUAL
+type "e"
+assert selection.text == RESIDENTIAL
+type "y"
+wait 200
+assert clipboard == RESIDENTIAL
+assert vim.mode == NORMAL
+type "V"
+assert vim.mode == V-LINE
+type "y"
+wait 200
+assert clipboard == RESIDENTIAL LEASE AGREEMENT
+type "vw"
+key escape
+assert vim.mode == NORMAL
+# History follows the user across PDFs, and a dialog blocks tab switching.
+type ":"
+key up
+assert vim.line == :noh
+key escape
+key ctrl+p
+assert print.visible == true
+key physical-ctrl+tab
+assert title == lease.pdf
+assert tabs == 2
+key escape
+assert vim.active == true
+# Tabs.
+type "gt"
+wait 400
+assert pages == 12
+type "2gt"
+wait 400
+assert pages == 4
+# :w FILE writes a copy (the document stays this file); an existing file needs !; :e opens.
+type ":w $OUT/vim-copy.pdf"
+key return
+wait 1500
+assert file.exists:$OUT/vim-copy.pdf == true
+assert message contains Wrote a copy
+type ":w $OUT/vim-copy.pdf"
+key return
+wait 300
+assert message contains add ! to overwrite
+type ":w! $OUT/vim-copy.pdf"
+key return
+wait 1500
+assert message contains Wrote a copy
+type ":e $OUT/vim-copy.pdf"
+key return
+wait 1200
+assert tabs == 3
+type ":q"
+key return
+wait 400
+assert tabs == 2
+# Vim stays out of a form field while typing.
+open "$SAMPLES/form.pdf"
+tool forms
+zoom 100 0
+wait 400
+click annot 1 1 300
+assert field.editing == true
+assert vim.active == false
+type "G:q"
+assert field.text == G:q
+key escape
+assert vim.active == true
+# Off again: letters pass through.
+call vim-keys off
+assert vim.active == false
+type "G"
+wait 300
+assert page == 1

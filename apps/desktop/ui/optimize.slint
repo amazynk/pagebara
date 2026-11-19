@@ -1,0 +1,254 @@
+// Optimize: presets and options, with the result worked out live.
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Button } from "components/button.slint";
+import { Dialog } from "components/panel.slint";
+import { Check, SectionLabel } from "components/controls.slint";
+import { Heading, Body, Hint, ErrorText, Buttons, Field, Note, Choice, Verdicts } from "components/dialog-parts.slint";
+
+export struct SizeRow {
+    label: string,
+    before: string,
+    after: string,
+}
+
+export global OptimizeState {
+    // TRANSLATORS: the optimization presets, resolutions and photo qualities offered
+    in property <[string]> presets: [@tr("Lossless"), @tr("Balanced"), @tr("Small"), @tr("Custom")];
+    in property <[string]> resolutions: [@tr("Keep"), @tr("{} ppi", 300), @tr("{} ppi", 150), @tr("{} ppi", 100), @tr("{} ppi", 72)];
+    in property <[string]> qualities: [@tr("High"), @tr("Good"), @tr("Medium"), @tr("Low")];
+    in-out property <int> preset;
+    in-out property <int> resolution;
+    in-out property <int> quality: 1;
+    in-out property <bool> strip-metadata;
+    in-out property <bool> strip-thumbnails;
+    in-out property <bool> strip-private;
+    in-out property <bool> strip-scripts;
+    in-out property <bool> strip-attachments;
+    in-out property <bool> strip-comments;
+    in-out property <bool> grayscale;
+    in-out property <bool> linearize;
+    in-out property <bool> maximum;
+    in property <bool> busy;
+    in property <string> before;
+    in property <string> after;
+    in property <string> saved;
+    in property <[SizeRow]> rows;
+    in property <string> note;
+    in property <bool> signed;
+    // "changed" (an option), "preset", "save".
+    callback action(what: string);
+}
+
+component SizeTable inherits VerticalLayout {
+    in property <[SizeRow]> rows;
+    spacing: 2px;
+    for r in root.rows: HorizontalLayout {
+        spacing: 8px;
+        Text {
+            text: r.label;
+            color: Theme.muted;
+            horizontal-stretch: 1;
+            font-size: Theme.font-small;
+        }
+        Text {
+            text: r.before;
+            color: Theme.muted;
+            width: 80px;
+            horizontal-alignment: right;
+            font-size: Theme.font-small;
+        }
+        Text {
+            text: "→";
+            color: Theme.muted;
+            font-size: Theme.font-small;
+        }
+        Text {
+            text: r.after;
+            color: Theme.text;
+            width: 80px;
+            horizontal-alignment: right;
+            font-size: Theme.font-small;
+        }
+    }
+}
+
+export component OptimizeDialog inherits Dialog {
+    title: @tr("Optimize");
+    card-width: 560px;
+    Heading {
+        text: @tr("Make the file smaller");
+    }
+    Field {
+        label: @tr("Preset");
+        Choice {
+            model: OptimizeState.presets;
+            current-index <=> OptimizeState.preset;
+            label: @tr("Preset");
+            selected => {
+                OptimizeState.action("preset");
+            }
+        }
+    }
+    Hint {
+        text: OptimizeState.preset == 0 ? @tr("Pages look exactly the same: the file is rewritten more compactly, duplicates and unused parts go, fonts keep only the letters used.") : OptimizeState.preset == 1 ? @tr("Large pictures are reduced to 150 pixels per inch and photos stored as JPEG: fine on screen and for most printing.") : OptimizeState.preset == 2 ? @tr("Pictures at 100 pixels per inch and stronger JPEG compression, metadata removed: the smallest file for sharing.") : @tr("Your own choices below.");
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Field {
+            label: @tr("Pictures");
+            horizontal-stretch: 1;
+            Choice {
+                model: OptimizeState.resolutions;
+                current-index <=> OptimizeState.resolution;
+                label: @tr("Picture resolution");
+                selected => {
+                    OptimizeState.action("changed");
+                }
+            }
+        }
+        Field {
+            label: @tr("Photo quality");
+            horizontal-stretch: 1;
+            Choice {
+                model: OptimizeState.qualities;
+                current-index <=> OptimizeState.quality;
+                label: @tr("Photo quality");
+                selected => {
+                    OptimizeState.action("changed");
+                }
+            }
+        }
+    }
+    SectionLabel {
+        // TRANSLATORS: heading: what to remove from the file
+        text: @tr("Remove");
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            Check {
+                text: @tr("Metadata");
+                checked <=> OptimizeState.strip-metadata;
+                toggled => {
+                    OptimizeState.action("changed");
+                }
+            }
+            Check {
+                text: @tr("Page thumbnails");
+                checked <=> OptimizeState.strip-thumbnails;
+                toggled => {
+                    OptimizeState.action("changed");
+                }
+            }
+            Check {
+                text: @tr("Private app data");
+                checked <=> OptimizeState.strip-private;
+                toggled => {
+                    OptimizeState.action("changed");
+                }
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            Check {
+                text: @tr("Scripts");
+                checked <=> OptimizeState.strip-scripts;
+                toggled => {
+                    OptimizeState.action("changed");
+                }
+            }
+            Check {
+                text: @tr("Attached files");
+                checked <=> OptimizeState.strip-attachments;
+                toggled => {
+                    OptimizeState.action("changed");
+                }
+            }
+            Check {
+                text: @tr("Comments");
+                checked <=> OptimizeState.strip-comments;
+                toggled => {
+                    OptimizeState.action("changed");
+                }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Check {
+            // TRANSLATORS: option: convert colours to shades of grey
+            text: @tr("Grey");
+            checked <=> OptimizeState.grayscale;
+            horizontal-stretch: 1;
+            toggled => {
+                OptimizeState.action("changed");
+            }
+        }
+        Check {
+            text: @tr("Fast web view");
+            checked <=> OptimizeState.linearize;
+            horizontal-stretch: 1;
+            toggled => {
+                OptimizeState.action("changed");
+            }
+        }
+        Check {
+            text: @tr("Maximum (slow)");
+            checked <=> OptimizeState.maximum;
+            horizontal-stretch: 1;
+            toggled => {
+                OptimizeState.action("changed");
+            }
+        }
+    }
+    Rectangle {
+        height: 1px;
+        background: Theme.border;
+    }
+    HorizontalLayout {
+        spacing: 8px;
+        Text {
+            text: OptimizeState.busy ? @tr("Working out the size…") : OptimizeState.before + "  →  " + OptimizeState.after;
+            color: Theme.text;
+            font-weight: 600;
+            horizontal-stretch: 1;
+            accessible-role: text;
+            accessible-live-region: polite;
+        }
+        Text {
+            text: OptimizeState.busy ? "" : OptimizeState.saved;
+            color: Verdicts.colours[0];
+            font-weight: 600;
+        }
+    }
+    if !OptimizeState.busy: SizeTable {
+        rows: OptimizeState.rows;
+    }
+    if OptimizeState.signed: Note {
+        text: @tr("This document is signed. Optimizing rewrites the file, so its signatures will no longer be valid. Keep the original if the signatures matter.");
+        level: 1;
+    }
+    if OptimizeState.note != "": Hint {
+        text: OptimizeState.note;
+    }
+    ErrorText { }
+    Buttons {
+        Button {
+            text: @tr("Cancel");
+            clicked => {
+                AppState.dialog-action("cancel", "");
+            }
+        }
+        Button {
+            text: @tr("Save as…");
+            primary: true;
+            enabled: !OptimizeState.busy;
+            clicked => {
+                OptimizeState.action("save");
+            }
+        }
+    }
+}
+

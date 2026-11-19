@@ -1,0 +1,107 @@
+// Each choice shows the same document, toolbar and thumbnail rail in its own colours.
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { SettingsChoices } from "settings-controls.slint";
+
+component ReaderPreview inherits Rectangle {
+    in property <bool> dark;
+    property <color> chrome: dark ? #2b2c34 : #fafbff;
+    property <color> ink: dark ? #c8cad4 : #60697d;
+    background: dark ? #41434f : #dce3f1;
+    accessible-role: none;
+    Rectangle {
+        x: 0px; y: 0px; width: root.width; height: 9px; background: root.chrome;
+        Rectangle { x: 6px; y: 3px; width: 10px; height: 3px; border-radius: 1px; background: root.ink; }
+        Rectangle { x: parent.width - 19px; y: 3px; width: 12px; height: 3px; border-radius: 1px; background: root.ink; }
+    }
+    Rectangle {
+        x: 0px; y: 10px; width: parent.width * 0.21; height: parent.height - self.y; background: root.chrome;
+        for i in 2: Rectangle {
+            x: parent.width / 4; y: 5px + i * 16px; width: parent.width / 2; height: 12px;
+            background: root.dark ? #595d6b : #d7deec;
+            border-radius: 1px;
+            border-width: i == 0 ? 1px : 0px; border-color: #5684ed;
+        }
+    }
+    Rectangle {
+        x: parent.width * 0.39; y: 16px; width: parent.width * 0.43; height: parent.height - self.y;
+        background: root.dark ? #262832 : #ffffff;
+        Rectangle { x: 5px; y: 5px; width: parent.width * 0.46; height: 3px; background: root.ink; }
+        for i in 3: Rectangle {
+            x: 5px; y: 12px + i * 5px; width: parent.width * (i == 2 ? 0.48 : 0.7);
+            height: i == 1 ? 3px : 2px; background: i == 1 ? #7d9fee : root.ink.with-alpha(0.5);
+        }
+    }
+}
+
+component ThemeOption inherits Rectangle {
+    in property <int> variant;
+    in property <bool> active;
+    in property <bool> focused;
+    in property <string> caption;
+    callback pick();
+    horizontal-stretch: 1;
+    min-width: 0px;
+    min-height: 0px;
+    accessible-role: radio-button;
+    accessible-label: root.caption;
+    accessible-checkable: true;
+    accessible-checked: root.active;
+    accessible-action-default => { root.pick(); }
+    border-radius: Theme.radius;
+    border-width: root.active || Theme.high-contrast ? 2px : 1px;
+    border-color: root.focused && root.active ? Theme.focus : root.active ? Theme.accent : Theme.high-contrast ? Theme.control-border : Theme.border;
+    background: root.active ? Theme.accent-soft : hit.has-hover ? Theme.hover : Theme.chrome;
+    preview := Rectangle {
+        x: 6px; y: 6px; width: parent.width - 12px; height: 49px;
+        clip: true; border-radius: 3px;
+        ReaderPreview { dark: root.variant == 2; }
+        if root.variant == 0: Rectangle {
+            x: parent.width / 2; width: parent.width / 2; height: parent.height; clip: true;
+            ReaderPreview { x: -parent.width; width: preview.width; dark: true; }
+        }
+    }
+    Text {
+        x: Theme.rtl && root.active ? 26px : 10px; y: 58px;
+        width: root.width - 20px - (root.active ? 16px : 0px);
+        height: root.height - self.y - 4px;
+        text: root.caption; color: root.active ? Theme.accent-fg : Theme.text;
+        font-weight: root.active ? 600 : 500; font-size: Theme.font-body;
+        horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+        wrap: word-wrap; vertical-alignment: center; accessible-role: none;
+    }
+    if root.active: Image {
+        x: Theme.rtl ? 8px : root.width - self.width - 8px;
+        y: 56px + (root.height - 56px - self.height) / 2;
+        width: 14px; height: 14px;
+        source: @image-url("icons/check.svg"); colorize: Theme.accent-fg; accessible-role: none;
+    }
+    hit := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.pick(); }
+    }
+}
+
+export component AppearancePicker inherits SettingsChoices {
+    accessible-role: radio-group;
+    accessible-label: @tr("Appearance");
+    selected: AppState.theme-choice == 0 ? 0 : AppState.theme-choice == 1 || AppState.theme-choice == 4 ? 1 : 2;
+    count: 3;
+    choose(i) => {
+        if i == 0 { AppState.set-theme(0); }
+        else if AppState.theme-choice >= 3 { AppState.set-theme(i == 1 ? 4 : 3); }
+        else { AppState.set-theme(i); }
+    }
+    property <[string]> labels: [@tr("Follow the system"), @tr("Light"), @tr("Dark")];
+    height: 66px + 24px * Theme.text-scale * Theme.text-scale;
+    for caption[i] in root.labels: ThemeOption {
+        width: (root.width - 20px) / 3;
+        height: root.height;
+        x: (Theme.rtl ? 2 - i : i) * (self.width + 10px);
+        variant: i;
+        caption: root.labels[i];
+        active: root.selected == i;
+        focused: root.has-focus;
+        pick => { root.focus(); root.choose(i); }
+    }
+}

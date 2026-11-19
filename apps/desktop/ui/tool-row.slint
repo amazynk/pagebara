@@ -1,0 +1,973 @@
+// The row under the toolbar: undo, the tools of the chosen group with their options, and
+// where the document is (page and zoom). Nothing of it lies over the pages.
+import { RowLayout } from "components/row.slint";
+import { Theme } from "theme.slint";
+import { AppState, Mode, Chrome } from "state.slint";
+import { Pressable, FocusNav, Keys } from "components/button.slint";
+import { ToolButton, ToolSep, ColourButton, ValueButton, SizeButton } from "components/tool-button.slint";
+import { Divider, MenuCard, MenuItem } from "components/panel.slint";
+import { ReadAloudState } from "read-aloud.slint";
+import { ReadingState, ViewMenu } from "reading.slint";
+import { SigningState } from "signing.slint";
+import { RedactState } from "redaction.slint";
+import { EditState } from "edit.slint";
+
+// The page number, typed to jump.
+component PageEntry inherits Rectangle {
+    width: max(34px, input.preferred-width + 14px);
+    height: 24px;
+    border-radius: 5px;
+    background: input.has-focus ? Theme.chrome : Theme.track;
+    border-width: input.has-focus ? 1.5px : Theme.high-contrast ? 1px : 0px;
+    border-color: input.has-focus ? Theme.focus : Theme.control-border;
+
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 5 {
+            input.focus();
+        }
+    }
+
+    input := TextInput {
+        x: 7px;
+        width: parent.width - 14px;
+        text: AppState.page-label;
+        color: Theme.text;
+        font-size: Theme.font-small;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        single-line: true;
+        accessible-label: @tr("Page number");
+        accessible-description: @tr("of {}. Type a page and press Enter", AppState.page-count);
+        accepted => {
+            AppState.page-entered(self.text);
+        }
+        changed has-focus => {
+            if self.has-focus {
+                self.select-all();
+            } else {
+                self.text = AppState.page-label;
+            }
+        }
+    }
+}
+
+component ZoomMenu inherits Pressable {
+    label: @tr("Zoom {}", AppState.zoom-label);
+    description: @tr("Choose a zoom level");
+    arrows: false;
+    accessible-expandable: true;
+    clicked => {
+        menu.show();
+    }
+    width: 52px;
+    height: Theme.touch ? 40px : 30px;
+    border-radius: Theme.radius-small;
+    background: self.has-hover && self.enabled ? Theme.hover : transparent;
+
+    Text {
+        text: AppState.zoom-label;
+        color: root.enabled ? Theme.text : Theme.faint;
+        font-size: Theme.font-body;
+        font-weight: 500;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        accessible-role: none;
+    }
+
+    menu := PopupWindow {
+        x: Theme.rtl ? 0px : root.width - 200px;
+        y: root.height + 6px;
+        width: 200px;
+        MenuCard {
+            MenuItem {
+                text: @tr("Fit width");
+                shortcut: "Ctrl+2";
+                initial-focus: true;
+                clicked => {
+                    menu.close();
+                    AppState.fit-width();
+                }
+            }
+            MenuItem {
+                text: @tr("Fit page");
+                shortcut: "Ctrl+0";
+                clicked => {
+                    menu.close();
+                    AppState.fit-page();
+                }
+            }
+            MenuItem {
+                text: @tr("Actual size");
+                shortcut: "Ctrl+1";
+                clicked => {
+                    menu.close();
+                    AppState.set-zoom(100);
+                }
+            }
+            Divider { }
+            for z in [50, 75, 100, 125, 150, 200, 400]: MenuItem {
+                text: z + "%";
+                clicked => {
+                    menu.close();
+                    AppState.set-zoom(z);
+                }
+            }
+        }
+    }
+}
+
+export component ToolRow inherits Rectangle {
+    property <bool> organize: AppState.mode == Mode.organize;
+    // 0 view, 1 annotate, 2 fill and sign, 3 edit, 4 organize.
+    property <int> group: organize ? 4 : Chrome.group;
+    property <int> tool: AppState.tool;
+    property <bool> some: AppState.selected-count > 0;
+    // Something is selected and the inspector is closed: what is most often done to a
+    // selection takes the place of the tool's options here. Not beside the selection,
+    // where it would cover what is next to it.
+    property <bool> edit-sel: tool == 7 && EditState.count > 0 && !EditState.text-editing && !EditState.cropping;
+    property <bool> annot-sel: tool != 7 && AppState.has-selection && !RedactState.has-mark;
+    property <bool> sel: !organize && !Chrome.inspector-open && !SigningState.panel-open && (edit-sel || annot-sel);
+
+    // Names on every tool while they fit. Short of room the hint goes first, then the
+    // names of all but the chosen tool (`tight`); at the window's narrowest also the chosen
+    // tool's name and what the inspector has too (`cramped`). Measured from what the names
+    // need, not from what is shown, so none of it depends on itself.
+    property <length> gap-start: Theme.rtl ? end.x + end.width : start.x + start.width;
+    property <length> gap-end: Theme.rtl ? start.x : end.x;
+    property <length> room: max(0px, gap-end - gap-start - 24px);
+    property <length> names-width: group == 0 ? v1.full-width + v2.full-width + v3.full-width + v4.full-width + v5.full-width : group == 1 ? a1.full-width + a2.full-width + a3.full-width + a4.full-width + a5.full-width : group == 2 ? s1.full-width + s2.full-width + s3.full-width + s4.full-width : group == 3 ? e1.full-width + e2.full-width + e3.full-width + e4.full-width : o1.full-width + o2.full-width + o3.full-width + o4.full-width + o5.full-width + o6.full-width + o7.full-width + o8.full-width + o9.full-width;
+    property <length> icons-width: group == 0 ? v1.tight-width + v2.tight-width + v3.tight-width + v4.tight-width + v5.tight-width : group == 1 ? a1.tight-width + a2.tight-width + a3.tight-width + a4.tight-width + a5.tight-width : group == 2 ? s1.tight-width + s2.tight-width + s3.tight-width + s4.tight-width : group == 3 ? e1.tight-width + e2.tight-width + e3.tight-width + e4.tight-width : o1.tight-width + o2.tight-width + o3.tight-width + o4.tight-width + o5.tight-width + o6.tight-width + o7.tight-width + o8.tight-width + o9.tight-width;
+    // What the chosen tool's name takes.
+    property <length> chosen-width: group == 1 ? (tool == 1 ? a2.full-width - a2.tight-width : tool == 2 ? a3.full-width - a3.tight-width : tool == 3 && AppState.text-mode == 0 ? a4.full-width - a4.tight-width : tool == 3 ? a5.full-width - a5.tight-width : a1.full-width - a1.tight-width) : group == 2 ? (tool == 5 ? s1.full-width - s1.tight-width : tool == 4 ? s2.full-width - s2.tight-width : tool == 8 ? s3.full-width - s3.tight-width : 0px) : group == 3 ? (tool == 7 ? e1.full-width - e1.tight-width : tool == 6 ? e4.full-width - e4.tight-width : 0px) : 0px;
+    // What always shows with the tools.
+    property <length> fixed-width: sep-a.width + colour.width + pen.width + size.width + sep-s.width + sep-e.width + sep-r.width + apply.width + sep-t.width + bold.width + italic.width + text-colour.width + done.width + sep-o1.width + sep-o2.width + sep-c.width + count.width + sep-sel.width + sel-colour.width + obj-colour.width + sel-comment.width + sel-copy.width + sel-delete.width;
+    // The page text being typed, and selected text of the page.
+    property <bool> typing: group == 3 && tool == 7 && EditState.text-editing;
+    property <bool> sel-has-text: sel && edit-sel && EditState.is-text;
+    // What gives way last: the count of marks, and the sizes of the selection and of the
+    // text being typed (the inspector has them, and the toolbar's button opens it).
+    property <length> optional-width: (group == 3 && tool == 6 ? marks-text.preferred-width + 16px : 0px) + (sel && annot-sel && AppState.sel-has-width ? sel-width.full-width : 0px) + (sel && annot-sel && AppState.sel-has-font ? sel-font.full-width : 0px) + (typing ? text-size.full-width : 0px) + (sel-has-text ? obj-size.full-width : 0px);
+    // The selection's own names give way with the tools'.
+    property <length> sel-names-width: !sel ? 0px : sel-insp.full-width + (annot-sel ? sel-name-text.preferred-width + 12px : 0px) + (sel-has-text ? sel-text.full-width : 0px);
+    property <length> sel-icons-width: !sel ? 0px : sel-insp.tight-width + (sel-has-text ? sel-text.tight-width : 0px);
+    property <bool> tight: names-width + sel-names-width + fixed-width + optional-width > room;
+    property <bool> cramped: icons-width + chosen-width + sel-icons-width + fixed-width + optional-width > room;
+    property <string> hint: organize || sel ? "" : group == 1 && tool == 1 ? @tr("Drag across text to mark it. Double-click marks a word.") : group == 1 && tool == 2 ? (AppState.shape == 0 ? @tr("Draw on the page with the mouse or a pen.") : @tr("Drag on the page to draw. Hold Shift for squares, circles and straight angles.")) : group == 1 && tool == 3 && AppState.text-mode == 0 ? Keys.label(@tr("Click on the page to add a text box, or drag to size it. Esc, Ctrl+Enter or a click elsewhere finishes."), false) : group == 2 && tool == 5 && AppState.fields.length == 0 ? @tr("This document has no form fields.") : group == 3 && tool == 7 && EditState.count == 0 && !EditState.text-editing && !EditState.cropping ? @tr("Double-click text to change it.") : "";
+    property <bool> hinted: hint != "" && names-width + sel-names-width + fixed-width + optional-width + hint-text.preferred-width + 22px <= room;
+
+    // F6 comes to the chosen tool, or the first of the group.
+    property <int> focus-serial: FocusNav.serial;
+    changed focus-serial => {
+        if FocusNav.region == 8 {
+            if group == 0 {
+                v1.focus-button();
+            } else if group == 1 {
+                if tool == 1 {
+                    a2.focus-button();
+                } else if tool == 2 {
+                    a3.focus-button();
+                } else if tool == 3 && AppState.text-mode == 0 {
+                    a4.focus-button();
+                } else if tool == 3 {
+                    a5.focus-button();
+                } else {
+                    a1.focus-button();
+                }
+            } else if group == 2 {
+                if tool == 4 {
+                    s2.focus-button();
+                } else if tool == 8 {
+                    s3.focus-button();
+                } else {
+                    s1.focus-button();
+                }
+            } else if group == 3 {
+                if tool == 6 {
+                    e4.focus-button();
+                } else {
+                    e1.focus-button();
+                }
+            } else {
+                o1.focus-button();
+            }
+        }
+    }
+
+    height: Theme.toolrow-height;
+    background: Theme.chrome;
+    accessible-role: region;
+    accessible-label: @tr("Tools");
+
+    // Placed, not laid out: the row's own size must not follow what it shows. In the
+    // order the Tab key goes: undo, the tools, then where the document is.
+    start := RowLayout {
+        x: Theme.rtl ? root.width - 10px - self.width : 10px;
+        y: 0px;
+        width: self.preferred-width;
+        height: root.height;
+        cross-axis-alignment: center;
+        ToolButton {
+            labelled: false;
+            icon: (Theme.rtl ? @image-url("icons/redo.svg") : @image-url("icons/undo.svg"));
+            label: AppState.undo-label != "" ? @tr("Undo {}", AppState.undo-label) : @tr("Undo");
+            description: "Ctrl+Z";
+            enabled: AppState.can-undo;
+            clicked => {
+                AppState.undo();
+            }
+        }
+        ToolButton {
+            labelled: false;
+            icon: (Theme.rtl ? @image-url("icons/undo.svg") : @image-url("icons/redo.svg"));
+            label: AppState.redo-label != "" ? @tr("Redo {}", AppState.redo-label) : @tr("Redo");
+            description: "Ctrl+Shift+Z";
+            enabled: AppState.can-redo;
+            clicked => {
+                AppState.redo();
+            }
+        }
+    }
+
+
+    Rectangle {
+        property <length> w: min(tools.preferred-width, root.room);
+        x: max(root.gap-start + 12px, min((root.width - self.w) / 2, root.gap-end - 12px - self.w));
+        y: 0px;
+        width: self.w;
+        height: root.height;
+        clip: true;
+
+        tools := RowLayout {
+            x: Theme.rtl ? parent.width - self.width : 0px;
+            width: self.preferred-width;
+            alignment: LayoutAlignment.start;
+            cross-axis-alignment: center;
+
+            // View: nothing to choose, the pointer selects text.
+            v1 := ToolButton {
+                shown: root.group == 0;
+                labelled: !root.tight;
+                icon: @image-url("icons/reflow.svg");
+                label: @tr("Reading view");
+                description: "Ctrl+Shift+R";
+                checkable: true;
+                checked: ReadingState.reflow;
+                clicked => {
+                    ReadingState.toggle-reflow();
+                }
+            }
+            v2 := ToolButton {
+                shown: root.group == 0;
+                labelled: !root.tight;
+                icon: @image-url("icons/speaker.svg");
+                label: @tr("Read aloud");
+                description: ReadAloudState.available ? "Ctrl+Shift+V" : @tr("No speech engine was found on this system");
+                enabled: ReadAloudState.available;
+                checkable: true;
+                checked: ReadAloudState.visible;
+                clicked => {
+                    ReadAloudState.show(!ReadAloudState.visible);
+                }
+            }
+            v3 := ToolButton {
+                shown: root.group == 0;
+                labelled: !root.tight;
+                icon: @image-url("icons/present.svg");
+                label: @tr("Present");
+                description: "F5";
+                clicked => {
+                    ReadingState.present();
+                }
+            }
+            v4 := ToolButton {
+                shown: root.group == 0;
+                labelled: !root.tight;
+                icon: @image-url("icons/bookmark.svg");
+                label: ReadingState.page-bookmarked ? @tr("Remove bookmark") : @tr("Bookmark this page");
+                description: "Ctrl+D";
+                checkable: true;
+                checked: ReadingState.page-bookmarked;
+                clicked => {
+                    ReadingState.toggle-bookmark();
+                }
+            }
+            v5 := ToolButton {
+                shown: root.group == 0;
+                labelled: !root.tight;
+                icon: @image-url("icons/outline.svg");
+                label: @tr("Bookmarks");
+                description: "Ctrl+B";
+                checkable: true;
+                checked: ReadingState.bookmarks-visible;
+                clicked => {
+                    ReadingState.show-bookmarks(!ReadingState.bookmarks-visible);
+                }
+            }
+
+            // Annotate.
+            a1 := ToolButton {
+                shown: root.group == 1;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/select.svg");
+                // TRANSLATORS: the tools; Select picks text and annotations
+                label: @tr("Select");
+                checkable: true;
+                checked: root.tool == 0;
+                clicked => {
+                    Chrome.set-tool(0);
+                }
+            }
+            a2 := ToolButton {
+                shown: root.group == 1;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: AppState.markup-kind == 1 ? @image-url("icons/underline.svg") : AppState.markup-kind == 2 ? @image-url("icons/strike.svg") : @image-url("icons/highlight.svg");
+                label: AppState.markup-kind == 1 ? @tr("Underline") : AppState.markup-kind == 2 ? @tr("Strike") : @tr("Highlight");
+                description: self.checked ? @tr("Click again for underline and strike") : "";
+                checkable: true;
+                checked: root.tool == 1;
+                caret: true;
+                clicked => {
+                    if root.tool == 1 {
+                        markup-menu.show();
+                    } else {
+                        Chrome.set-tool(1);
+                    }
+                }
+                markup-menu := PopupWindow {
+                    y: a2.height + 6px;
+                    width: 190px;
+                    MenuCard {
+                        for it[i] in [
+                            { label: @tr("Highlight"), icon: @image-url("icons/highlight.svg") },
+                            { label: @tr("Underline"), icon: @image-url("icons/underline.svg") },
+                            { label: @tr("Strike"), icon: @image-url("icons/strike.svg") },
+                        ]: MenuItem {
+                            text: it.label;
+                            icon: it.icon;
+                            initial-focus: i == AppState.markup-kind;
+                            clicked => {
+                                markup-menu.close();
+                                AppState.markup-kind = i;
+                                AppState.option-changed("markup");
+                            }
+                        }
+                    }
+                }
+            }
+            a3 := ToolButton {
+                shown: root.group == 1;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: AppState.shape == 1 ? @image-url("icons/rect.svg") : AppState.shape == 2 ? @image-url("icons/ellipse.svg") : AppState.shape == 3 ? @image-url("icons/line.svg") : AppState.shape == 4 ? @image-url("icons/arrow.svg") : @image-url("icons/draw.svg");
+                // TRANSLATORS: Line: noun, the shape tool for straight lines
+                label: AppState.shape == 1 ? @tr("Box") : AppState.shape == 2 ? @tr("Ellipse") : AppState.shape == 3 ? @tr("Line") : AppState.shape == 4 ? @tr("Arrow") : @tr("Draw");
+                description: self.checked ? @tr("Click again for shapes") : "";
+                checkable: true;
+                checked: root.tool == 2;
+                caret: true;
+                clicked => {
+                    if root.tool == 2 {
+                        shape-menu.show();
+                    } else {
+                        Chrome.set-tool(2);
+                    }
+                }
+                shape-menu := PopupWindow {
+                    y: a3.height + 6px;
+                    width: 190px;
+                    MenuCard {
+                        for it[i] in [
+                            { label: @tr("Pen"), icon: @image-url("icons/pen.svg") },
+                            { label: @tr("Box"), icon: @image-url("icons/rect.svg") },
+                            { label: @tr("Ellipse"), icon: @image-url("icons/ellipse.svg") },
+                            { label: @tr("Line"), icon: @image-url("icons/line.svg") },
+                            { label: @tr("Arrow"), icon: @image-url("icons/arrow.svg") },
+                        ]: MenuItem {
+                            text: it.label;
+                            icon: it.icon;
+                            initial-focus: i == AppState.shape;
+                            clicked => {
+                                shape-menu.close();
+                                AppState.shape = i;
+                                AppState.option-changed("shape");
+                            }
+                        }
+                    }
+                }
+            }
+            a4 := ToolButton {
+                shown: root.group == 1;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/text.svg");
+                label: @tr("Text box");
+                checkable: true;
+                checked: root.tool == 3 && AppState.text-mode == 0;
+                clicked => {
+                    if AppState.text-mode != 0 {
+                        AppState.text-mode = 0;
+                        AppState.option-changed("text-mode");
+                    }
+                    Chrome.set-tool(3);
+                }
+            }
+            a5 := ToolButton {
+                shown: root.group == 1;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/note.svg");
+                label: @tr("Note");
+                checkable: true;
+                checked: root.tool == 3 && AppState.text-mode == 1;
+                clicked => {
+                    if AppState.text-mode != 1 {
+                        AppState.text-mode = 1;
+                        AppState.option-changed("text-mode");
+                    }
+                    Chrome.set-tool(3);
+                }
+            }
+            // The chosen tool's colour and size, next to it.
+            sep-a := ToolSep {
+                shown: root.group == 1 && root.tool >= 1 && root.tool <= 3 && !root.sel;
+            }
+            colour := ColourButton {
+                shown: root.group == 1 && root.tool >= 1 && root.tool <= 3 && !root.sel;
+                selected: AppState.colour;
+                picked(i) => {
+                    AppState.colour = i;
+                    AppState.option-changed("colour");
+                }
+            }
+            pen := ValueButton {
+                shown: root.group == 1 && root.tool == 2 && !root.sel;
+                label: @tr("Width");
+                value-text: @tr("{} pt", round(AppState.pen-width * 10) / 10);
+                current: AppState.pen-width;
+                minimum: 0.5;
+                maximum: 12;
+                check-text: AppState.shape == 0 ? @tr("Smooth strokes") : "";
+                checked <=> AppState.smoothing;
+                changed-value(v) => {
+                    AppState.pen-width = v;
+                }
+                released => {
+                    AppState.option-changed("width");
+                }
+            }
+            size := ValueButton {
+                shown: root.group == 1 && root.tool == 3 && AppState.text-mode == 0 && !root.sel;
+                label: @tr("Font size");
+                value-text: @tr("{} pt", round(AppState.font-size));
+                current: AppState.font-size;
+                minimum: 6;
+                maximum: 48;
+                changed-value(v) => {
+                    AppState.font-size = v;
+                }
+            }
+
+            // Fill and sign.
+            s1 := ToolButton {
+                shown: root.group == 2;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/form.svg");
+                label: @tr("Fill forms");
+                checkable: true;
+                checked: root.tool == 5;
+                clicked => {
+                    Chrome.set-tool(5);
+                }
+            }
+            s2 := ToolButton {
+                shown: root.group == 2;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/sign.svg");
+                // TRANSLATORS: verb, the tool for placing a handwritten signature
+                label: @tr("Sign");
+                checkable: true;
+                checked: root.tool == 4;
+                clicked => {
+                    Chrome.set-tool(4);
+                }
+            }
+            sep-s := ToolSep {
+                shown: root.group == 2;
+            }
+            s3 := ToolButton {
+                shown: root.group == 2;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/edit.svg");
+                label: @tr("Prepare form");
+                checkable: true;
+                checked: root.tool == 8;
+                clicked => {
+                    Chrome.set-tool(8);
+                }
+            }
+            s4 := ToolButton {
+                shown: root.group == 2;
+                labelled: !root.tight;
+                icon: @image-url("icons/seal.svg");
+                label: @tr("Sign with a certificate…");
+                clicked => {
+                    SigningState.action("open-sign", "");
+                }
+            }
+
+            // Edit: what is on the page itself, and taking it out for good.
+            e1 := ToolButton {
+                shown: root.group == 3;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/edit.svg");
+                label: @tr("Edit text and images");
+                description: "Ctrl+E";
+                checkable: true;
+                checked: root.tool == 7;
+                clicked => {
+                    Chrome.set-tool(7);
+                }
+            }
+            e2 := ToolButton {
+                shown: root.group == 3;
+                labelled: !root.tight;
+                icon: @image-url("icons/text.svg");
+                label: @tr("Add text");
+                description: @tr("Click on the page where the text goes");
+                clicked => {
+                    Chrome.set-tool(7);
+                    EditState.action("add-text", "");
+                }
+            }
+            e3 := ToolButton {
+                shown: root.group == 3;
+                labelled: !root.tight;
+                icon: @image-url("icons/upload.svg");
+                label: @tr("Add image…");
+                clicked => {
+                    Chrome.set-tool(7);
+                    EditState.action("add-image", "");
+                }
+            }
+            sep-e := ToolSep {
+                shown: root.group == 3;
+            }
+            e4 := ToolButton {
+                shown: root.group == 3;
+                labelled: !root.tight || (self.checked && !root.cramped);
+                icon: @image-url("icons/eye-off.svg");
+                // TRANSLATORS: the tool that marks what to remove for good
+                label: @tr("Redact");
+                checkable: true;
+                checked: root.tool == 6;
+                clicked => {
+                    Chrome.set-tool(6);
+                }
+            }
+            sep-r := ToolSep {
+                shown: root.group == 3 && root.tool == 6;
+            }
+            marks := Rectangle {
+                property <bool> shown: root.group == 3 && root.tool == 6 && !root.cramped;
+                width: self.shown ? marks-text.preferred-width + 16px : 0px;
+                visible: self.shown;
+                marks-text := Text {
+                    text: RedactState.marks > 0 ? @tr("{n} marked" | "{n} marked" % RedactState.marks) : @tr("Nothing marked");
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    vertical-alignment: center;
+                }
+            }
+            apply := ToolButton {
+                shown: root.group == 3 && root.tool == 6;
+                label: @tr("Apply redactions…");
+                primary: true;
+                enabled: RedactState.marks > 0 && !RedactState.busy;
+                clicked => {
+                    RedactState.action("confirm", "");
+                }
+            }
+            // The style of the page text being typed.
+            sep-t := ToolSep {
+                shown: root.typing;
+            }
+            bold := ToolButton {
+                shown: root.typing;
+                labelled: false;
+                icon: @image-url("icons/bold.svg");
+                label: @tr("Bold");
+                description: "Ctrl+B";
+                checkable: true;
+                checked: EditState.style-bold == 1;
+                clicked => {
+                    EditState.action("text-bold", EditState.style-bold == 1 ? "0" : "1");
+                }
+            }
+            italic := ToolButton {
+                shown: root.typing;
+                labelled: false;
+                icon: @image-url("icons/italic.svg");
+                label: @tr("Italic");
+                description: "Ctrl+I";
+                checkable: true;
+                checked: EditState.style-italic == 1;
+                clicked => {
+                    EditState.action("text-italic", EditState.style-italic == 1 ? "0" : "1");
+                }
+            }
+            text-colour := ColourButton {
+                shown: root.typing;
+                label: @tr("Text colour");
+                selected: EditState.style-fill;
+                picked(i) => {
+                    EditState.action("text-fill", i);
+                }
+            }
+            text-size := SizeButton {
+                shown: root.typing && !root.cramped;
+                current: EditState.style-size;
+                presets: EditState.size-presets;
+                picked(v) => {
+                    EditState.action("text-size", v);
+                }
+            }
+            done := ToolButton {
+                shown: root.typing;
+                label: @tr("Done");
+                primary: true;
+                clicked => {
+                    EditState.action("text-done", "");
+                }
+            }
+
+            // The selection: its name, then what is most often done to it.
+            sep-sel := ToolSep {
+                shown: root.sel;
+            }
+            sel-name := Rectangle {
+                property <bool> shown: root.sel && root.annot-sel && !root.tight;
+                width: self.shown ? sel-name-text.preferred-width + 12px : 0px;
+                visible: self.shown;
+                sel-name-text := Text {
+                    text: AppState.sel-kind;
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    vertical-alignment: center;
+                    accessible-role: none;
+                }
+            }
+            sel-colour := ColourButton {
+                shown: root.sel && root.annot-sel && !AppState.sel-is-signature;
+                selected: AppState.sel-colour;
+                picked(i) => {
+                    AppState.selection-action("colour:" + i);
+                }
+            }
+            sel-width := ValueButton {
+                shown: root.sel && root.annot-sel && AppState.sel-has-width && !root.cramped;
+                label: @tr("Line width");
+                value-text: @tr("{} pt", round(AppState.sel-width * 10) / 10);
+                current: AppState.sel-width;
+                minimum: 0.5;
+                maximum: 12;
+                released(v) => {
+                    AppState.selection-action("width:" + v);
+                }
+            }
+            sel-font := ValueButton {
+                shown: root.sel && root.annot-sel && AppState.sel-has-font && !root.cramped;
+                label: @tr("Font size");
+                value-text: @tr("{} pt", round(AppState.sel-font-size));
+                current: AppState.sel-font-size;
+                minimum: 6;
+                maximum: 48;
+                released(v) => {
+                    AppState.selection-action("font:" + v);
+                }
+            }
+            // Text and shapes of the page: the colour, and the size of text.
+            obj-colour := ColourButton {
+                shown: root.sel && root.edit-sel && (EditState.is-text || EditState.has-fill);
+                label: EditState.is-text ? @tr("Text colour") : @tr("Fill colour");
+                selected: EditState.fill;
+                picked(i) => {
+                    EditState.action("fill", i);
+                }
+            }
+            obj-size := SizeButton {
+                shown: root.sel-has-text && !root.cramped;
+                current: EditState.font-size;
+                presets: EditState.size-presets;
+                picked(v) => {
+                    EditState.action("font-size", v);
+                }
+            }
+            sel-text := ToolButton {
+                shown: root.sel-has-text;
+                labelled: !root.tight;
+                icon: @image-url("icons/text.svg");
+                label: @tr("Edit text");
+                description: "Enter";
+                clicked => {
+                    EditState.action("edit-text", "");
+                }
+            }
+            sel-comment := ToolButton {
+                shown: root.sel && root.annot-sel;
+                labelled: false;
+                icon: @image-url("icons/chat.svg");
+                // TRANSLATORS: noun, heading above the comment text
+                label: @tr("Comment");
+                clicked => {
+                    Chrome.focus-comment = true;
+                    Chrome.toggle-inspector();
+                }
+            }
+            sel-copy := ToolButton {
+                shown: root.sel && root.edit-sel;
+                labelled: false;
+                icon: @image-url("icons/duplicate.svg");
+                label: @tr("Duplicate");
+                description: "Ctrl+D";
+                clicked => {
+                    EditState.action("duplicate", "");
+                }
+            }
+            sel-delete := ToolButton {
+                shown: root.sel;
+                labelled: false;
+                danger: true;
+                icon: @image-url("icons/trash.svg");
+                label: @tr("Delete");
+                description: "Delete";
+                clicked => {
+                    if root.edit-sel {
+                        EditState.action("delete", "");
+                    } else {
+                        AppState.selection-action("delete");
+                    }
+                }
+            }
+            sel-insp := ToolButton {
+                shown: root.sel && !root.cramped;
+                labelled: !root.tight;
+                icon: @image-url("icons/panel-right.svg");
+                label: @tr("Properties");
+                clicked => {
+                    Chrome.toggle-inspector();
+                }
+            }
+
+            // Organize: what is done to the selected pages, then what makes new files.
+            o1 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/insert.svg");
+                label: @tr("Insert pages…");
+                clicked => {
+                    AppState.organize-action("insert");
+                }
+            }
+            sep-o1 := ToolSep {
+                shown: root.group == 4;
+            }
+            o2 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/undo.svg");
+                label: @tr("Rotate left");
+                enabled: root.some;
+                clicked => {
+                    AppState.organize-action("rotate-left");
+                }
+            }
+            o3 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/rotate.svg");
+                label: @tr("Rotate");
+                enabled: root.some;
+                clicked => {
+                    AppState.organize-action("rotate");
+                }
+            }
+            o4 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/duplicate.svg");
+                label: @tr("Duplicate");
+                enabled: root.some;
+                clicked => {
+                    AppState.organize-action("duplicate");
+                }
+            }
+            o5 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/extract.svg");
+                label: @tr("Extract…");
+                enabled: root.some;
+                clicked => {
+                    AppState.organize-action("extract");
+                }
+            }
+            o6 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/crop.svg");
+                label: @tr("Crop…");
+                enabled: root.some;
+                clicked => {
+                    AppState.organize-action("crop");
+                }
+            }
+            o7 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/trash.svg");
+                // TRANSLATORS: verb, on a button that deletes the selected pages
+                label: @tr("Remove");
+                danger: true;
+                enabled: root.some;
+                clicked => {
+                    AppState.organize-action("remove");
+                }
+            }
+            sep-o2 := ToolSep {
+                shown: root.group == 4;
+            }
+            o8 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/split.svg");
+                label: @tr("Split…");
+                clicked => {
+                    AppState.organize-action("split");
+                }
+            }
+            o9 := ToolButton {
+                shown: root.group == 4;
+                labelled: !root.tight;
+                icon: @image-url("icons/combine.svg");
+                label: @tr("Merge…");
+                clicked => {
+                    AppState.organize-action("merge");
+                }
+            }
+            sep-c := ToolSep {
+                shown: root.group == 4;
+            }
+            count := Rectangle {
+                property <bool> shown: root.group == 4;
+                width: self.shown ? count-text.preferred-width + 12px : 0px;
+                visible: self.shown;
+                count-text := Text {
+                    text: @tr("{n} page" | "{n} pages" % AppState.page-count) + (AppState.selected-count > 0 ? " · " + @tr("{n} selected" | "{n} selected" % AppState.selected-count) : "");
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    vertical-alignment: center;
+                }
+            }
+
+            // What the chosen tool wants done, while there is room to say it.
+            ToolSep {
+                shown: root.hinted;
+            }
+            Rectangle {
+                width: root.hinted ? hint-text.preferred-width + 9px : 0px;
+                visible: root.hinted;
+                hint-text := Text {
+                    text: root.hint;
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    vertical-alignment: center;
+                    accessible-role: none;
+                }
+            }
+        }
+    }
+
+    // Where the document is: back after a jump, the page, the zoom, the layout.
+    end := RowLayout {
+        x: Theme.rtl ? 10px : root.width - 10px - self.width;
+        y: 0px;
+        width: self.preferred-width;
+        height: root.height;
+        cross-axis-alignment: center;
+        if !root.organize && AppState.can-back: ToolButton {
+            labelled: false;
+            icon: (Theme.rtl ? @image-url("icons/go-forward.svg") : @image-url("icons/back.svg"));
+            label: @tr("Back");
+            description: "Alt+Left";
+            clicked => {
+                AppState.back();
+            }
+        }
+        if !root.organize && AppState.can-forward: ToolButton {
+            labelled: false;
+            icon: (Theme.rtl ? @image-url("icons/back.svg") : @image-url("icons/go-forward.svg"));
+            label: @tr("Forward");
+            description: "Alt+Right";
+            clicked => {
+                AppState.forward();
+            }
+        }
+        if !root.organize: ToolButton {
+            labelled: false;
+            icon: (Theme.rtl ? @image-url("icons/chevron-right.svg") : @image-url("icons/chevron-left.svg"));
+            label: @tr("Previous page");
+            enabled: AppState.current-page > 0;
+            clicked => {
+                AppState.go-to-page(AppState.current-page - 1);
+            }
+        }
+        if !root.organize: PageEntry { }
+        if !root.organize: Text {
+            // With page labels (i, ii, A-1) the box shows the label: the number too.
+            property <string> number: AppState.current-page + 1;
+            // TRANSLATORS: after the page number field, {} is the page count; the
+            // second form when the field shows a page label: (page number of count)
+            text: " " + (AppState.page-label != "" && AppState.page-label != self.number ? @tr("({} of {})", self.number, AppState.page-count) : @tr("of {}", AppState.page-count));
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+        }
+        if !root.organize: ToolButton {
+            labelled: false;
+            icon: (Theme.rtl ? @image-url("icons/chevron-left.svg") : @image-url("icons/chevron-right.svg"));
+            label: @tr("Next page");
+            enabled: AppState.current-page < AppState.page-count - 1;
+            clicked => {
+                AppState.go-to-page(AppState.current-page + 1);
+            }
+        }
+        if !root.organize: ToolSep { }
+        if !root.organize && root.width >= 900px: ToolButton {
+            labelled: false;
+            icon: @image-url("icons/minus.svg");
+            label: @tr("Zoom out");
+            description: "Ctrl+-";
+            clicked => {
+                AppState.zoom-out();
+            }
+        }
+        if !root.organize: ZoomMenu { }
+        if !root.organize && root.width >= 900px: ToolButton {
+            labelled: false;
+            icon: @image-url("icons/plus.svg");
+            label: @tr("Zoom in");
+            description: "Ctrl++";
+            clicked => {
+                AppState.zoom-in();
+            }
+        }
+        if !root.organize: ViewMenu {
+            has-doc: true;
+        }
+    }
+
+    Rectangle {
+        y: root.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+}

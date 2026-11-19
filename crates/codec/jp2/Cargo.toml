@@ -1,0 +1,19 @@
+[package]
+name = "pagebara-jp2"
+description = "JPEG 2000 decoder: JP2/J2K/JPH, JPX, HTJ2K, reduced-resolution and region decode"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-budget.workspace = true
+pagebara-thread = { workspace = true, features = ["rayon"] }
+rayon.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+# Pure-Rust oracle for in-process comparisons (tests/benches only).
+hayro-jpeg2000 = { version = "0.3", default-features = false, features = ["std", "simd"] }
+
+[lints]
+workspace = true

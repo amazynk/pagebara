@@ -1,0 +1,47 @@
+[package]
+name = "pagebara-app-core"
+description = "UI-agnostic app logic: documents, page view geometry, tile cache and scheduling"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-i18n.workspace = true
+pagebara-syntax.workspace = true
+pagebara-pages.workspace = true
+pagebara-annot.workspace = true
+pagebara-content.workspace = true
+pagebara-tagged.workspace = true
+pagebara-render.workspace = true
+pagebara-forms.workspace = true
+pagebara-fdf.workspace = true
+pagebara-formdetect.workspace = true
+pagebara-sign.workspace = true
+pagebara-redact.workspace = true
+pagebara-edit.workspace = true
+pagebara-ocr.workspace = true
+pagebara-spell.workspace = true
+pagebara-filters.workspace = true
+pagebara-thread = { workspace = true, features = ["rayon"] }
+rayon.workspace = true
+parking_lot.workspace = true
+log.workspace = true
+pagebara-identity.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+memchr.workspace = true
+unicode-segmentation = "1.13"
+sha2.workspace = true
+
+# Printing on Windows calls the spooler and GDI (print/win32.rs).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Graphics_Gdi", "Win32_Graphics_Printing", "Win32_Storage_Xps"] }
+
+# The workspace lints, except that unsafe code is denied rather than forbidden: the Windows
+# print path (print/win32.rs) calls C APIs and allows it there only.
+[lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

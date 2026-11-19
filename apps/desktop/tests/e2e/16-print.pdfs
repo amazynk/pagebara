@@ -1,0 +1,56 @@
+# Printing through a stand-in `lp` (see run.sh): Ctrl+P opens the dialog with the printer
+# and a preview; two copies of pages 2-3 reach the printer as a valid two-page PDF; the
+# options turn into lp arguments; Save as PDF writes the print file anywhere.
+cursor on
+open "$SAMPLES/lease.pdf"
+wait 500
+key ctrl+p
+assert print.visible == true
+assert print.printers contains pagebara-test
+wait 1500
+assert print.previews == 3
+assert print.summary == 4 sheets
+screenshot 16-print-dialog.png
+call print-set copies 2
+call print-set pages "2-3"
+call print-set quality 150
+wait 800
+assert print.summary == 2 sheets × 2 copies
+assert print.previews == 2
+click #PrintDialog::print-button 300
+wait 2500
+assert print.busy == false
+assert print.visible == false
+assert print.result contains Sent 2 pages to pagebara-test
+assert file.exists:$OUT/lp/job.pdf == true
+assert file.text:$OUT/lp/args contains -d pagebara-test -n 2 -o sides=one-sided
+assert pdf.pages:$OUT/lp/job.pdf == 2
+assert qpdf:$OUT/lp/job.pdf == ok
+# Two-sided, greyscale, Letter paper, the current page only.
+key ctrl+p
+call print-set copies 1
+call print-set range current
+call print-set duplex long
+call print-set greyscale true
+call print-set paper Letter
+call print-set quality 150
+wait 800
+screenshot 16-print-grey.png
+call print-go
+wait 2500
+assert file.text:$OUT/lp/args contains -n 1 -o sides=two-sided-long-edge -o media=Letter
+assert pdf.pages:$OUT/lp/job.pdf == 1
+# Save as PDF for printing: every page, no printer needed.
+key ctrl+p
+call print-set range all
+call print-set duplex off
+call print-save "$OUT/print-all.pdf"
+wait 3000
+assert file.exists:$OUT/print-all.pdf == true
+assert pdf.pages:$OUT/print-all.pdf == 4
+assert qpdf:$OUT/print-all.pdf == ok
+# Esc closes the dialog.
+key ctrl+p
+assert print.visible == true
+key escape
+assert print.visible == false

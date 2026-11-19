@@ -1,0 +1,97 @@
+// The banners over the pages and the dialogs for signatures, redaction, text recognition,
+// and the output tools.
+import { Theme } from "theme.slint";
+import { AppState, DialogKind } from "state.slint";
+import { Button } from "components/button.slint";
+import { SigningState, SignatureBanner, SignCertDialog, CreateIdDialog, TrustDialog } from "signing.slint";
+import { RedactState, RedactApplyDialog, RedactReportDialog } from "redaction.slint";
+import { OcrState, OcrBanner, OcrDialog } from "ocr.slint";
+import { SpellState } from "spell-menu.slint";
+import { OptimizeDialog } from "optimize.slint";
+import { PdfaDialog, AccessDialog } from "conformance.slint";
+
+// Offers the spelling dictionary of the document's language, which is downloaded.
+component SpellBanner inherits Rectangle {
+    height: 36px;
+    background: Theme.accent-soft;
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 8px;
+        spacing: 10px;
+        Text {
+            text: SpellState.progress >= 0 ? @tr("Downloading the dictionary… {}%", round(SpellState.progress * 100)) : SpellState.offer;
+            color: Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+            accessible-role: text;
+            accessible-live-region: polite;
+        }
+        if SpellState.progress < 0: Button {
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+            text: @tr("Download");
+            clicked => {
+                SpellState.action("download", "");
+            }
+        }
+        Button {
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+            text: SpellState.progress < 0 ? @tr("Not now") : @tr("Cancel");
+            clicked => {
+                SpellState.action("dismiss", "");
+            }
+        }
+    }
+    Rectangle {
+        y: root.height - 1px;
+        height: 1px;
+        background: Theme.border;
+    }
+}
+
+export component DocBanners inherits VerticalLayout {
+    if SigningState.level >= 0 || SigningState.checking: SignatureBanner { }
+    if OcrState.offer != "": OcrBanner { }
+    if SpellState.offer != "": SpellBanner { }
+}
+
+export component ExtraDialogs inherits Rectangle {
+    if AppState.dialog == DialogKind.sign-cert: SignCertDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.create-id: CreateIdDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.trusted-certs: TrustDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.redact-apply: RedactApplyDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.redact-report: RedactReportDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.ocr: OcrDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.optimize: OptimizeDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.pdfa: PdfaDialog {
+        width: root.width;
+        height: root.height;
+    }
+    if AppState.dialog == DialogKind.access-check: AccessDialog {
+        width: root.width;
+        height: root.height;
+    }
+}

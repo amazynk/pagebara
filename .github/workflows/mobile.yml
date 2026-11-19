@@ -1,0 +1,112 @@
+name: Mobile
+
+on:
+  push:
+    paths: ["apps/mobile/**", "crates/**", "Cargo.*", "rust-toolchain.toml", ".github/workflows/mobile.yml"]
+  pull_request:
+    paths: ["apps/mobile/**", "crates/**", "Cargo.*", "rust-toolchain.toml", ".github/workflows/mobile.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Proves the iOS app builds: the Rust binary for the simulator inside the Xcode project,
+  # unsigned.
+  ios-simulator:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          rustup target add aarch64-apple-ios-sim aarch64-apple-ios
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ios-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+      - name: XcodeGen
+        run: brew install xcodegen
+      - name: Check the device build
+        run: cargo check -p pagebara-mobile --target aarch64-apple-ios
+      - name: Generate the Xcode project
+        run: apps/mobile/ios/generate.sh
+      - name: Build for the simulator
+        run: |
+          xcodebuild -project apps/mobile/ios/pagebara.xcodeproj -scheme pagebara \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug CODE_SIGNING_ALLOWED=NO build
+      - name: The app bundle
+        run: |
+          app=$(find ~/Library/Developer/Xcode/DerivedData -name pagebara.app -path '*iphonesimulator*' | head -1)
+          test -x "$app/pagebara"
+          plutil -p "$app/Info.plist"
+
+  # The Android APK (arm64, debug-signed), with the SDK and NDK of the runner.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Rust toolchain
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          rustup target add aarch64-linux-android
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/cargo-ndk
+            target
+          key: android-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+      - name: cargo-ndk
+        run: command -v cargo-ndk || cargo install cargo-ndk --locked
+      - name: Build the APK
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: apps/mobile/android/build-apk.sh "$PWD/target/android"
+      - name: Inspect
+        run: |
+          aapt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/aapt
+          "$aapt" dump badging target/android/*.apk | head -20
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: target/android/*.apk
+
+  # The phone UI on a desktop, driven by the UI scripts, with screenshots.
+  host-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Packages
+        run: sudo apt-get update && sudo apt-get install -y xvfb libfontconfig1-dev libxkbcommon-dev fonts-noto-cjk
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: host-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+      - name: Tests
+        run: cargo test -p pagebara-mobile -p pagebara-ui -p pagebara-app-core
+      - name: UI scripts
+        run: |
+          cargo build -p pagebara-mobile
+          apps/mobile/tests/run.sh "$RUNNER_TEMP/mobile-ui"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-screenshots
+          path: ${{ runner.temp }}/mobile-ui

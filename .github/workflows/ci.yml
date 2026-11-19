@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+  # Compiling the desktop app with debug info needs about 15 GB of memory, more than a
+  # hosted runner has. Without it the peak is about 9 GB, and backtraces keep their names.
+  CARGO_PROFILE_DEV_DEBUG: 0
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev libxkbcommon-dev libwayland-dev fonts-noto-cjk
+      # Installs the nightly and components pinned in rust-toolchain.toml.
+      - name: Toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --workspace --all-targets --locked
+      - name: Test
+        run: cargo test --workspace --locked
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --all --check
+      - name: Third-party licences are current
+        if: runner.os == 'Linux'
+        run: |
+          python3 packaging/third-party.py "$RUNNER_TEMP/tp.md"
+          diff -u THIRD-PARTY-LICENSES.md "$RUNNER_TEMP/tp.md"
+
+  e2e:
+    name: e2e (Xvfb)
+    runs-on: ubuntu-24.04
+    env:
+      PAGEBARA_OCR_MODELS: ${{ github.workspace }}/.ocr-models
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev \
+            libxkbcommon-dev libwayland-dev xvfb xauth libgl1-mesa-dri libegl1 libxkbcommon-x11-0 \
+            libxcursor1 libxi6 libxrandr2 \
+            at-spi2-core python3-gi gir1.2-atspi-2.0 python3-pyatspi dbus xdotool \
+            speech-dispatcher speech-dispatcher-espeak-ng espeak-ng pulseaudio pulseaudio-utils
+      - name: Toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      # The Latin OCR models (Apache-2.0, PaddlePaddle PP-OCRv5), pinned in pagebara_ocr::model.
+      - name: Cache OCR models
+        id: models
+        uses: actions/cache@v4
+        with:
+          path: .ocr-models
+          key: ocr-models-${{ hashFiles('crates/ocr/src/model.rs') }}
+      - name: Download OCR models
+        if: steps.models.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .ocr-models && cd .ocr-models
+          hf=https://huggingface.co/PaddlePaddle
+          curl -fsSL -o ppocrv5-mobile-det.onnx "$hf/PP-OCRv5_mobile_det_onnx/resolve/e6f4fa85f00e168c862bc462aebca69eef9b3d3d/inference.onnx"
+          curl -fsSL -o ppocrv5-latin-rec.onnx "$hf/latin_PP-OCRv5_mobile_rec_onnx/resolve/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f/inference.onnx"
+          curl -fsSL -o ppocrv5-latin-rec.yml "$hf/latin_PP-OCRv5_mobile_rec_onnx/resolve/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f/inference.yml"
+      - name: Verify OCR models
+        working-directory: .ocr-models
+        run: |
+          sha256sum -c <<'END'
+          a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d  ppocrv5-mobile-det.onnx
+          7888113072263cb471b93f66dd5e2ad70548dc526fa1ace760d0d973dd121498  ppocrv5-latin-rec.onnx
+          0bbe984570f597af3638e50bdf2e8276f3ab26a61966096538b3b0d1849f5c84  ppocrv5-latin-rec.yml
+          END
+      - name: Build
+        run: cargo build --locked -p pagebara-app
+      - name: UI scripts
+        run: PAGEBARA=target/debug/pagebara apps/desktop/tests/e2e/run.sh "$RUNNER_TEMP/e2e"
+      # What a screen reader gets: the app on its own display, D-Bus session and AT-SPI bus,
+      # walked and driven by an AT-SPI client (roles, names, states, actions, focus and
+      # announcement events, the page text). Exit 77 (tools missing) fails here too.
+      - name: Screen reader (AT-SPI)
+        run: PAGEBARA=target/debug/pagebara apps/desktop/tests/a11y/run.sh "$RUNNER_TEMP/a11y"
+      # Read aloud with the real engine: Speech Dispatcher (started by the app) speaking
+      # with eSpeak NG into a null sound card (the runner has none).
+      - name: Read aloud with Speech Dispatcher
+        run: |
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=silent
+          pactl set-default-sink silent
+          PAGEBARA_SPEECH= PAGEBARA=target/debug/pagebara apps/desktop/tests/e2e/run.sh \
+            "$RUNNER_TEMP/e2e-speech" apps/desktop/tests/e2e/18-read-aloud.pdfs
+      - name: Upload logs and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-output
+          path: |
+            ${{ runner.temp }}/e2e
+            ${{ runner.temp }}/a11y
+            ${{ runner.temp }}/e2e-speech
+          retention-days: 7
+
+  print-windows:
+    name: print (Windows spooler)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      # "Microsoft Print to PDF" writes the job to a file instead of paper; it is an
+      # optional feature on Windows Server, turned on here when missing.
+      - name: PDF printer
+        shell: pwsh
+        run: |
+          if (-not (Get-Printer -Name 'Microsoft Print to PDF' -ErrorAction SilentlyContinue)) {
+            Enable-WindowsOptionalFeature -Online -FeatureName Printing-PrintToPDFServices-Features -All -NoRestart
+          }
+          Get-Printer | Format-Table Name, DriverName, PortName
+      - name: Print three sheets through the spooler
+        shell: bash
+        env:
+          PAGEBARA_TEST_PRINTER: Microsoft Print to PDF
+          PAGEBARA_TEST_PRINT_OUT: ${{ runner.temp }}/printed.pdf
+        run: cargo test --locked -p pagebara-app-core prints_through_the_windows_spooler -- --nocapture
+      - name: Upload the printed file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: printed-windows
+          path: ${{ runner.temp }}/printed.pdf
+          if-no-files-found: ignore
+          retention-days: 7
+
+  fuzz:
+    name: fuzz smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fuzz
+      - name: cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Run each target for 60 s
+        working-directory: fuzz
+        run: |
+          ./seed.sh
+          SECS=60 PAR=4 ./run.sh
+          if [ -n "$(find artifacts -type f 2>/dev/null)" ]; then
+            find artifacts -type f
+            exit 1
+          fi
+      - name: Upload crashes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts
+          path: |
+            fuzz/artifacts
+            fuzz/logs

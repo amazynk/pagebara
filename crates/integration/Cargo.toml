@@ -1,0 +1,21 @@
+[package]
+name = "pagebara-integration"
+description = "Optional desktop integration, item by item: what each registers with the system, its status, and undoing exactly that"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-i18n.workspace = true
+pagebara-identity.workspace = true
+pagebara-os.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+
+# Microsoft's safe registry API (per-user keys under HKCU).
+[target.'cfg(windows)'.dependencies]
+windows-registry = "0.6"
+
+[lints]
+workspace = true

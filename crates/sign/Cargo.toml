@@ -1,0 +1,49 @@
+[package]
+name = "pagebara-sign"
+description = "Digital signatures: verify and create PAdES/CMS signatures, RFC 3161 timestamps, LTV"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-syntax.workspace = true
+pagebara-forms.workspace = true
+pagebara-annot.workspace = true
+pagebara-pages.workspace = true
+pagebara-filters.workspace = true
+der = { version = "0.8", features = ["oid", "std"] }
+const-oid = { version = "0.10", features = ["db"] }
+pkcs8 = { version = "0.11", features = ["encryption", "std"] }
+pkcs5 = { version = "0.8", features = ["pbes2", "3des", "alloc"] }
+rsa = { version = "0.10", features = ["pkcs1v15"] }
+p256 = { version = "0.14", features = ["ecdsa"] }
+p384 = { version = "0.14", features = ["ecdsa"] }
+ecdsa = { version = "0.17", features = ["algorithm", "der", "spki", "pkcs8"] }
+sha1 = "0.11"
+sha2.workspace = true
+hmac = "0.13"
+cbc = { version = "0.2", features = ["alloc"] }
+des = "0.9"
+rc2 = "0.9"
+getrandom = { workspace = true, features = ["sys_rng"] }
+thiserror.workspace = true
+
+[dev-dependencies]
+pagebara-render.workspace = true
+pagebara-thread.workspace = true
+
+# Reading the Windows certificate store and the macOS keychain.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Security_Cryptography"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "3.7"
+
+# The workspace lints, except that unsafe code is denied rather than forbidden: the Windows
+# certificate store is reached through FFI, allowed in `keystore/win.rs` only.
+[lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

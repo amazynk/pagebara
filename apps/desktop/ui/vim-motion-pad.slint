@@ -1,0 +1,114 @@
+// A local viewport for trying hjkl without moving the open PDF.
+import { Theme } from "theme.slint";
+import { VimGuide } from "vim-bindings.slint";
+
+component SamplePage inherits Rectangle {
+    background: #ecf4eb;
+    border-radius: 2px;
+    Rectangle { x: 12px; y: 11px; width: 42px; height: 5px; background: #36574c; }
+    Rectangle { x: 12px; y: 21px; width: 66px; height: 2px; background: #a5b9ac; }
+    for i in 5: Rectangle {
+        x: 12px + i * 12px; y: 67px - self.height;
+        height: [9px, 16px, 12px, 25px, 32px][i]; width: 8px;
+        background: i == 4 ? #20684e : #89b9a0;
+    }
+    for i in 3: Rectangle {
+        x: 12px; y: 78px + i * 6px; width: i == 2 ? 41px : 66px;
+        height: 2px; background: #acbdb1;
+    }
+}
+
+export component VimMotionPad inherits FocusScope {
+    in property <length> pad-width;
+    property <length> key-size: min(49px * min(Theme.text-scale, 1.2), (root.width * (wide ? 0.60 : 1.0) - 52px) / 4);
+    property <bool> wide: root.width >= 335px;
+    property <length> offset-x: 0px;
+    property <length> offset-y: 0px;
+    property <string> lit;
+    property <[string]> letters: ["h", "j", "k", "l"];
+    property <[string]> labels: [@tr("Pan left"), @tr("Pan down"), @tr("Pan up"), @tr("Pan right")];
+    width: root.pad-width;
+    property <length> controls-height: 138px * min(Theme.text-scale, 1.25);
+    height: controls-height + (wide ? 0px : 72px);
+    accessible-role: groupbox;
+    accessible-label: @tr("Motion practice");
+    accessible-description: @tr("Use h, j, k and l to pan the sample page.");
+    function pan(k: string) {
+        root.lit = k;
+        if k == "h" || k == "l" { root.offset-x = clamp(root.offset-x + (k == "h" ? 12px : -12px), -48px, 48px); }
+        if k == "j" || k == "k" { root.offset-y = clamp(root.offset-y + (k == "j" ? -16px : 16px), -130px, 54px); }
+    }
+    key-pressed(e) => {
+        if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt
+            && (e.text == "h" || e.text == "j" || e.text == "k" || e.text == "l") {
+            root.pan(e.text);
+            return accept;
+        }
+        reject
+    }
+    Rectangle {
+        clip: true; border-radius: Theme.radius;
+        background: VimGuide.ink;
+        border-width: root.has-focus ? 2px : 1px;
+        border-color: root.has-focus ? Theme.focus : Theme.high-contrast ? Theme.control-border : #365248;
+        Rectangle {
+            x: !root.wide || Theme.rtl ? 10px : parent.width - self.width - 10px;
+            y: root.wide ? 9px : root.controls-height;
+            width: root.wide ? min(260px, parent.width * 0.38) : parent.width - 20px;
+            height: root.wide ? parent.height - 18px : parent.height - self.y - 9px;
+            clip: true; border-radius: 5px;
+            background: #203c34;
+            for i in 11: Rectangle { x: 9px + i * 23px; width: 1px; background: #304d40; }
+            for i in 10: Rectangle { y: 7px + i * 20px; height: 1px; background: #304d40; }
+            for i in 3: SamplePage {
+                x: (parent.width - self.width) / 2 + root.offset-x;
+                y: 8px + (i - 1) * 119px + root.offset-y;
+                width: 92px; height: 110px;
+            }
+            accessible-role: none;
+        }
+        lab := Rectangle {
+            x: Theme.rtl && root.wide ? parent.width - self.width : 0px;
+            width: root.wide ? parent.width * 0.60 : parent.width; height: root.controls-height; y: 0px;
+            title := Text {
+                x: 17px; y: 12px; width: parent.width - 34px;
+                text: @tr("Motion practice"); font-size: Theme.font-heading; font-weight: 700;
+                color: VimGuide.paper; horizontal-alignment: Theme.rtl ? right : left;
+            }
+            Text {
+                x: title.x; y: title.y + title.preferred-height + 3px; width: title.width;
+                text: root.has-focus ? @tr("Use h, j, k and l to pan the sample page.") : @tr("Click a key or Tab to the pad to try it.");
+                font-size: Theme.font-small; color: Theme.high-contrast ? Theme.text : #b9d3c3;
+                horizontal-alignment: Theme.rtl ? right : left; wrap: word-wrap;
+            }
+            for k[i] in root.letters: Rectangle {
+                x: (Theme.rtl ? parent.width - 17px - (root.key-size + 6px) * 4 + 6px : 17px) + i * (root.key-size + 6px);
+                y: parent.height - self.height - 13px;
+                width: root.key-size; height: root.key-size;
+                border-radius: 5px;
+                background: root.lit == k ? VimGuide.mint : hit.has-hover ? #435f50 : #324d41;
+                border-color: root.lit == k ? VimGuide.mint : #6d8b79; border-width: 1px;
+                accessible-role: button; accessible-label: root.labels[i];
+                accessible-action-default => { root.focus(); root.pan(k); }
+                Rectangle {
+                    x: 3px; y: parent.height - 4px; width: parent.width - 6px; height: 2px;
+                    border-radius: 1px; background: root.lit == k ? #739e82 : #192e26;
+                }
+                Text {
+                    x: 8px; y: 2px; text: k;
+                    font-family: "monospace"; font-size: min(22px * Theme.text-scale, root.key-size * 0.50);
+                    font-weight: 700; color: root.lit == k ? VimGuide.ink : #eff8ee;
+                    accessible-role: none;
+                }
+                Text {
+                    x: 0px; y: parent.height - self.preferred-height - 5px;
+                    width: parent.width - 6px; text: ["←", "↓", "↑", "→"][i];
+                    font-size: Theme.font-small; horizontal-alignment: right;
+                    color: root.lit == k ? VimGuide.ink : #b9d3c3;
+                    accessible-role: none;
+                }
+                hit := TouchArea { mouse-cursor: pointer; clicked => { root.focus(); root.pan(k); } }
+            }
+        }
+    }
+}

@@ -1,0 +1,20 @@
+[package]
+name = "pagebara-filters"
+description = "PDF stream filters and predictors"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pagebara-budget.workspace = true
+pagebara-flate.workspace = true
+pagebara-ccitt.workspace = true
+miniz_oxide.workspace = true
+rayon.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+weezl = "0.1"
+
+[lints]
+workspace = true
