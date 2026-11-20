@@ -27,7 +27,7 @@ jobs:
         os: [ubuntu-24.04, windows-2025, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Linux build dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libfontconfig1-dev libxkbcommon-dev libwayland-dev
@@ -56,7 +56,7 @@ jobs:
     env:
       PAGEBARA_OCR_MODELS: ${{ github.workspace }}/.ocr-models
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Dependencies
         run: |
           sudo apt-get update
@@ -124,7 +124,7 @@ jobs:
     name: print (Windows spooler)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
@@ -156,7 +156,7 @@ jobs:
     name: fuzz smoke
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2

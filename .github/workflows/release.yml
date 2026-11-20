@@ -22,7 +22,7 @@ jobs:
     # elsewhere needs cargo-zigbuild (packaging/linux/build-release.sh) for the same result.
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Dependencies
         run: |
           sudo apt-get update
@@ -64,7 +64,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain
         run: rustup toolchain install
       - name: Build
@@ -84,7 +84,7 @@ jobs:
   macos:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain
         run: |
           rustup toolchain install
