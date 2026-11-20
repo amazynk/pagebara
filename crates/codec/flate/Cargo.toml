@@ -10,7 +10,7 @@ pagebara-budget.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
-miniz_oxide = "0.8"
+miniz_oxide = "0.9"
 
 [lints]
 workspace = true

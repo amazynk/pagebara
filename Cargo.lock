@@ -4106,7 +4106,7 @@ dependencies = [
 name = "pagebara-annot"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-font",
  "pagebara-syntax",
  "thiserror 2.0.21",
@@ -4293,7 +4293,7 @@ dependencies = [
 name = "pagebara-filters"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-budget",
  "pagebara-ccitt",
  "pagebara-flate",
@@ -4306,7 +4306,7 @@ dependencies = [
 name = "pagebara-flate"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-budget",
  "thiserror 2.0.21",
 ]
@@ -4332,7 +4332,7 @@ dependencies = [
 name = "pagebara-font"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-syntax",
  "pagebara-thread",
 ]
@@ -4364,7 +4364,7 @@ dependencies = [
 name = "pagebara-i18n"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "sys-locale",
 ]
 
@@ -4470,7 +4470,7 @@ dependencies = [
 name = "pagebara-ocr"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-content",
  "pagebara-font",
  "pagebara-pages",
@@ -4530,7 +4530,7 @@ name = "pagebara-png"
 version = "0.1.0"
 dependencies = [
  "fdeflate",
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-budget",
  "pagebara-flate",
  "pagebara-thread",
@@ -4565,7 +4565,7 @@ dependencies = [
 name = "pagebara-render"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-budget",
  "pagebara-content",
  "pagebara-font",
@@ -4663,7 +4663,7 @@ dependencies = [
 name = "pagebara-spell"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "sha2",
  "thiserror 2.0.21",
  "ureq",
@@ -4726,7 +4726,7 @@ dependencies = [
 name = "pagebara-typeset"
 version = "0.1.0"
 dependencies = [
- "miniz_oxide 0.8.9",
+ "miniz_oxide 0.9.1",
  "pagebara-content",
  "pagebara-font",
  "pagebara-pages",

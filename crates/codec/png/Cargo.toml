@@ -17,7 +17,7 @@ thiserror.workspace = true
 png = "0.18"
 zune-png = "0.5"
 zune-core = "0.5"
-miniz_oxide = "0.8"
+miniz_oxide = "0.9"
 fdeflate = "0.3"
 
 [lints]
