@@ -1,6 +1,6 @@
 # Sourced by the packaging scripts: the app's name, ID and version, read from their one
 # source (crates/support/identity/src/lib.rs and the workspace Cargo.toml).
-# Sets ROOT, APP_NAME, APP_ID, APP_PUBLISHER, APP_SUMMARY, APP_HOMEPAGE, APP_REPOSITORY, APP_VERSION,
+# Sets ROOT, APP_NAME, APP_ID, APP_DEVELOPER_ID, APP_PUBLISHER, APP_SUMMARY, APP_HOMEPAGE, APP_REPOSITORY, APP_VERSION,
 # APP_BIN,
 # APP_UPDATE_URL and APP_UPDATE_KEY (both empty until updates are published).
 # The sourcing script lives in packaging/<platform>/.
@@ -10,6 +10,8 @@ _identity_const() {
 }
 APP_NAME=$(_identity_const NAME)
 APP_ID=$(_identity_const APP_ID)
+# The publisher's ID for AppStream, which wants lower case: the app ID without its last part.
+APP_DEVELOPER_ID=${APP_ID%.*}
 APP_PUBLISHER=$(_identity_const PUBLISHER)
 APP_SUMMARY=$(_identity_const SUMMARY)
 APP_HOMEPAGE=$(_identity_const HOMEPAGE)
@@ -24,6 +26,7 @@ APP_BIN=$(sed -n '/^\[\[bin\]\]/,/^\[/s/^name = "\(.*\)"/\1/p' "$ROOT/apps/deskt
 # Replaces @APP_NAME@, @APP_ID@, ... in a template file ($1) and writes it to $2.
 fill_template() {
     sed -e "s|@APP_NAME@|$APP_NAME|g" -e "s|@APP_ID@|$APP_ID|g" \
+        -e "s|@APP_DEVELOPER_ID@|$APP_DEVELOPER_ID|g" \
         -e "s|@APP_PUBLISHER@|$APP_PUBLISHER|g" -e "s|@APP_SUMMARY@|$APP_SUMMARY|g" \
         -e "s|@APP_HOMEPAGE@|$APP_HOMEPAGE|g" -e "s|@APP_REPOSITORY@|$APP_REPOSITORY|g" \
         -e "s|@APP_VERSION@|$APP_VERSION|g" \

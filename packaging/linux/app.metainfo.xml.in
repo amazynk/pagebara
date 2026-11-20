@@ -5,7 +5,7 @@
   <project_license>MIT OR Apache-2.0</project_license>
   <name>@APP_NAME@</name>
   <summary>@APP_SUMMARY@</summary>
-  <developer id="@APP_ID@">
+  <developer id="@APP_DEVELOPER_ID@">
     <name>@APP_PUBLISHER@</name>
   </developer>
   <description>

@@ -6,6 +6,12 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Saving a damaged file whose trailer names object 0 as the catalog, when the file has no
+  such object, no longer crashes the app.
+- The Linux AppStream file names its developer in the form AppStream accepts.
+
 ## [0.1.0]
 
 The first public release.

@@ -224,8 +224,10 @@ impl Document {
     pub fn save_full_with(&self, opts: &SaveOptions) -> Result<Vec<u8>> {
         if self.root_is_object_zero() {
             let mut d = self.clone();
-            d.move_root_off_zero();
-            return d.save_full_with(opts);
+            // With no catalog to move, the file is written as it is.
+            if d.move_root_off_zero() {
+                return d.save_full_with(opts);
+            }
         }
         let xref_stream = opts.xref_stream || opts.object_streams;
         let mut version = self.version();

@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Packages
-        run: sudo apt-get update && sudo apt-get install -y xvfb libfontconfig1-dev libxkbcommon-dev fonts-noto-cjk
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libfontconfig1-dev libxkbcommon-dev libxkbcommon-x11-0 libgl1-mesa-dri libegl1 libxcursor1 libxi6 libxrandr2 fonts-noto-cjk
       - uses: actions/cache@v4
         with:
           path: |

@@ -117,3 +117,14 @@ fn catalog_numbered_zero_survives_saving() {
     assert!(doc.move_root_off_zero());
     assert!(!doc.move_root_off_zero());
 }
+
+/// A fuzzer find: a trailer that names object 0 as the catalog in a file with no object 0.
+/// The full save moves such a catalog to a number of its own and starts again; with no
+/// catalog to move it started again without end.
+#[test]
+fn root_zero_without_a_catalog_saves() {
+    let doc = Document::open(bare(&PAGES[1..], "trailer\n<</Root 0 0 R>>\n")).unwrap();
+    assert!(doc.catalog().is_none());
+    doc.save_full().unwrap();
+    doc.save_full_with(&SaveOptions::compact()).unwrap();
+}
