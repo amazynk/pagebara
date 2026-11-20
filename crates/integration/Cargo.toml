@@ -15,7 +15,7 @@ log.workspace = true
 
 # Microsoft's safe registry API (per-user keys under HKCU).
 [target.'cfg(windows)'.dependencies]
-windows-registry = "0.6"
+windows-registry = "0.100"
 
 [lints]
 workspace = true
