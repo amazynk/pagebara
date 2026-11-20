@@ -53,7 +53,7 @@ jobs:
           packaging/linux/build-appimage.sh target/release/pagebara dist
           packaging/linux/build-deb.sh target/release/pagebara dist
           dpkg-deb -f dist/*.deb Depends | grep -q 'libc6 (>= 2\.3[0-5])'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux
           path: dist/*
@@ -76,7 +76,7 @@ jobs:
           WINDOWS_CERT_PFX: ${{ secrets.WINDOWS_CERT_PFX }}
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: packaging/windows/build-msi.sh target/release/pagebara.exe dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: dist/*.msi
@@ -105,7 +105,7 @@ jobs:
           MACOS_NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
           MACOS_NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
         run: packaging/macos/build-dmg.sh target/universal/pagebara dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos
           path: dist/*.dmg

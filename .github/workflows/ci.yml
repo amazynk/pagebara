@@ -111,7 +111,7 @@ jobs:
             "$RUNNER_TEMP/e2e-speech" apps/desktop/tests/e2e/18-read-aloud.pdfs
       - name: Upload logs and screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-output
           path: |
@@ -145,7 +145,7 @@ jobs:
         run: cargo test --locked -p pagebara-app-core prints_through_the_windows_spooler -- --nocapture
       - name: Upload the printed file
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: printed-windows
           path: ${{ runner.temp }}/printed.pdf
@@ -175,7 +175,7 @@ jobs:
           fi
       - name: Upload crashes
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fuzz-artifacts
           path: |
