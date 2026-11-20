@@ -63,7 +63,7 @@ unicode-normalization = "0.1"
 unicode-bidi = "0.3"
 rayon = "1.11"
 thiserror = "2"
-parking_lot = "0.12"
+parking_lot = "0.13"
 log = "0.4"
 tracing = { version = "0.1", default-features = false }
 miniz_oxide = "0.8"
