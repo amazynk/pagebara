@@ -1041,7 +1041,7 @@ dependencies = [
 
 [[package]]
 name = "corpus-check"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-conform",
@@ -4077,7 +4077,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-actions"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "log",
  "pagebara-annot",
@@ -4104,7 +4104,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-annot"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-font",
@@ -4115,7 +4115,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-app"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "arboard",
  "env_logger",
@@ -4163,7 +4163,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-app-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "log",
  "memchr",
@@ -4197,7 +4197,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-budget"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "parking_lot",
  "sysinfo",
@@ -4205,11 +4205,11 @@ dependencies = [
 
 [[package]]
 name = "pagebara-ccitt"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "pagebara-compare"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-content",
@@ -4231,7 +4231,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-conform"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-content",
  "pagebara-filters",
@@ -4249,7 +4249,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-content"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "memchr",
  "pagebara-flate",
@@ -4260,7 +4260,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-edit"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-content",
@@ -4280,7 +4280,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-fdf"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-forms",
@@ -4292,7 +4292,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-filters"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-budget",
@@ -4305,7 +4305,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-flate"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-budget",
@@ -4314,7 +4314,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-flatten"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-content",
@@ -4331,7 +4331,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-font"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-syntax",
@@ -4340,7 +4340,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-formdetect"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-content",
@@ -4352,7 +4352,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-forms"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-pages",
@@ -4363,7 +4363,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-i18n"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "sys-locale",
@@ -4371,14 +4371,14 @@ dependencies = [
 
 [[package]]
 name = "pagebara-identity"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "directories",
 ]
 
 [[package]]
 name = "pagebara-integration"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "log",
  "pagebara-i18n",
@@ -4391,14 +4391,14 @@ dependencies = [
 
 [[package]]
 name = "pagebara-jbig2"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hayro-jbig2",
 ]
 
 [[package]]
 name = "pagebara-jp2"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hayro-jpeg2000",
  "pagebara-budget",
@@ -4409,7 +4409,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-jpeg"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "jpeg-decoder",
  "jpeg-encoder",
@@ -4424,7 +4424,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-mobile"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "android_logger",
  "env_logger",
@@ -4455,7 +4455,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-native"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "block2 0.6.2",
  "dispatch2",
@@ -4469,7 +4469,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-ocr"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-content",
@@ -4488,7 +4488,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-optimize"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-ccitt",
  "pagebara-content",
@@ -4507,7 +4507,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-os"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "interprocess",
  "log",
@@ -4520,7 +4520,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-pages"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-syntax",
  "thiserror 2.0.21",
@@ -4528,7 +4528,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-png"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fdeflate",
  "miniz_oxide 0.8.9",
@@ -4544,7 +4544,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-redact"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-content",
@@ -4564,7 +4564,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-render"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-budget",
@@ -4583,7 +4583,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-samples"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-annot",
  "pagebara-app-core",
@@ -4602,7 +4602,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-shell-win"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-content",
  "pagebara-identity",
@@ -4615,7 +4615,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-sign"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cbc",
  "const-oid",
@@ -4646,7 +4646,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-signatures"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "getrandom 0.4.3",
  "pagebara-annot",
@@ -4662,7 +4662,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-spell"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "sha2",
@@ -4672,7 +4672,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-stamp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "jiff",
  "pagebara-content",
@@ -4692,7 +4692,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-syntax"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aes",
  "getrandom 0.4.3",
@@ -4709,7 +4709,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-tagged"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "pagebara-content",
  "pagebara-syntax",
@@ -4717,7 +4717,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-thread"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "log",
  "rayon",
@@ -4725,7 +4725,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-typeset"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "miniz_oxide 0.8.9",
  "pagebara-content",
@@ -4739,7 +4739,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-ui"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "log",
  "pagebara-app-core",
@@ -4750,7 +4750,7 @@ dependencies = [
 
 [[package]]
 name = "pagebara-update"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ed25519-dalek",
  "getrandom 0.4.3",
@@ -4970,7 +4970,7 @@ dependencies = [
 
 [[package]]
 name = "pixel-diff"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "corpus-check",
  "pagebara-png",
@@ -6595,7 +6595,7 @@ checksum = "009dbb7700f11c55ef83aebbe4c0e9cf1f1ac0844bd8d6f00dc38f302026e13a"
 
 [[package]]
 name = "tr-extract"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "tracing"

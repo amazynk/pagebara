@@ -63,7 +63,7 @@
   <releases>
     <release version="@APP_VERSION@" date="@APP_DATE@">
       <description>
-        <p>First release.</p>
+        <p>A library that searches thousands of documents by name, title and text, a choice of read-aloud voices, and a reading view that scrolls to the end and follows the page number.</p>
       </description>
     </release>
   </releases>
