@@ -6,6 +6,11 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1]
+
+The first release with the changes of 0.2.0, whose Linux and Windows packages did not
+build.
+
 ### Fixed
 
 - Optimizing a damaged file no longer loses a page when two of its pages have the same
@@ -16,6 +21,8 @@ All notable changes to Pagebara are listed here. The format follows
   the letters left a little lighter.
 
 ## [0.2.0]
+
+Tagged but not released: its Linux and Windows packages did not build.
 
 ### Added
 
@@ -116,6 +123,7 @@ The first public release.
   page colours and live text. It is built in CI and is not packaged for release yet.
 - **Packages.** AppImage, .deb, MSI and DMG.
 
-[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/amazynk/pagebara/releases/tag/v0.2.1
 [0.2.0]: https://github.com/amazynk/pagebara/releases/tag/v0.2.0
 [0.1.0]: https://github.com/amazynk/pagebara/releases/tag/v0.1.0
