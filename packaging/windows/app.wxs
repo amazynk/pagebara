@@ -50,19 +50,35 @@
         <Component Id="ShellExtension">
           <File Id="ShellDllFile" Source="$(var.ShellDll)" Name="$(var.ShellDllName)" KeyPath="yes" />
         </Component>
-        <Directory Id="DocFolder" Name="licences">
-          <Component Id="Notices">
-            <File Source="$(var.Root)\LICENSE-MIT" KeyPath="yes" />
-            <File Source="$(var.Root)\LICENSE-APACHE" />
-            <File Source="$(var.Root)\THIRD-PARTY.md" />
-            <File Source="$(var.Root)\THIRD-PARTY-LICENSES.md" />
-            <File Source="$(var.Root)\apps\desktop\ui\fonts\OFL.txt" Name="Inter-OFL.txt" />
-            <File Source="$(var.Root)\crates\content\LICENSE-adobe-cmap" Name="LICENSE-adobe-cmap.txt" />
-            <File Source="$(var.Root)\crates\typeset\LICENSE-hyphenation" Name="LICENSE-hyphenation.txt" />
-          </Component>
-        </Directory>
+        <Directory Id="DocFolder" Name="licences" />
       </Directory>
     </StandardDirectory>
+
+    <!-- One component per notice: a component of several files without version numbers
+         cannot have an automatic GUID (WIX0367). -->
+    <ComponentGroup Id="Notices" Directory="DocFolder">
+      <Component Id="NoticeMit">
+        <File Source="$(var.Root)\LICENSE-MIT" KeyPath="yes" />
+      </Component>
+      <Component Id="NoticeApache">
+        <File Source="$(var.Root)\LICENSE-APACHE" KeyPath="yes" />
+      </Component>
+      <Component Id="NoticeThirdParty">
+        <File Source="$(var.Root)\THIRD-PARTY.md" KeyPath="yes" />
+      </Component>
+      <Component Id="NoticeThirdPartyLicences">
+        <File Source="$(var.Root)\THIRD-PARTY-LICENSES.md" KeyPath="yes" />
+      </Component>
+      <Component Id="NoticeInter">
+        <File Source="$(var.Root)\apps\desktop\ui\fonts\OFL.txt" Name="Inter-OFL.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="NoticeAdobeCmap">
+        <File Source="$(var.Root)\crates\content\LICENSE-adobe-cmap" Name="LICENSE-adobe-cmap.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="NoticeHyphenation">
+        <File Source="$(var.Root)\crates\typeset\LICENSE-hyphenation" Name="LICENSE-hyphenation.txt" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
 
     <StandardDirectory Id="ProgramMenuFolder">
       <Component Id="StartMenu">
@@ -76,7 +92,7 @@
     <Feature Id="Main">
       <ComponentRef Id="Exe" />
       <ComponentRef Id="ShellExtension" />
-      <ComponentRef Id="Notices" />
+      <ComponentGroupRef Id="Notices" />
       <ComponentRef Id="StartMenu" />
     </Feature>
   </Package>
