@@ -281,7 +281,9 @@ mod tests {
     fn identity_uses_the_id_or_a_hash() {
         let doc = Document::open(crate::test_pdf::text(&["Hello"])).unwrap();
         let k = identity(Path::new("/tmp/a.pdf"), &doc);
-        assert!(k.starts_with("/tmp/a.pdf|h"), "{k}");
+        // Made absolute: on Windows "/tmp/a.pdf" is on the current drive.
+        let abs = std::path::absolute("/tmp/a.pdf").unwrap();
+        assert!(k.starts_with(&format!("{}|h", abs.display())), "{k}");
         assert_eq!(k, identity(Path::new("/tmp/a.pdf"), &doc));
     }
 

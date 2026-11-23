@@ -40,12 +40,20 @@ fn scan_finds_faces() {
     }
     let faces = db().faces();
     assert!(!faces.is_empty());
-    // Collections contribute one face per font.
-    if let Some(f) = faces
-        .iter()
-        .find(|f| f.path.extension().is_some_and(|e| e == "ttc"))
-    {
-        assert!(faces.iter().any(|g| g.path == f.path && g.index > 0));
+    // Collections contribute one face per font. Not every collection gives all of its
+    // fonts (faces that are bitmap only or have no name are left out), so this asks only
+    // that the fonts after the first are read where there are several.
+    let several = |p: &std::path::Path| {
+        let mut head = [0; 12];
+        std::fs::File::open(p)
+            .and_then(|mut f| std::io::Read::read_exact(&mut f, &mut head))
+            .is_ok_and(|()| {
+                &head[..4] == b"ttcf"
+                    && u32::from_be_bytes([head[8], head[9], head[10], head[11]]) > 1
+            })
+    };
+    if faces.iter().any(|f| f.index == 0 && several(&f.path)) {
+        assert!(faces.iter().any(|f| f.index > 0));
     }
     for f in faces {
         assert!(

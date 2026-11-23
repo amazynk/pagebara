@@ -41,7 +41,8 @@ jobs:
       - name: Build
         run: cargo build --workspace --all-targets --locked
       - name: Test
-        run: cargo test --workspace --locked
+        # Every crate is tested even after one fails, so a run shows all the failures.
+        run: cargo test --workspace --locked --no-fail-fast
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Format

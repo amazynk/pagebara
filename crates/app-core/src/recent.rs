@@ -94,8 +94,10 @@ mod tests {
         r.add(Path::new("/docs/15.pdf"));
         let r = RecentFiles::load(store);
         assert_eq!(r.paths().len(), MAX);
-        assert_eq!(r.paths()[0], Path::new("/docs/15.pdf"));
-        assert_eq!(r.paths()[1], Path::new("/docs/19.pdf"));
+        // Made absolute: on Windows "/docs" is on the current drive.
+        let abs = |p: &str| std::path::absolute(p).unwrap();
+        assert_eq!(r.paths()[0], abs("/docs/15.pdf"));
+        assert_eq!(r.paths()[1], abs("/docs/19.pdf"));
         std::fs::remove_dir_all(dir).unwrap();
     }
 }
