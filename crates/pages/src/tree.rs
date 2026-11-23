@@ -238,7 +238,7 @@ impl PageTree {
                     // A catalog pointing straight at a single page.
                     if let Some(r) = pages_ref(doc)
                         && let Some(o) = doc.get(r)
-                        && let Some(d) = o.as_dict()
+                        && let Some(d) = page_dict(&o)
                     {
                         w.pages.push(Page::new(doc, r, d, Arc::default()));
                     }
@@ -295,7 +295,7 @@ impl PageTree {
             let (r, o, leaf, rest) = hit?;
             let kd = o.as_dict()?;
             if leaf {
-                return Some(Page::new(doc, r, kd, inh));
+                return Some(Page::new(doc, r, page_dict(&o)?, inh));
             }
             inh = Inherited::extend(&inh, kd);
             i = rest;
@@ -366,7 +366,7 @@ impl Walk {
                 self.nodes.push(r);
                 let inh = Inherited::extend(&inh, d);
                 stack.push((kids(doc, d), 0, inh));
-            } else {
+            } else if let Some(d) = page_dict(&obj) {
                 self.pages.push(Page::new(doc, r, d, inh));
             }
         }
@@ -380,7 +380,7 @@ impl Walk {
                 continue;
             };
             let Some(obj) = doc.get(r) else { continue };
-            if let Object::Dict(d) = &*obj
+            if let Some(d) = page_dict(&obj)
                 && d.name(b"Type") == Some(b"Page")
             {
                 self.pages.push(Page::new(doc, r, d, none.clone()));
@@ -426,6 +426,15 @@ fn root_count(doc: &Document, root: ObjRef, d: &Dict) -> Option<usize> {
         sum = sum.checked_add(if is_node(doc, kd) { count(kd)? } else { 1 })?;
     }
     (sum == total).then_some(total)
+}
+
+/// The dictionary of a page: a page is a dictionary, never a stream (a damaged tree may
+/// lead to an object stream or a picture instead).
+fn page_dict(o: &Object) -> Option<&Dict> {
+    match o {
+        Object::Dict(d) => Some(d),
+        _ => None,
+    }
 }
 
 fn is_node(doc: &Document, d: &Dict) -> bool {

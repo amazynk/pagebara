@@ -6,6 +6,11 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A damaged file whose page tree leads to a stream instead of a page no longer counts the
+  stream as a blank page, which optimizing the file then lost.
+
 ## [0.2.1]
 
 The first release with the changes of 0.2.0, whose Linux and Windows packages did not

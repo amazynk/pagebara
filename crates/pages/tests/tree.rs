@@ -90,6 +90,32 @@ fn catalog_pointing_at_a_page() {
     }
 }
 
+/// A fuzzer find: a catalog whose `/Pages` was an object stream gave that stream as the
+/// only page, and optimizing then dropped it. A page is a dictionary: here the page is
+/// found by scanning, and a stream among a node's kids is left out.
+#[test]
+fn streams_are_not_pages() {
+    let o = vec![
+        (1, "<</Type/Catalog/Pages 2 0 R>>".to_string()),
+        (2, content("not a page")),
+        (
+            3,
+            "<</Type/Page/MediaBox[0 0 10 10]/Contents 4 0 R>>".to_string(),
+        ),
+        (4, content("Page 1")),
+    ];
+    let t = PageTree::load(&open(pdf(&o, 1)));
+    assert!(t.repaired());
+    assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
+    let stream = content("not a page either");
+    let doc = tree_with(
+        "<</Type/Pages/Kids[3 0 R 4 0 R]/Count 2>>",
+        &[(3, "<</Type/Page/MediaBox[0 0 10 10]>>"), (4, &stream)],
+    );
+    let t = PageTree::load(&doc);
+    assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
+}
+
 #[test]
 fn missing_tree_is_recovered_by_scanning() {
     let o = vec![
