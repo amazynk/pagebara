@@ -39,7 +39,7 @@ fn pkcs12_round_trip() {
             Error::WrongPassword
         );
         sign_and_check(&back, name);
-        if let Some(openssl) = tool("openssl") {
+        if let Some(openssl) = common::openssl() {
             // OpenSSL reads what we write.
             let path = scratch(&format!("ours-{name}.p12"));
             std::fs::write(&path, &p12).unwrap();
@@ -111,7 +111,7 @@ fn base64(b: &[u8]) -> String {
 }
 
 fn openssl(args: &[&str], dir: &Path) -> bool {
-    let Some(o) = tool("openssl") else {
+    let Some(o) = common::openssl() else {
         return false;
     };
     let out = Command::new(o)
@@ -128,7 +128,7 @@ fn openssl(args: &[&str], dir: &Path) -> bool {
 /// Keys and PKCS #12 files made by OpenSSL at test time.
 #[test]
 fn openssl_made_identities() {
-    if tool("openssl").is_none() {
+    if common::openssl().is_none() {
         eprintln!("openssl not found; skipping");
         return;
     }

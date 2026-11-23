@@ -158,6 +158,21 @@ pub fn tool(name: &str) -> Option<PathBuf> {
     p.exists().then_some(p)
 }
 
+/// OpenSSL itself, from `/usr/bin` or else the `PATH`: macOS's `/usr/bin/openssl` is
+/// LibreSSL, which makes other bytes of a non-ASCII password (the tests use one).
+pub fn openssl() -> Option<PathBuf> {
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    std::iter::once(PathBuf::from("/usr/bin"))
+        .chain(std::env::split_paths(&path))
+        .map(|d| d.join("openssl"))
+        .find(|p| {
+            std::process::Command::new(p)
+                .arg("version")
+                .output()
+                .is_ok_and(|o| o.stdout.starts_with(b"OpenSSL "))
+        })
+}
+
 pub fn scratch(name: &str) -> PathBuf {
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("sign-tests");
     std::fs::create_dir_all(&dir).unwrap();
