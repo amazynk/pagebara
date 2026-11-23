@@ -1727,20 +1727,25 @@ msgid "Sent {n} page to {} ({})"
 msgid_plural "Sent {n} pages to {} ({})"
 msgstr[0] "{n} ページを {} に送信しました（{}）"
 
-#: apps/desktop/src/app/read_aloud.rs:262
+#: apps/desktop/src/app/read_aloud.rs:218
+#: apps/desktop/src/app/read_aloud.rs:247
+msgid "Automatic"
+msgstr ""
+
+#: apps/desktop/src/app/read_aloud.rs:418
 msgid "Finished reading."
 msgstr "読み上げが終了しました。"
 
-#: apps/desktop/src/app/read_aloud.rs:292
+#: apps/desktop/src/app/read_aloud.rs:455
 msgid "Reading aloud stopped: the speech engine is not working."
 msgstr "読み上げを停止しました：音声エンジンが動作していません。"
 
-#: apps/desktop/src/app/read_aloud.rs:314 apps/desktop/src/app/reading.rs:692
+#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:692
 #: apps/desktop/ui/page-view.slint:472 apps/mobile/src/app/mod.rs:701
 msgid "Page {} of {}"
 msgstr "{0} / {1} ページ"
 
-#: apps/desktop/src/app/read_aloud.rs:316
+#: apps/desktop/src/app/read_aloud.rs:479
 msgid "Page {} ({} of {})"
 msgstr ""
 
@@ -3889,7 +3894,7 @@ msgstr "比較…"
 msgid "Reading view"
 msgstr "リーディングビュー"
 
-#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:42
+#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:217
 #: apps/desktop/ui/shortcuts.slint:100 apps/desktop/ui/tool-row.slint:265
 msgid "Read aloud"
 msgstr "読み上げ"
@@ -4501,43 +4506,51 @@ msgstr "印刷の概要"
 msgid "Save as PDF for printing…"
 msgstr "印刷用に PDF として保存…"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:119 apps/desktop/ui/read-aloud.slint:155
+msgid "Voice"
+msgstr ""
+
+#: apps/desktop/ui/read-aloud.slint:164
+msgid "Looking for voices…"
+msgstr ""
+
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Pause reading"
 msgstr "読み上げを一時停止"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Resume reading"
 msgstr "読み上げを再開"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Read aloud from here"
 msgstr "ここから読み上げ"
 
-#: apps/desktop/ui/read-aloud.slint:88
+#: apps/desktop/ui/read-aloud.slint:263
 msgid "Stop reading"
 msgstr "読み上げを停止"
 
-#: apps/desktop/ui/read-aloud.slint:98
+#: apps/desktop/ui/read-aloud.slint:273
 msgid "Previous sentence"
 msgstr "前の文"
 
-#: apps/desktop/ui/read-aloud.slint:107
+#: apps/desktop/ui/read-aloud.slint:282
 msgid "Next sentence"
 msgstr "次の文"
 
-#: apps/desktop/ui/read-aloud.slint:122
+#: apps/desktop/ui/read-aloud.slint:297
 msgid "Slower"
 msgstr "遅く"
 
-#: apps/desktop/ui/read-aloud.slint:136
+#: apps/desktop/ui/read-aloud.slint:311
 msgid "Speed {} percent"
 msgstr "速度 {}%"
 
-#: apps/desktop/ui/read-aloud.slint:141
+#: apps/desktop/ui/read-aloud.slint:316
 msgid "Faster"
 msgstr "速く"
 
-#: apps/desktop/ui/read-aloud.slint:162
+#: apps/desktop/ui/read-aloud.slint:340
 msgid "Close read aloud"
 msgstr "読み上げを閉じる"
 
@@ -8143,15 +8156,31 @@ msgstr "名前を入力してください。"
 msgid "Choose a password to protect the ID."
 msgstr "ID を保護するパスワードを選んでください。"
 
-#: crates/app-core/src/speech/ssip.rs:122
+#: crates/app-core/src/speech/mod.rs:415
+msgid "eSpeak voices sound robotic. For natural voices, install Speech Dispatcher with Piper or RHVoice."
+msgstr ""
+
+#: crates/app-core/src/speech/mod.rs:418
+msgid "More natural voices can be downloaded in System Settings > Accessibility > Spoken Content > System voice > Manage Voices."
+msgstr ""
+
+#: crates/app-core/src/speech/mod.rs:421
+msgid "More voices can be added in Settings > Time & language > Speech."
+msgstr ""
+
+#: crates/app-core/src/speech/ssip.rs:144
 msgid "Speech Dispatcher did not finish speaking"
 msgstr "Speech Dispatcher が読み上げを完了しませんでした"
 
-#: crates/app-core/src/speech/ssip.rs:203
+#: crates/app-core/src/speech/ssip.rs:264
+msgid "For natural voices, add Piper or RHVoice to Speech Dispatcher."
+msgstr ""
+
+#: crates/app-core/src/speech/ssip.rs:351
 msgid "Speech Dispatcher did not answer"
 msgstr "Speech Dispatcher が応答しませんでした"
 
-#: crates/app-core/src/speech/ssip.rs:219
+#: crates/app-core/src/speech/ssip.rs:367
 msgid "Speech Dispatcher closed the connection"
 msgstr "Speech Dispatcher が接続を閉じました"
 

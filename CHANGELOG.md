@@ -6,6 +6,14 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Read aloud voices.** The read-aloud bar has a voice menu listing the voices installed on
+  the system: Speech Dispatcher's voices on Linux (Piper, RHVoice and the others), macOS
+  voices, Windows voices. By default the most natural voice installed for the text's
+  language reads, so a downloaded Premium or Enhanced voice is used without choosing it.
+  When only robotic voices are installed, the menu says where to get better ones.
+
 ### Fixed
 
 - Saving a damaged file whose trailer names object 0 as the catalog, when the file has no

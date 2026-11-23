@@ -1727,20 +1727,25 @@ msgid "Sent {n} page to {} ({})"
 msgid_plural "Sent {n} pages to {} ({})"
 msgstr[0] "{}({})(으)로 {n}개 페이지를 보냈습니다"
 
-#: apps/desktop/src/app/read_aloud.rs:262
+#: apps/desktop/src/app/read_aloud.rs:218
+#: apps/desktop/src/app/read_aloud.rs:247
+msgid "Automatic"
+msgstr ""
+
+#: apps/desktop/src/app/read_aloud.rs:418
 msgid "Finished reading."
 msgstr "읽기를 마쳤습니다."
 
-#: apps/desktop/src/app/read_aloud.rs:292
+#: apps/desktop/src/app/read_aloud.rs:455
 msgid "Reading aloud stopped: the speech engine is not working."
 msgstr "소리 내어 읽기가 중지되었습니다. 음성 엔진이 작동하지 않습니다."
 
-#: apps/desktop/src/app/read_aloud.rs:314 apps/desktop/src/app/reading.rs:692
+#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:692
 #: apps/desktop/ui/page-view.slint:472 apps/mobile/src/app/mod.rs:701
 msgid "Page {} of {}"
 msgstr "{}/{}페이지"
 
-#: apps/desktop/src/app/read_aloud.rs:316
+#: apps/desktop/src/app/read_aloud.rs:479
 msgid "Page {} ({} of {})"
 msgstr ""
 
@@ -3889,7 +3894,7 @@ msgstr "비교…"
 msgid "Reading view"
 msgstr "읽기 보기"
 
-#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:42
+#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:217
 #: apps/desktop/ui/shortcuts.slint:100 apps/desktop/ui/tool-row.slint:265
 msgid "Read aloud"
 msgstr "소리 내어 읽기"
@@ -4501,43 +4506,51 @@ msgstr "인쇄 요약"
 msgid "Save as PDF for printing…"
 msgstr "인쇄용 PDF로 저장…"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:119 apps/desktop/ui/read-aloud.slint:155
+msgid "Voice"
+msgstr ""
+
+#: apps/desktop/ui/read-aloud.slint:164
+msgid "Looking for voices…"
+msgstr ""
+
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Pause reading"
 msgstr "읽기 일시 정지"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Resume reading"
 msgstr "읽기 다시 시작"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Read aloud from here"
 msgstr "여기부터 소리 내어 읽기"
 
-#: apps/desktop/ui/read-aloud.slint:88
+#: apps/desktop/ui/read-aloud.slint:263
 msgid "Stop reading"
 msgstr "읽기 중지"
 
-#: apps/desktop/ui/read-aloud.slint:98
+#: apps/desktop/ui/read-aloud.slint:273
 msgid "Previous sentence"
 msgstr "이전 문장"
 
-#: apps/desktop/ui/read-aloud.slint:107
+#: apps/desktop/ui/read-aloud.slint:282
 msgid "Next sentence"
 msgstr "다음 문장"
 
-#: apps/desktop/ui/read-aloud.slint:122
+#: apps/desktop/ui/read-aloud.slint:297
 msgid "Slower"
 msgstr "느리게"
 
-#: apps/desktop/ui/read-aloud.slint:136
+#: apps/desktop/ui/read-aloud.slint:311
 msgid "Speed {} percent"
 msgstr "속도 {}퍼센트"
 
-#: apps/desktop/ui/read-aloud.slint:141
+#: apps/desktop/ui/read-aloud.slint:316
 msgid "Faster"
 msgstr "빠르게"
 
-#: apps/desktop/ui/read-aloud.slint:162
+#: apps/desktop/ui/read-aloud.slint:340
 msgid "Close read aloud"
 msgstr "소리 내어 읽기 닫기"
 
@@ -8143,15 +8156,31 @@ msgstr "이름을 입력하세요."
 msgid "Choose a password to protect the ID."
 msgstr "ID를 보호할 암호를 선택하세요."
 
-#: crates/app-core/src/speech/ssip.rs:122
+#: crates/app-core/src/speech/mod.rs:415
+msgid "eSpeak voices sound robotic. For natural voices, install Speech Dispatcher with Piper or RHVoice."
+msgstr ""
+
+#: crates/app-core/src/speech/mod.rs:418
+msgid "More natural voices can be downloaded in System Settings > Accessibility > Spoken Content > System voice > Manage Voices."
+msgstr ""
+
+#: crates/app-core/src/speech/mod.rs:421
+msgid "More voices can be added in Settings > Time & language > Speech."
+msgstr ""
+
+#: crates/app-core/src/speech/ssip.rs:144
 msgid "Speech Dispatcher did not finish speaking"
 msgstr "Speech Dispatcher가 말하기를 끝내지 않았습니다"
 
-#: crates/app-core/src/speech/ssip.rs:203
+#: crates/app-core/src/speech/ssip.rs:264
+msgid "For natural voices, add Piper or RHVoice to Speech Dispatcher."
+msgstr ""
+
+#: crates/app-core/src/speech/ssip.rs:351
 msgid "Speech Dispatcher did not answer"
 msgstr "Speech Dispatcher가 응답하지 않았습니다"
 
-#: crates/app-core/src/speech/ssip.rs:219
+#: crates/app-core/src/speech/ssip.rs:367
 msgid "Speech Dispatcher closed the connection"
 msgstr "Speech Dispatcher가 연결을 닫았습니다"
 

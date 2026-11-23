@@ -112,6 +112,8 @@ pub struct Settings {
     pub text_scale: f32,
     /// Read-aloud speed, 1.0 normal.
     pub speech_rate: f32,
+    /// The read-aloud voice (an id the speech engine gave); `None` picks one.
+    pub speech_voice: Option<String>,
     /// The colours of the pages on phones and tablets (the desktop app keeps them per
     /// document).
     pub page_theme: PageTheme,
@@ -139,6 +141,7 @@ impl Default for Settings {
             reduce_motion: None,
             text_scale: 1.0,
             speech_rate: 1.0,
+            speech_voice: None,
             page_theme: PageTheme::Normal,
             language: None,
             check_spelling: true,

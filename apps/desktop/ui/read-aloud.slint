@@ -1,7 +1,15 @@
 import { RowLayout } from "components/row.slint";
 import { Theme } from "theme.slint";
 import { AppState } from "state.slint";
-import { IconButton, FocusNav } from "components/button.slint";
+import { IconButton, FocusNav, Pressable } from "components/button.slint";
+import { MenuCard, KeepInView } from "components/panel.slint";
+
+// A voice in the voice menu; the first is the automatic choice.
+export struct VoiceRow {
+    name: string,
+    // Its language, or what the automatic choice is.
+    detail: string,
+}
 
 // Reading the document aloud with the system's speech engine, sentence by sentence in
 // reading order, from the selection or the current page.
@@ -18,6 +26,14 @@ export global ReadAloudState {
     in property <string> position;
     // The sentence being read.
     in property <string> sentence;
+    // The voices to choose from, the automatic choice first; the chosen one; the name on
+    // the voice button.
+    in property <[VoiceRow]> voices;
+    in property <int> voice-index;
+    in property <string> voice-name;
+    in property <bool> voices-loading;
+    // Where to find more natural voices, when none is installed.
+    in property <string> voices-hint;
     callback show(visible: bool);
     // Starts, or resumes when paused.
     callback play();
@@ -25,6 +41,165 @@ export global ReadAloudState {
     callback stop();
     callback skip(forward: bool);
     callback set-rate(rate: float);
+    // The voice menu opens: list the voices again (some may have been installed).
+    callback load-voices();
+    callback set-voice(index: int);
+}
+
+// A voice in the menu, ticked when chosen.
+component VoiceItem inherits Pressable {
+    in property <string> text;
+    in property <string> detail;
+    in property <bool> chosen;
+    in property <bool> initial-focus;
+    // A moment after the row is made, as for MenuItem: the popup takes the focus first.
+    Timer {
+        interval: 1ms;
+        running: root.initial-focus;
+        triggered => {
+            self.running = false;
+            root.focus-row();
+        }
+    }
+    height: Theme.row-height;
+    border-radius: Theme.radius-small;
+    background: self.has-hover || self.has-focus ? Theme.hover : transparent;
+    label: text;
+    description: detail;
+    accessible-checkable: true;
+    accessible-checked: chosen;
+    RowLayout {
+        padding-left: 8px;
+        padding-right: 10px;
+        spacing: 8px;
+        Rectangle {
+            width: 16px;
+            if root.chosen: Image {
+                y: (parent.height - self.height) / 2;
+                source: @image-url("icons/check.svg");
+                width: 16px;
+                height: 16px;
+                colorize: Theme.accent-fg;
+                accessible-role: none;
+            }
+        }
+        Text {
+            text: root.text;
+            color: Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+            accessible-role: none;
+        }
+        if root.detail != "": Text {
+            text: root.detail;
+            color: Theme.faint;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+            overflow: elide;
+            max-width: 140px;
+            accessible-role: none;
+        }
+    }
+}
+
+// The voice button: the name of the voice reading, and the voices above it to choose from.
+component VoiceMenu inherits Rectangle {
+    width: 150px;
+    height: Theme.control-height;
+
+    btn := Pressable {
+        width: root.width;
+        height: root.height;
+        border-radius: Theme.radius-small;
+        background: self.has-hover || self.has-focus ? Theme.hover : transparent;
+        arrows: false;
+        accessible-role: combobox;
+        accessible-expandable: true;
+        label: @tr("Voice");
+        description: ReadAloudState.voice-name;
+        clicked => {
+            ReadAloudState.load-voices();
+            menu.show();
+        }
+        Text {
+            x: Theme.rtl ? 24px : 8px;
+            width: parent.width - 32px;
+            height: parent.height;
+            text: ReadAloudState.voice-name;
+            color: Theme.text;
+            font-size: Theme.font-small;
+            horizontal-alignment: Theme.rtl ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+            vertical-alignment: center;
+            overflow: elide;
+            accessible-role: none;
+        }
+        Image {
+            x: Theme.rtl ? 8px : parent.width - 20px;
+            y: (parent.height - self.height) / 2;
+            source: @image-url("icons/chevron-up.svg");
+            width: 12px;
+            height: 12px;
+            colorize: Theme.muted;
+            accessible-role: none;
+        }
+    }
+
+    menu := PopupWindow {
+        x: Theme.rtl ? root.width - self.width : 0px;
+        y: -self.height - 18px;
+        width: 340px;
+        height: card.preferred-height;
+        card := MenuCard {
+            Text {
+                text: @tr("Voice");
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                font-weight: 600;
+                height: 26px;
+                vertical-alignment: center;
+                x: 12px;
+            }
+            if ReadAloudState.voices-loading && ReadAloudState.voices.length <= 1: Text {
+                text: @tr("Looking for voices…");
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                height: 26px;
+                vertical-alignment: center;
+                x: 12px;
+            }
+            list := KeepInView {
+                height: min(rows.preferred-height, 320px);
+                inner-height: rows.preferred-height;
+                rows := VerticalLayout {
+                    width: list.width;
+                    for v[i] in ReadAloudState.voices: VoiceItem {
+                        text: v.name;
+                        detail: v.detail;
+                        chosen: i == ReadAloudState.voice-index;
+                        initial-focus: i == ReadAloudState.voice-index;
+                        clicked => {
+                            // Before closing: the row, and its index, go with the menu.
+                            ReadAloudState.set-voice(i);
+                            menu.close();
+                        }
+                    }
+                }
+            }
+            if ReadAloudState.voices-hint != "": VerticalLayout {
+                padding: 8px;
+                Text {
+                    text: ReadAloudState.voices-hint;
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    wrap: word-wrap;
+                    // A fixed width, so that the wrapped height counts in the menu's.
+                    width: menu.width - 24px;
+                    accessible-role: text;
+                }
+            }
+        }
+    }
 }
 
 // The read-aloud controls, floating over the bottom of the pages.
@@ -143,6 +318,9 @@ export component ReadAloudBar inherits Rectangle {
                 clicked => {
                     ReadAloudState.set-rate(ReadAloudState.rate + 0.25);
                 }
+            }
+            VoiceMenu {
+                cross-axis-self-alignment: center;
             }
             Text {
                 min-width: 90px;

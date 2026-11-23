@@ -153,6 +153,16 @@ pub fn query(s: &mut State, ui: &AppWindow, key: &str) -> Option<Result<String, 
         "speech.visible" => ra.get_visible().to_string(),
         "speech.sentence" => ra.get_sentence().to_string(),
         "speech.rate" => ra.get_rate().to_string(),
+        // The voice the last sentence was read in; empty for the engine's own.
+        "speech.voice" => s.read_aloud.voice_used.clone().unwrap_or_default(),
+        "speech.voice-name" => ra.get_voice_name().to_string(),
+        "speech.voices" => ra
+            .get_voices()
+            .iter()
+            .map(|v| v.name.to_string())
+            .collect::<Vec<_>>()
+            .join(" | "),
+        "speech.voices-hint" => ra.get_voices_hint().to_string(),
         "speech.spoken" => s
             .read_aloud
             .spoken

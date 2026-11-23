@@ -1,18 +1,24 @@
 //! Reading aloud: the selection, or the document from the current page on, a sentence at
 //! a time in reading order (the structure tree of tagged PDFs, else the layout), through
 //! the system's speech engine. The sentence being read is highlighted on the page.
+//!
+//! The voice is the one chosen in the bar's voice menu, else the most natural one
+//! installed for the text's language (see `speech::pick`), else the engine's own.
 
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use pagebara_app_core::speech::{self, Logged, Recorder, Speaker};
+use pagebara_app_core::speech::{self, Logged, Recorder, Speaker, Voice};
 use pagebara_app_core::utterances::{Utterance, page_utterances, selection};
 use pagebara_i18n::tr;
-use slint::ComponentHandle;
+use slint::{ComponentHandle, ModelRc, VecModel};
 
 use super::{App, State, post_act};
-use crate::{AppState, AppWindow, ReadAloudState};
+use crate::{AppState, AppWindow, ReadAloudState, VoiceRow};
+
+/// The engine's voices, listed once (and again when the voice menu opens).
+type Voices = Arc<Mutex<Option<Arc<Vec<Voice>>>>>;
 
 pub struct ReadAloud {
     speaker: Option<Arc<dyn Speaker>>,
@@ -28,6 +34,13 @@ pub struct ReadAloud {
     paused: bool,
     tab: u64,
     rate: f32,
+    voices: Voices,
+    /// The voice ids of the voice menu's rows; the first, `None`, picks one.
+    menu: Vec<Option<String>>,
+    /// The voice the last sentence was read with; `None` for the engine's own.
+    pub voice_used: Option<String>,
+    /// The language to pick a voice for when the text does not say: the system's.
+    default_lang: Option<String>,
 }
 
 impl std::fmt::Debug for ReadAloud {
@@ -72,6 +85,10 @@ impl ReadAloud {
             paused: false,
             tab: 0,
             rate: 1.0,
+            voices: Voices::default(),
+            menu: vec![None],
+            voice_used: None,
+            default_lang: pagebara_i18n::system_locale().and_then(|l| speech::locale_tag(&l)),
         }
     }
 
@@ -100,6 +117,7 @@ pub fn wire(app: &Rc<App>, ui: &AppWindow) {
         );
         rs.set_rate(s.settings.speech_rate);
     }
+    show_voices(&mut app.state.borrow_mut(), ui);
     macro_rules! on {
         ($cb:ident, |$app:ident, $s:ident, $ui:ident $(, $arg:ident)*| $body:expr) => {{
             let a = app.clone();
@@ -109,6 +127,8 @@ pub fn wire(app: &Rc<App>, ui: &AppWindow) {
     on!(on_show, |app, s, ui, visible| {
         ui.global::<ReadAloudState>().set_visible(visible);
         if visible {
+            // Ready for the first sentence, which would otherwise wait for the list.
+            prefetch_voices(s);
             s.focus_region = 7;
             ui.global::<crate::FocusNav>().invoke_request(7);
         } else {
@@ -127,6 +147,142 @@ pub fn wire(app: &Rc<App>, ui: &AppWindow) {
         ui.global::<ReadAloudState>().set_rate(rate);
         app.save_settings(s);
     });
+    on!(on_load_voices, |app, s, ui| load_voices(app, s, ui));
+    on!(on_set_voice, |app, s, ui, i| set_voice(app, s, ui, i));
+}
+
+/// The engine's voices: those listed already, else listed now (which can take a moment,
+/// and then the voice menu is shown again).
+fn voice_list(engine: &dyn Speaker, voices: &Voices) -> Arc<Vec<Voice>> {
+    let mut guard = voices.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(list) = &*guard {
+        return list.clone();
+    }
+    let list = Arc::new(engine.voices());
+    *guard = Some(list.clone());
+    post_act(|_app, s, ui| show_voices(s, ui));
+    list
+}
+
+fn prefetch_voices(s: &State) {
+    let r = &s.read_aloud;
+    let Some(engine) = r.speaker.clone() else {
+        return;
+    };
+    if r.voices.lock().unwrap_or_else(|e| e.into_inner()).is_some() {
+        return;
+    }
+    let voices = r.voices.clone();
+    pagebara_thread::spawn("speech-voices", move || {
+        voice_list(&*engine, &voices);
+    });
+}
+
+/// Lists the voices afresh for the voice menu.
+fn load_voices(_app: &Rc<App>, s: &mut State, ui: &AppWindow) {
+    let Some(engine) = s.read_aloud.speaker.clone() else {
+        return;
+    };
+    let rs = ui.global::<ReadAloudState>();
+    rs.set_voices_loading(true);
+    let voices = s.read_aloud.voices.clone();
+    pagebara_thread::spawn("speech-voices", move || {
+        let list = Arc::new(engine.voices());
+        *voices.lock().unwrap_or_else(|e| e.into_inner()) = Some(list);
+        post_act(|_app, s, ui| {
+            ui.global::<ReadAloudState>().set_voices_loading(false);
+            show_voices(s, ui);
+        });
+    });
+}
+
+/// The voice menu and the name on its button.
+fn show_voices(s: &mut State, ui: &AppWindow) {
+    let r = &s.read_aloud;
+    let rs = ui.global::<ReadAloudState>();
+    let Some(engine) = &r.speaker else {
+        return;
+    };
+    let list = r
+        .voices
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+        .unwrap_or_default();
+    let mut voices: Vec<Voice> = (*list).clone();
+    speech::sort_voices(&mut voices, r.default_lang.as_deref());
+    let chosen = s.settings.speech_voice.as_deref();
+    let auto = speech::pick(&voices, None, r.default_lang.as_deref())
+        .and_then(|id| voices.iter().find(|v| v.id == id));
+    let mut rows = vec![VoiceRow {
+        name: tr!("Automatic").into(),
+        detail: auto
+            .map_or_else(|| engine.name().to_owned(), |v| v.name.clone())
+            .into(),
+    }];
+    let mut ids = vec![None];
+    for v in &voices {
+        rows.push(VoiceRow {
+            name: v.name.as_str().into(),
+            detail: v.lang.clone().unwrap_or_default().into(),
+        });
+        ids.push(Some(v.id.clone()));
+    }
+    // A voice chosen before that is not listed now (removed, or the list is not in yet).
+    if let Some(c) = chosen
+        && !ids.iter().any(|i| i.as_deref() == Some(c))
+    {
+        rows.push(VoiceRow {
+            name: c.into(),
+            detail: Default::default(),
+        });
+        ids.push(Some(c.to_owned()));
+    }
+    let index = ids.iter().position(|i| i.as_deref() == chosen).unwrap_or(0);
+    let name = match chosen {
+        Some(c) => voices
+            .iter()
+            .find(|v| v.id == c)
+            .map_or_else(|| c.to_owned(), |v| v.name.clone()),
+        None => auto.map_or_else(|| tr!("Automatic"), |v| v.name.clone()),
+    };
+    rs.set_voice_name(name.into());
+    rs.set_voice_index(index as i32);
+    // Only robotic voices for the reader's language: say where better ones come from.
+    let natural = voices.iter().any(|v| {
+        v.quality >= speech::GOOD
+            && match (v.lang.as_deref(), r.default_lang.as_deref()) {
+                (Some(l), Some(d)) => speech::same_language(l, d),
+                _ => true,
+            }
+    });
+    let hint = if natural || list.is_empty() {
+        String::new()
+    } else {
+        engine.more_voices().unwrap_or_default()
+    };
+    rs.set_voices_hint(hint.into());
+    rs.set_voices(ModelRc::new(VecModel::from(rows)));
+    s.read_aloud.menu = ids;
+}
+
+/// The reader chose row `i` of the voice menu: kept in the settings, and the sentence
+/// being read is read again in that voice.
+fn set_voice(app: &Rc<App>, s: &mut State, ui: &AppWindow, i: i32) {
+    let Some(id) = s.read_aloud.menu.get(i.max(0) as usize).cloned() else {
+        return;
+    };
+    s.settings.speech_voice = id;
+    app.save_settings(s);
+    show_voices(s, ui);
+    let r = &mut s.read_aloud;
+    if r.playing && !r.paused {
+        r.run += 1;
+        if let Some(e) = &r.speaker {
+            e.stop();
+        }
+        speak_current(app, s, ui);
+    }
 }
 
 /// Ctrl+Shift+V reads, Ctrl+Shift+C pauses or resumes, Ctrl+Shift+E stops.
@@ -267,6 +423,9 @@ fn speak_current(app: &Rc<App>, s: &mut State, ui: &AppWindow) {
     r.run += 1;
     let run = r.run;
     let rate = r.rate;
+    let voices = r.voices.clone();
+    let default_lang = r.default_lang.clone();
+    let chosen = s.settings.speech_voice.clone();
     // Follow the reading through the document.
     let page = u.page;
     let off_page = s
@@ -277,12 +436,16 @@ fn speak_current(app: &Rc<App>, s: &mut State, ui: &AppWindow) {
     }
     show(app, s, ui);
     pagebara_thread::spawn("read-aloud", move || {
-        let spoken = engine.speak(&u.text, rate, u.lang.as_deref());
+        let list = voice_list(&*engine, &voices);
+        let lang = u.lang.as_deref().or(default_lang.as_deref());
+        let voice = speech::pick(&list, chosen.as_deref(), lang).map(str::to_owned);
+        let spoken = engine.speak(&u.text, rate, u.lang.as_deref(), voice.as_deref());
         post_act(move |app, s, ui| {
             let r = &mut s.read_aloud;
             if r.run != run || !r.playing || r.paused {
                 return;
             }
+            r.voice_used = voice;
             // The engine is missing or broken: stop rather than skip through the text.
             if let Err(e) = spoken {
                 log::warn!("speech: {e}");

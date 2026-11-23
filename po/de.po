@@ -1754,20 +1754,25 @@ msgid_plural "Sent {n} pages to {} ({})"
 msgstr[0] "{n} Seite an {} gesendet ({})"
 msgstr[1] "{n} Seiten an {} gesendet ({})"
 
-#: apps/desktop/src/app/read_aloud.rs:262
+#: apps/desktop/src/app/read_aloud.rs:218
+#: apps/desktop/src/app/read_aloud.rs:247
+msgid "Automatic"
+msgstr ""
+
+#: apps/desktop/src/app/read_aloud.rs:418
 msgid "Finished reading."
 msgstr "Vorlesen beendet."
 
-#: apps/desktop/src/app/read_aloud.rs:292
+#: apps/desktop/src/app/read_aloud.rs:455
 msgid "Reading aloud stopped: the speech engine is not working."
 msgstr "Vorlesen angehalten: Die Sprachausgabe funktioniert nicht."
 
-#: apps/desktop/src/app/read_aloud.rs:314 apps/desktop/src/app/reading.rs:692
+#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:692
 #: apps/desktop/ui/page-view.slint:472 apps/mobile/src/app/mod.rs:701
 msgid "Page {} of {}"
 msgstr "Seite {} von {}"
 
-#: apps/desktop/src/app/read_aloud.rs:316
+#: apps/desktop/src/app/read_aloud.rs:479
 msgid "Page {} ({} of {})"
 msgstr ""
 
@@ -3941,7 +3946,7 @@ msgstr "Vergleichen…"
 msgid "Reading view"
 msgstr "Leseansicht"
 
-#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:42
+#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:217
 #: apps/desktop/ui/shortcuts.slint:100 apps/desktop/ui/tool-row.slint:265
 msgid "Read aloud"
 msgstr "Vorlesen"
@@ -4553,43 +4558,51 @@ msgstr "Druckübersicht"
 msgid "Save as PDF for printing…"
 msgstr "Als PDF zum Drucken speichern…"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:119 apps/desktop/ui/read-aloud.slint:155
+msgid "Voice"
+msgstr ""
+
+#: apps/desktop/ui/read-aloud.slint:164
+msgid "Looking for voices…"
+msgstr ""
+
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Pause reading"
 msgstr "Vorlesen anhalten"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Resume reading"
 msgstr "Vorlesen fortsetzen"
 
-#: apps/desktop/ui/read-aloud.slint:75
+#: apps/desktop/ui/read-aloud.slint:250
 msgid "Read aloud from here"
 msgstr "Ab hier vorlesen"
 
-#: apps/desktop/ui/read-aloud.slint:88
+#: apps/desktop/ui/read-aloud.slint:263
 msgid "Stop reading"
 msgstr "Vorlesen beenden"
 
-#: apps/desktop/ui/read-aloud.slint:98
+#: apps/desktop/ui/read-aloud.slint:273
 msgid "Previous sentence"
 msgstr "Vorheriger Satz"
 
-#: apps/desktop/ui/read-aloud.slint:107
+#: apps/desktop/ui/read-aloud.slint:282
 msgid "Next sentence"
 msgstr "Nächster Satz"
 
-#: apps/desktop/ui/read-aloud.slint:122
+#: apps/desktop/ui/read-aloud.slint:297
 msgid "Slower"
 msgstr "Langsamer"
 
-#: apps/desktop/ui/read-aloud.slint:136
+#: apps/desktop/ui/read-aloud.slint:311
 msgid "Speed {} percent"
 msgstr "Geschwindigkeit {} Prozent"
 
-#: apps/desktop/ui/read-aloud.slint:141
+#: apps/desktop/ui/read-aloud.slint:316
 msgid "Faster"
 msgstr "Schneller"
 
-#: apps/desktop/ui/read-aloud.slint:162
+#: apps/desktop/ui/read-aloud.slint:340
 msgid "Close read aloud"
 msgstr "Vorlesen schließen"
 
@@ -8227,15 +8240,31 @@ msgstr "Geben Sie Ihren Namen ein."
 msgid "Choose a password to protect the ID."
 msgstr "Wählen Sie ein Kennwort zum Schutz der ID."
 
-#: crates/app-core/src/speech/ssip.rs:122
+#: crates/app-core/src/speech/mod.rs:415
+msgid "eSpeak voices sound robotic. For natural voices, install Speech Dispatcher with Piper or RHVoice."
+msgstr ""
+
+#: crates/app-core/src/speech/mod.rs:418
+msgid "More natural voices can be downloaded in System Settings > Accessibility > Spoken Content > System voice > Manage Voices."
+msgstr ""
+
+#: crates/app-core/src/speech/mod.rs:421
+msgid "More voices can be added in Settings > Time & language > Speech."
+msgstr ""
+
+#: crates/app-core/src/speech/ssip.rs:144
 msgid "Speech Dispatcher did not finish speaking"
 msgstr "Speech Dispatcher hat das Sprechen nicht beendet"
 
-#: crates/app-core/src/speech/ssip.rs:203
+#: crates/app-core/src/speech/ssip.rs:264
+msgid "For natural voices, add Piper or RHVoice to Speech Dispatcher."
+msgstr ""
+
+#: crates/app-core/src/speech/ssip.rs:351
 msgid "Speech Dispatcher did not answer"
 msgstr "Speech Dispatcher hat nicht geantwortet"
 
-#: crates/app-core/src/speech/ssip.rs:219
+#: crates/app-core/src/speech/ssip.rs:367
 msgid "Speech Dispatcher closed the connection"
 msgstr "Speech Dispatcher hat die Verbindung geschlossen"
 

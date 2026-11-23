@@ -81,12 +81,18 @@ pub fn find(tag: &str) -> Option<&'static Language> {
 /// The system's language: `PAGEBARA_LANG`, else the locale (`LC_ALL`, `LC_MESSAGES`, `LANG`
 /// on Unix; the platform's setting elsewhere), else English.
 pub fn system_language() -> &'static Language {
-    let env = std::env::var("PAGEBARA_LANG")
-        .ok()
-        .filter(|v| !v.is_empty());
-    env.or_else(sys_locale::get_locale)
+    system_locale()
         .and_then(|l| find(&l))
         .unwrap_or(&LANGUAGES[0])
+}
+
+/// The system's locale (`de_DE.UTF-8`, `pt-BR`): `PAGEBARA_LANG`, else the platform's,
+/// whether or not the app is translated into its language.
+pub fn system_locale() -> Option<String> {
+    std::env::var("PAGEBARA_LANG")
+        .ok()
+        .filter(|v| !v.is_empty())
+        .or_else(sys_locale::get_locale)
 }
 
 /// The language to show: the one chosen in the settings (a code of [`LANGUAGES`]), else
