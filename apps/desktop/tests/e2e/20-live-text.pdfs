@@ -16,6 +16,7 @@ assert live.text:1 contains Include comments and highlights
 assert live.text:1 contains Exporting a document
 screenshot 20-hover.png
 # A word in it is selected with a double click and copied like real text.
+assert live.text:1 contains Margins
 dblclick text 1 "Margins" 300
 assert selection.text == Margins
 key ctrl+c
