@@ -12,6 +12,8 @@ All notable changes to Pagebara are listed here. The format follows
   incomplete dictionary: they were merged into one.
 - A damaged JBIG2 image with an end marker in the middle of its data no longer takes
   seconds to show; decoding stops at the marker.
+- Redacting part of a text filled with a large pattern no longer makes the top edge of
+  the letters left a little lighter.
 
 ## [0.2.0]
 

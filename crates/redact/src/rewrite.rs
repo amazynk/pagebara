@@ -1651,8 +1651,11 @@ fn not_painted(doc: &Document, d: &Dict) -> u32 {
     if inverted { 0 } else { 1 }
 }
 
-/// Notes text shown in box `b` as painted the way the rendering mode says.
+/// Notes text shown in box `b` as painted the way the rendering mode says. The box grows by
+/// a unit: the cells drawn for a tiling pattern end at it, and an edge there right on the
+/// glyphs' edge (a flat top at the box's top) would be smoothed twice, lighter than before.
 fn text_painted(run: &mut Run, b: Rect) {
+    let b = Rect::new(b.x0 - 1.0, b.y0 - 1.0, b.x1 + 1.0, b.y1 + 1.0);
     let mode = run.gs.render;
     let fill = matches!(mode, 0 | 2 | 4 | 6);
     let stroke = matches!(mode, 1 | 2 | 5 | 6);
