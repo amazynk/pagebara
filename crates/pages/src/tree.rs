@@ -238,7 +238,7 @@ impl PageTree {
                     // A catalog pointing straight at a single page.
                     if let Some(r) = pages_ref(doc)
                         && let Some(o) = doc.get(r)
-                        && let Some(d) = page_dict(&o)
+                        && let Some(d) = page_dict(r, &o)
                     {
                         w.pages.push(Page::new(doc, r, d, Arc::default()));
                     }
@@ -268,7 +268,7 @@ impl PageTree {
                 && let Some(r) = kids.get(i).and_then(Object::as_objref)
                 && !seen.contains(&r.num)
                 && let Some(o) = doc.get(r)
-                && let Some(kd) = o.as_dict()
+                && let Some(kd) = page_dict(r, &o)
                 && !is_node(doc, kd)
             {
                 return Some(Page::new(doc, r, kd, inh));
@@ -295,7 +295,7 @@ impl PageTree {
             let (r, o, leaf, rest) = hit?;
             let kd = o.as_dict()?;
             if leaf {
-                return Some(Page::new(doc, r, page_dict(&o)?, inh));
+                return Some(Page::new(doc, r, page_dict(r, &o)?, inh));
             }
             inh = Inherited::extend(&inh, kd);
             i = rest;
@@ -366,7 +366,7 @@ impl Walk {
                 self.nodes.push(r);
                 let inh = Inherited::extend(&inh, d);
                 stack.push((kids(doc, d), 0, inh));
-            } else if let Some(d) = page_dict(&obj) {
+            } else if let Some(d) = page_dict(r, &obj) {
                 self.pages.push(Page::new(doc, r, d, inh));
             }
         }
@@ -380,7 +380,7 @@ impl Walk {
                 continue;
             };
             let Some(obj) = doc.get(r) else { continue };
-            if let Some(d) = page_dict(&obj)
+            if let Some(d) = page_dict(r, &obj)
                 && d.name(b"Type") == Some(b"Page")
             {
                 self.pages.push(Page::new(doc, r, d, none.clone()));
@@ -428,11 +428,12 @@ fn root_count(doc: &Document, root: ObjRef, d: &Dict) -> Option<usize> {
     (sum == total).then_some(total)
 }
 
-/// The dictionary of a page: a page is a dictionary, never a stream (a damaged tree may
-/// lead to an object stream or a picture instead).
-fn page_dict(o: &Object) -> Option<&Dict> {
+/// The dictionary of page `r`: a page is a dictionary, never a stream (a damaged tree may
+/// lead to an object stream or a picture instead), and never object 0, the head of the
+/// free list, which repair may find in a damaged file but no file can save.
+fn page_dict(r: ObjRef, o: &Object) -> Option<&Dict> {
     match o {
-        Object::Dict(d) => Some(d),
+        Object::Dict(d) if r.num > 0 => Some(d),
         _ => None,
     }
 }

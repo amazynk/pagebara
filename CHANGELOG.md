@@ -9,7 +9,8 @@ All notable changes to Pagebara are listed here. The format follows
 ### Fixed
 
 - A damaged file whose page tree leads to a stream instead of a page no longer counts the
-  stream as a blank page, which optimizing the file then lost.
+  stream as a blank page, which optimizing the file then lost. The same goes for a page
+  numbered as object 0, which no saved file can hold.
 
 ## [0.2.1]
 

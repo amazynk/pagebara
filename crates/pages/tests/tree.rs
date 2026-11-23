@@ -113,6 +113,30 @@ fn streams_are_not_pages() {
         &[(3, "<</Type/Page/MediaBox[0 0 10 10]>>"), (4, &stream)],
     );
     let t = PageTree::load(&doc);
+    // Page by page, through the counts, as well as all at once.
+    assert!(t.page(1).is_none());
+    assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
+}
+
+/// Repair may find an object numbered 0 in a damaged file, but object 0 is the head of the
+/// free list and saving drops it: a page there counted, and optimizing then lost it.
+#[test]
+fn object_zero_is_not_a_page() {
+    let page = "<</Type/Page/MediaBox[0 0 10 10]>>";
+    let o = vec![
+        (0, page.to_string()),
+        (1, "<</Type/Catalog/Pages 9 0 R>>".to_string()),
+        (3, page.to_string()),
+    ];
+    let t = PageTree::load(&open(pdf(&o, 1)));
+    assert!(t.repaired());
+    assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
+    let doc = tree_with(
+        "<</Type/Pages/Kids[0 0 R 3 0 R]/Count 2>>",
+        &[(0, page), (3, page)],
+    );
+    let t = PageTree::load(&doc);
+    assert!(t.page(0).is_none_or(|p| p.r.num != 0));
     assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
 }
 
