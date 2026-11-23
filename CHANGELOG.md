@@ -6,6 +6,13 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Optimizing a damaged file no longer loses a page when two of its pages have the same
+  incomplete dictionary: they were merged into one.
+- A damaged JBIG2 image with an end marker in the middle of its data no longer takes
+  seconds to show; decoding stops at the marker.
+
 ## [0.2.0]
 
 ### Added

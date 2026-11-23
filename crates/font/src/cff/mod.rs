@@ -406,7 +406,7 @@ impl Cff {
             });
         }
         if let Some(vs) = top.vstore {
-            f.regions = regions(d, vs + 2).unwrap_or_default();
+            f.regions = regions(d, vs).unwrap_or_default();
         }
         if !cff2 {
             f.charset = match top.charset.unwrap_or(0) {
@@ -746,13 +746,17 @@ fn parse_charset(d: &[u8], off: usize, n: u16) -> Option<Charset> {
     Some(Charset::Custom(v))
 }
 
-/// Region counts of each ItemVariationData (CFF2 `vstore`).
-fn regions(d: &[u8], ivs: usize) -> Option<Vec<u16>> {
+/// Region counts of each ItemVariationData (CFF2 `vstore`, an offset from the font's
+/// data, which may be anything).
+fn regions(d: &[u8], vstore: usize) -> Option<Vec<u16>> {
+    // The ItemVariationStore follows the store's two-byte length. Within the data, the
+    // additions below cannot overflow.
+    let ivs = vstore.checked_add(2).filter(|&o| o <= d.len())?;
     let n = u16_at(d, ivs + 6)?;
     let mut out = Vec::with_capacity(usize::from(n));
     for i in 0..usize::from(n) {
         let off = u32_at(d, ivs + 8 + i * 4)? as usize;
-        out.push(u16_at(d, ivs + off + 4)?);
+        out.push(u16_at(d, ivs.checked_add(off)?.checked_add(4)?)?);
     }
     Some(out)
 }

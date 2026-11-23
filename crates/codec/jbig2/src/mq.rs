@@ -92,11 +92,12 @@ impl<'a> Mq<'a> {
     fn byte_in(&mut self) {
         if self.byte(self.pos) == 0xFF {
             if self.byte(self.pos + 1) > 0x8F {
+                // A marker ends the coded data, wherever it is in the segment: from here on
+                // the decoder reads ones without moving, so this counts as running past the
+                // end (or a marker early in the data would let it decode forever).
                 self.c = self.c.wrapping_add(0xFF00);
                 self.ct = 8;
-                if self.pos + 1 >= self.data.len() {
-                    self.overrun += 1;
-                }
+                self.overrun += 1;
             } else {
                 self.pos += 1;
                 self.c = self.c.wrapping_add((self.byte(self.pos) as u32) << 9);
@@ -310,6 +311,21 @@ mod tests {
             let _ = i;
         }
         assert_eq!(got, want);
+    }
+
+    /// A marker with more data after it (found by fuzzing): the decoder stays on it reading
+    /// ones, and that runs out like reading past the end instead of decoding forever.
+    #[test]
+    fn a_marker_inside_the_data_ends_it() {
+        let data = [0x84, 0xC7, 0xFF, 0xAC, 0x3B, 0xFC, 0xE1, 0xA1, 0x43, 0x04];
+        let mut mq = Mq::new(&data);
+        let mut n = 0;
+        while !mq.exhausted() {
+            // A fresh context each time: every decision moves on by a bit.
+            mq.decode(&mut 0u8);
+            n += 1;
+            assert!(n < 100_000, "never exhausted");
+        }
     }
 
     #[test]

@@ -393,3 +393,22 @@ fn pages_found_by_scanning_are_kept() {
     ];
     check("orphan page", &classic(&objs), &Preset::Lossless.options());
 }
+
+/// A fuzzer find: two pages whose damaged dictionaries are equal and have neither `/Type`
+/// nor `/Parent` were merged into one object listed twice, which is one page.
+#[test]
+fn equal_pages_without_type_stay_apart() {
+    let objs = [
+        "<</Type/Catalog/Pages 2 0 R>>".to_owned(),
+        "<</Type/Pages/Kids[3 0 R 4 0 R]/Count 2/MediaBox[0 0 100 100]>>".into(),
+        "<</Contents 5 0 R>>".into(),
+        "<</Contents 5 0 R>>".into(),
+        stream("1 0 0 rg 10 10 50 50 re f"),
+    ];
+    let bytes = classic(&objs);
+    let pages = |b: &[u8]| pagebara_pages::PageTree::load(&open(b).unwrap()).len();
+    assert_eq!(pages(&bytes), 2);
+    let out = optimize(&open(&bytes).unwrap(), &Preset::Lossless.options(), None).unwrap();
+    assert_eq!(pages(&out.bytes), 2);
+    check("equal pages", &bytes, &Preset::Lossless.options());
+}

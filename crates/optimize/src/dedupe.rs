@@ -2,10 +2,11 @@
 //! the merges found so far, repeated until nothing more merges, so two identical fonts
 //! whose descriptors and programs are separate copies end up as one.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write as _;
 use std::sync::Arc;
 
+use pagebara_pages::PageTree;
 use pagebara_syntax::{Dict, Document, ObjRef, Object};
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
@@ -80,9 +81,13 @@ fn ser_dict(d: &Dict, rep: &HashMap<u32, u32>, out: &mut Vec<u8>) {
 
 /// Merges identical objects; returns how many copies went.
 pub(crate) fn merge(doc: &mut Document) -> usize {
+    // The pages the tree holds, whatever their dictionaries say: a damaged page may have
+    // neither `/Type` nor `/Parent`, and two equal ones are still two pages.
+    let pages: HashSet<u32> = PageTree::load(doc).refs().iter().map(|r| r.num).collect();
     let objs: Vec<(u32, Arc<Object>)> = doc
         .object_numbers()
         .into_iter()
+        .filter(|n| !pages.contains(n))
         .filter_map(|n| Some((n, doc.get(doc.reference(n)?)?)))
         .filter(|(_, o)| !distinct(o))
         .collect();
