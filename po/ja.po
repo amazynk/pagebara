@@ -58,7 +58,7 @@ msgid_plural "{n} changes: {} words inserted, {} deleted, {} moved · {} pages i
 msgstr[0] "{n} 件の変更：{} 語挿入、{} 語削除、{} 語移動 · {} ページ挿入、{} ページ削除、{} ページ外観が異なる · {} 秒"
 
 #. where a link goes
-#: apps/desktop/src/app/compare.rs:338 apps/desktop/ui/library.slint:216
+#: apps/desktop/src/app/compare.rs:338 apps/desktop/src/app/library.rs:361
 #: crates/app-core/src/reading_order.rs:347
 msgid "page {}"
 msgstr "{} ページ"
@@ -683,37 +683,73 @@ msgstr "先に Ctrl+A またはポインターでテキストを選択するか�
 msgid "Follow the system"
 msgstr "システムに従う"
 
-#: apps/desktop/src/app/library.rs:174
+#: apps/desktop/src/app/library.rs:220
+msgid "{n} document"
+msgid_plural "{n} documents"
+msgstr[0] ""
+
+#: apps/desktop/src/app/library.rs:248
 msgid "Add a folder to the library"
 msgstr "ライブラリにフォルダーを追加"
 
 #. in the library list, a password-protected document
-#: apps/desktop/src/app/library.rs:207
+#: apps/desktop/src/app/library.rs:321
 msgid "locked"
 msgstr "ロック中"
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1907
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
 msgstr[0] "{n} ページ"
 
-#: apps/desktop/src/app/library.rs:243
+#: apps/desktop/src/app/library.rs:333 apps/desktop/ui/welcome.slint:111
+msgid "Open {}"
+msgstr "{} を開く"
+
+#: apps/desktop/src/app/library.rs:350
+msgid "{n} page matches"
+msgid_plural "{n} pages match"
+msgstr[0] ""
+
+#: apps/desktop/src/app/library.rs:356
+msgid "Open {} at page {}"
+msgstr "{0} の {1} ページを開く"
+
+#. heading over the recently opened files
+#: apps/desktop/src/app/library.rs:416 apps/desktop/ui/welcome.slint:95
+#: apps/mobile/ui/home.slint:63
+msgid "Recent"
+msgstr "最近使用した項目"
+
+#: apps/desktop/src/app/library.rs:441
+msgid "In your folders"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:457
+msgid "Name or title"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:463
+msgid "In the text"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:632
 msgid "Looking for documents…"
 msgstr "文書を検索中…"
 
-#: apps/desktop/src/app/library.rs:261
+#: apps/desktop/src/app/library.rs:669
 msgid "Indexing {} of {} documents…"
 msgstr "{} / {} 件の文書をインデックス作成中…"
 
-#: apps/desktop/src/app/library.rs:284
-msgid "Indexing stopped · {n} document indexed ({} new or changed)"
-msgid_plural "Indexing stopped · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:695
+msgid "{n} document · indexing stopped"
+msgid_plural "{n} documents · indexing stopped"
 msgstr[0] ""
 
-#: apps/desktop/src/app/library.rs:291
-msgid "Up to date · {n} document indexed ({} new or changed)"
-msgid_plural "Up to date · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:701
+msgid "{n} document · up to date"
+msgid_plural "{n} documents · up to date"
 msgstr[0] ""
 
 #: apps/desktop/src/app/live.rs:146 apps/mobile/src/app/live.rs:309
@@ -2791,7 +2827,7 @@ msgstr "パネルを閉じる"
 msgid "Shortcut {}"
 msgstr "ショートカット {}"
 
-#: apps/desktop/ui/components/text-field.slint:63
+#: apps/desktop/ui/components/text-field.slint:74
 msgid "Not valid"
 msgstr "無効です"
 
@@ -2883,7 +2919,7 @@ msgstr "閉じる"
 #: apps/desktop/ui/dialogs.slint:403 apps/desktop/ui/dialogs.slint:674
 #: apps/desktop/ui/dialogs.slint:715 apps/desktop/ui/dialogs.slint:775
 #: apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:301
-#: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:167
+#: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:374
 #: apps/desktop/ui/ocr.slint:119 apps/desktop/ui/optimize.slint:239
 #: apps/desktop/ui/password-dialog.slint:131
 #: apps/desktop/ui/print-dialog.slint:401 apps/desktop/ui/redaction.slint:288
@@ -3447,7 +3483,7 @@ msgstr "辞書をダウンロード中… {}%"
 msgid "Not now"
 msgstr "後で"
 
-#: apps/desktop/ui/find-results.slint:36 apps/desktop/ui/library.slint:189
+#: apps/desktop/ui/find-results.slint:36
 msgid "Matches"
 msgstr "一致箇所"
 
@@ -3461,73 +3497,70 @@ msgstr "大文字と小文字を区別"
 msgid "Whole words"
 msgstr "単語単位"
 
-#: apps/desktop/ui/library.slint:56 apps/desktop/ui/library.slint:87
+#: apps/desktop/ui/library.slint:111
+msgid "Remove folder {}"
+msgstr "フォルダー {} を削除"
+
+#: apps/desktop/ui/library.slint:128
+msgid "Folders"
+msgstr "フォルダー"
+
+#: apps/desktop/ui/library.slint:145
+msgid "No folders yet. Add one to search the PDF files in it."
+msgstr "フォルダーはまだありません。フォルダーを追加すると、その中の PDF ファイルを検索できます。"
+
+#: apps/desktop/ui/library.slint:170 apps/desktop/ui/library.slint:187
+#: apps/desktop/ui/library.slint:647
+msgid "Add folder…"
+msgstr "フォルダーを追加…"
+
+#: apps/desktop/ui/library.slint:242 apps/desktop/ui/library.slint:356
 #: apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50
 #: apps/desktop/ui/welcome.slint:42
 msgid "Library"
 msgstr "ライブラリ"
 
-#: apps/desktop/ui/library.slint:81
+#: apps/desktop/ui/library.slint:346
 msgid "Close library"
 msgstr "ライブラリを閉じる"
 
-#: apps/desktop/ui/library.slint:94
-msgid "Search stays on this device."
-msgstr "検索はこのデバイス上で行われます。"
-
-#: apps/desktop/ui/library.slint:103
-msgid "Add folder…"
-msgstr "フォルダーを追加…"
-
-#: apps/desktop/ui/library.slint:127
-msgid "Search all documents"
-msgstr "すべての文書を検索"
-
-#: apps/desktop/ui/library.slint:128
-msgid "Search library"
-msgstr "ライブラリを検索"
-
-#: apps/desktop/ui/library.slint:149
+#: apps/desktop/ui/library.slint:367
 msgid "Library status: {}"
 msgstr "ライブラリの状態：{}"
 
-#: apps/desktop/ui/library.slint:174
+#: apps/desktop/ui/library.slint:382
 msgid "Update index"
 msgstr "インデックスを更新"
 
-#. heading of the search results
-#: apps/desktop/ui/library.slint:189 crates/app-core/src/find.rs:441
-msgid "No matches"
-msgstr "一致なし"
+#: apps/desktop/ui/library.slint:383
+msgid "Look for new and changed documents"
+msgstr ""
 
-#: apps/desktop/ui/library.slint:198
-msgid "Open {} at page {}"
-msgstr "{0} の {1} ページを開く"
+#: apps/desktop/ui/library.slint:417
+msgid "Search names, titles and text on this device"
+msgstr ""
 
-#: apps/desktop/ui/library.slint:235 apps/desktop/ui/shortcuts.slint:38
+#: apps/desktop/ui/library.slint:418
+msgid "Search library"
+msgstr "ライブラリを検索"
+
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/shortcuts.slint:38
 #: apps/desktop/ui/vim-bindings.slint:85
 msgid "Documents"
 msgstr "文書"
 
-#: apps/desktop/ui/library.slint:238
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/vim-bindings.slint:47
+msgid "Search results"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:636
 msgid "Documents you open and PDF files in folders you add show up here."
 msgstr "開いた文書と、追加したフォルダー内の PDF ファイルがここに表示されます。"
 
-#: apps/desktop/ui/library.slint:250 apps/desktop/ui/welcome.slint:111
-msgid "Open {}"
-msgstr "{} を開く"
-
-#: apps/desktop/ui/library.slint:294
-msgid "Folders"
-msgstr "フォルダー"
-
-#: apps/desktop/ui/library.slint:297
-msgid "No folders yet. Add one to search the PDF files in it."
-msgstr "フォルダーはまだありません。フォルダーを追加すると、その中の PDF ファイルを検索できます。"
-
-#: apps/desktop/ui/library.slint:329
-msgid "Remove folder {}"
-msgstr "フォルダー {} を削除"
+#. the library's search found nothing
+#: apps/desktop/ui/library.slint:660 crates/app-core/src/find.rs:441
+msgid "No matches"
+msgstr "一致なし"
 
 #: apps/desktop/ui/notices.slint:36
 msgid "Status: {}"
@@ -6232,10 +6265,6 @@ msgstr ""
 msgid "Cancel search"
 msgstr ""
 
-#: apps/desktop/ui/vim-bindings.slint:47
-msgid "Search results"
-msgstr ""
-
 #: apps/desktop/ui/vim-bindings.slint:49
 msgid "Advance three matches"
 msgstr ""
@@ -6506,11 +6535,6 @@ msgstr "任意：サムネール、ファイルマネージャーのメニュー
 #: apps/desktop/ui/welcome.slint:78
 msgid "Set up…"
 msgstr "設定…"
-
-#. heading over the recently opened files
-#: apps/desktop/ui/welcome.slint:95 apps/mobile/ui/home.slint:63
-msgid "Recent"
-msgstr "最近使用した項目"
 
 #: apps/mobile/src/app/document.rs:70 apps/mobile/ui/sheets.slint:766
 msgid "Add page numbers"
@@ -7403,7 +7427,7 @@ msgstr "バイト範囲が不正です"
 msgid "Signature: checking…"
 msgstr "署名：確認中…"
 
-#: crates/app-core/src/library.rs:203
+#: crates/app-core/src/library.rs:273
 msgid "needs a password"
 msgstr "パスワードが必要です"
 

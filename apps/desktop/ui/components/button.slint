@@ -166,6 +166,8 @@ export component Button inherits Rectangle {
     in property <bool> primary;
     in property <bool> enabled: true;
     in property <string> description;
+    // Opens a menu: an arrow after the text.
+    in property <bool> menu;
     callback clicked;
 
     public function focus-button() {
@@ -221,6 +223,14 @@ export component Button inherits Rectangle {
             font-size: Theme.font-body;
             font-weight: 500;
             vertical-alignment: center;
+            accessible-role: none;
+        }
+        if root.menu: Image {
+            source: @image-url("../icons/chevron-down.svg");
+            colorize: Theme.muted;
+            width: 12px;
+            height: 12px;
+            cross-axis-self-alignment: center;
             accessible-role: none;
         }
     }

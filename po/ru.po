@@ -60,7 +60,7 @@ msgstr[1] "{n} изменения: вставлено слов: {}, удален
 msgstr[2] "{n} изменений: вставлено слов: {}, удалено: {}, перемещено: {} · вставлено страниц: {}, удалено: {}, выглядят иначе: {} · {} с"
 
 #. where a link goes
-#: apps/desktop/src/app/compare.rs:338 apps/desktop/ui/library.slint:216
+#: apps/desktop/src/app/compare.rs:338 apps/desktop/src/app/library.rs:361
 #: crates/app-core/src/reading_order.rs:347
 msgid "page {}"
 msgstr "страница {}"
@@ -693,16 +693,23 @@ msgstr "Сначала выделите текст с помощью Ctrl+A ил
 msgid "Follow the system"
 msgstr "Как в системе"
 
-#: apps/desktop/src/app/library.rs:174
+#: apps/desktop/src/app/library.rs:220
+msgid "{n} document"
+msgid_plural "{n} documents"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: apps/desktop/src/app/library.rs:248
 msgid "Add a folder to the library"
 msgstr "Добавить папку в библиотеку"
 
 #. in the library list, a password-protected document
-#: apps/desktop/src/app/library.rs:207
+#: apps/desktop/src/app/library.rs:321
 msgid "locked"
 msgstr "защищен"
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1907
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
@@ -710,24 +717,57 @@ msgstr[0] "{n} страница"
 msgstr[1] "{n} страницы"
 msgstr[2] "{n} страниц"
 
-#: apps/desktop/src/app/library.rs:243
-msgid "Looking for documents…"
-msgstr "Поиск документов…"
+#: apps/desktop/src/app/library.rs:333 apps/desktop/ui/welcome.slint:111
+msgid "Open {}"
+msgstr "Открыть {}"
 
-#: apps/desktop/src/app/library.rs:261
-msgid "Indexing {} of {} documents…"
-msgstr "Индексирование документов: {} из {}…"
-
-#: apps/desktop/src/app/library.rs:284
-msgid "Indexing stopped · {n} document indexed ({} new or changed)"
-msgid_plural "Indexing stopped · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:350
+msgid "{n} page matches"
+msgid_plural "{n} pages match"
 msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
-#: apps/desktop/src/app/library.rs:291
-msgid "Up to date · {n} document indexed ({} new or changed)"
-msgid_plural "Up to date · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:356
+msgid "Open {} at page {}"
+msgstr "Открыть {} на странице {}"
+
+#. heading over the recently opened files
+#: apps/desktop/src/app/library.rs:416 apps/desktop/ui/welcome.slint:95
+#: apps/mobile/ui/home.slint:63
+msgid "Recent"
+msgstr "Недавние"
+
+#: apps/desktop/src/app/library.rs:441
+msgid "In your folders"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:457
+msgid "Name or title"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:463
+msgid "In the text"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:632
+msgid "Looking for documents…"
+msgstr "Поиск документов…"
+
+#: apps/desktop/src/app/library.rs:669
+msgid "Indexing {} of {} documents…"
+msgstr "Индексирование документов: {} из {}…"
+
+#: apps/desktop/src/app/library.rs:695
+msgid "{n} document · indexing stopped"
+msgid_plural "{n} documents · indexing stopped"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: apps/desktop/src/app/library.rs:701
+msgid "{n} document · up to date"
+msgid_plural "{n} documents · up to date"
 msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
@@ -2893,7 +2933,7 @@ msgstr "Закрыть панель"
 msgid "Shortcut {}"
 msgstr "Сочетание клавиш: {}"
 
-#: apps/desktop/ui/components/text-field.slint:63
+#: apps/desktop/ui/components/text-field.slint:74
 msgid "Not valid"
 msgstr "Недопустимо"
 
@@ -2985,7 +3025,7 @@ msgstr "Закрыть"
 #: apps/desktop/ui/dialogs.slint:403 apps/desktop/ui/dialogs.slint:674
 #: apps/desktop/ui/dialogs.slint:715 apps/desktop/ui/dialogs.slint:775
 #: apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:301
-#: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:167
+#: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:374
 #: apps/desktop/ui/ocr.slint:119 apps/desktop/ui/optimize.slint:239
 #: apps/desktop/ui/password-dialog.slint:131
 #: apps/desktop/ui/print-dialog.slint:401 apps/desktop/ui/redaction.slint:288
@@ -3551,7 +3591,7 @@ msgstr "Загрузка словаря… {} %"
 msgid "Not now"
 msgstr "Не сейчас"
 
-#: apps/desktop/ui/find-results.slint:36 apps/desktop/ui/library.slint:189
+#: apps/desktop/ui/find-results.slint:36
 msgid "Matches"
 msgstr "Совпадения"
 
@@ -3565,73 +3605,70 @@ msgstr "С учетом регистра"
 msgid "Whole words"
 msgstr "Слова целиком"
 
-#: apps/desktop/ui/library.slint:56 apps/desktop/ui/library.slint:87
+#: apps/desktop/ui/library.slint:111
+msgid "Remove folder {}"
+msgstr "Удалить папку {}"
+
+#: apps/desktop/ui/library.slint:128
+msgid "Folders"
+msgstr "Папки"
+
+#: apps/desktop/ui/library.slint:145
+msgid "No folders yet. Add one to search the PDF files in it."
+msgstr "Папок пока нет. Добавьте папку, чтобы искать в ее PDF-файлах."
+
+#: apps/desktop/ui/library.slint:170 apps/desktop/ui/library.slint:187
+#: apps/desktop/ui/library.slint:647
+msgid "Add folder…"
+msgstr "Добавить папку…"
+
+#: apps/desktop/ui/library.slint:242 apps/desktop/ui/library.slint:356
 #: apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50
 #: apps/desktop/ui/welcome.slint:42
 msgid "Library"
 msgstr "Библиотека"
 
-#: apps/desktop/ui/library.slint:81
+#: apps/desktop/ui/library.slint:346
 msgid "Close library"
 msgstr "Закрыть библиотеку"
 
-#: apps/desktop/ui/library.slint:94
-msgid "Search stays on this device."
-msgstr "Поиск выполняется только на этом устройстве."
-
-#: apps/desktop/ui/library.slint:103
-msgid "Add folder…"
-msgstr "Добавить папку…"
-
-#: apps/desktop/ui/library.slint:127
-msgid "Search all documents"
-msgstr "Искать во всех документах"
-
-#: apps/desktop/ui/library.slint:128
-msgid "Search library"
-msgstr "Поиск в библиотеке"
-
-#: apps/desktop/ui/library.slint:149
+#: apps/desktop/ui/library.slint:367
 msgid "Library status: {}"
 msgstr "Состояние библиотеки: {}"
 
-#: apps/desktop/ui/library.slint:174
+#: apps/desktop/ui/library.slint:382
 msgid "Update index"
 msgstr "Обновить индекс"
 
-#. heading of the search results
-#: apps/desktop/ui/library.slint:189 crates/app-core/src/find.rs:441
-msgid "No matches"
-msgstr "Совпадений нет"
+#: apps/desktop/ui/library.slint:383
+msgid "Look for new and changed documents"
+msgstr ""
 
-#: apps/desktop/ui/library.slint:198
-msgid "Open {} at page {}"
-msgstr "Открыть {} на странице {}"
+#: apps/desktop/ui/library.slint:417
+msgid "Search names, titles and text on this device"
+msgstr ""
 
-#: apps/desktop/ui/library.slint:235 apps/desktop/ui/shortcuts.slint:38
+#: apps/desktop/ui/library.slint:418
+msgid "Search library"
+msgstr "Поиск в библиотеке"
+
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/shortcuts.slint:38
 #: apps/desktop/ui/vim-bindings.slint:85
 msgid "Documents"
 msgstr "Документы"
 
-#: apps/desktop/ui/library.slint:238
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/vim-bindings.slint:47
+msgid "Search results"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:636
 msgid "Documents you open and PDF files in folders you add show up here."
 msgstr "Здесь отображаются открытые вами документы и PDF-файлы из добавленных папок."
 
-#: apps/desktop/ui/library.slint:250 apps/desktop/ui/welcome.slint:111
-msgid "Open {}"
-msgstr "Открыть {}"
-
-#: apps/desktop/ui/library.slint:294
-msgid "Folders"
-msgstr "Папки"
-
-#: apps/desktop/ui/library.slint:297
-msgid "No folders yet. Add one to search the PDF files in it."
-msgstr "Папок пока нет. Добавьте папку, чтобы искать в ее PDF-файлах."
-
-#: apps/desktop/ui/library.slint:329
-msgid "Remove folder {}"
-msgstr "Удалить папку {}"
+#. the library's search found nothing
+#: apps/desktop/ui/library.slint:660 crates/app-core/src/find.rs:441
+msgid "No matches"
+msgstr "Совпадений нет"
 
 #: apps/desktop/ui/notices.slint:36
 msgid "Status: {}"
@@ -6346,10 +6383,6 @@ msgstr ""
 msgid "Cancel search"
 msgstr ""
 
-#: apps/desktop/ui/vim-bindings.slint:47
-msgid "Search results"
-msgstr ""
-
 #: apps/desktop/ui/vim-bindings.slint:49
 msgid "Advance three matches"
 msgstr ""
@@ -6620,11 +6653,6 @@ msgstr "Необязательно: миниатюры, меню файлово�
 #: apps/desktop/ui/welcome.slint:78
 msgid "Set up…"
 msgstr "Настроить…"
-
-#. heading over the recently opened files
-#: apps/desktop/ui/welcome.slint:95 apps/mobile/ui/home.slint:63
-msgid "Recent"
-msgstr "Недавние"
 
 #: apps/mobile/src/app/document.rs:70 apps/mobile/ui/sheets.slint:766
 msgid "Add page numbers"
@@ -7557,7 +7585,7 @@ msgstr "диапазон байтов поврежден"
 msgid "Signature: checking…"
 msgstr "Подпись: проверка…"
 
-#: crates/app-core/src/library.rs:203
+#: crates/app-core/src/library.rs:273
 msgid "needs a password"
 msgstr "требуется пароль"
 

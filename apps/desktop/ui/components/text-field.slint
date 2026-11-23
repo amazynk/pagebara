@@ -10,6 +10,8 @@ export component TextField inherits Rectangle {
     in property <bool> password;
     in property <bool> error;
     in property <string> label;
+    // Shown before the text, like a magnifier in a search field.
+    in property <image> icon;
     out property <bool> caps-lock;
     // Whether a letter was typed, so caps-lock means something.
     out property <bool> caps-known;
@@ -49,6 +51,15 @@ export component TextField inherits Rectangle {
         RowLayout {
             padding-left: 10px;
             padding-right: 10px;
+            spacing: 8px;
+            if root.icon.width > 0: Image {
+                source: root.icon;
+                width: 16px;
+                height: 16px;
+                cross-axis-self-alignment: center;
+                colorize: Theme.muted;
+                accessible-role: none;
+            }
             input := TextInput {
                 horizontal-stretch: 1;
                 input-type: root.password ? InputType.password : InputType.text;
@@ -73,7 +84,7 @@ export component TextField inherits Rectangle {
     }
 
     if root.text == "": Text {
-        x: 11px;
+        x: root.icon.width > 0 ? 35px : 11px;
         text: root.placeholder;
         color: Theme.faint;
         font-size: Theme.font-title;

@@ -14,6 +14,24 @@ All notable changes to Pagebara are listed here. The format follows
   language reads, so a downloaded Premium or Enhanced voice is used without choosing it.
   When only robotic voices are installed, the menu says where to get better ones.
 
+### Changed
+
+- **The library for thousands of documents.** Search finds documents by file name and
+  title as well as by their text, and lists each document once: names and titles first,
+  then text, with recently opened documents and those with more matching pages first.
+  A text match opens at its page with the words found there. Matches start a word, so
+  "lease" no longer finds "please". Searching a large library is many times faster.
+- **A new look for the library.** Each document shows a picture of its first page (made
+  in the background and kept, a padlock for one that needs a password), its name without
+  `.pdf`, the folder it is in and its pages, on cards under Recent and In your folders.
+  The tool bar shows how many documents there are, and a line along it fills while
+  indexing; the folders, with the number of documents in each, are under a Folders menu.
+- The library's list is made only for the rows in view, so it stays quick however many
+  documents there are. It has a scroll bar, scrolls from anywhere across the window, and
+  Up, Down, Page Up, Page Down, Home and End move through it; Enter in the search field
+  opens the first match. While a folder is being indexed for the first time, its
+  documents show up as they are read.
+
 ### Fixed
 
 - The reading view scrolls to the end of the document. Each paragraph counted as one line

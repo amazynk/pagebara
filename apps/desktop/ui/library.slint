@@ -1,27 +1,54 @@
 import { Theme } from "theme.slint";
 import { AppState } from "state.slint";
-import { Button, IconButton, Pressable } from "components/button.slint";
+import { Button, IconButton, Pressable, FocusRing } from "components/button.slint";
 import { TextField } from "components/text-field.slint";
+import { MenuCard } from "components/panel.slint";
+import { ListView } from "std-widgets.slint";
 
-export struct LibraryDoc {
+// A row of the library's list. All rows have the same height, so that only the rows in view
+// are made, however many documents there are.
+export struct LibraryRow {
+    // 0 a heading, 1 a document, 2 a document with the text searched for, 3 space at the end.
+    kind: int,
     name: string,
-    folder: string,
-    pages: string,
+    // Where the document is and its pages; for kind 2 the text before the match.
+    detail: string,
+    // For kind 2, the match and the text after it.
+    matched: string,
+    after: string,
+    // On the right: the page of the match and how many pages match; a heading's count.
+    side: string,
+    side2: string,
+    // The first and last row of a group: the ends of its card.
+    first: bool,
+    last: bool,
+    // Needs a password, so there is no picture of its first page.
+    locked: bool,
+    // What a screen reader says for it.
+    label: string,
 }
 
-export struct LibraryHit {
+export struct LibraryFolder {
     name: string,
-    page: int,
-    label: string,
-    snippet: string,
+    path: string,
+    docs: string,
 }
 
 // The library: known documents and folders, searched together on this device.
 export global LibraryState {
     in property <bool> visible;
-    in property <[string]> folders;
-    in property <[LibraryDoc]> docs;
-    in property <[LibraryHit]> hits;
+    in property <[LibraryFolder]> folders;
+    in property <[LibraryRow]> rows;
+    // The row Enter opens.
+    in-out property <int> current: -1;
+    // A search is running for the query.
+    in property <bool> searching;
+    // Bumped to show the top of the list (new search results).
+    in property <int> serial;
+    // Pictures of the first pages of rows `thumbs-start` on (an empty image where there is
+    // none yet).
+    in property <[image]> thumbs;
+    in property <int> thumbs-start;
     in-out property <string> query;
     in property <string> status;
     in property <bool> indexing;
@@ -31,23 +58,182 @@ export global LibraryState {
     callback add-folder();
     callback remove-folder(index: int);
     callback search(text: string);
-    callback open-doc(index: int);
-    callback open-hit(index: int);
+    callback open-row(index: int);
+    // Enter in the search field.
+    callback accept();
     callback reindex();
     callback cancel();
+    // The rows in view (and a few around them) changed.
+    callback rows-shown(first: int, end: int);
 }
 
-component SectionTitle inherits Text {
-    color: Theme.muted;
-    font-size: Theme.font-small;
-    font-weight: 600;
+component FolderItem inherits Rectangle {
+    in property <LibraryFolder> folder;
+    in property <int> index;
+    height: max(48px, Theme.font-body * 1.4 + Theme.font-small * 1.4 + 16px);
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 4px;
+        spacing: 10px;
+        Image {
+            accessible-role: none;
+            source: @image-url("icons/folder.svg");
+            width: 18px;
+            height: 18px;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.muted;
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: root.folder.name;
+                color: Theme.text;
+                font-weight: 500;
+                overflow: elide;
+            }
+            Text {
+                text: root.folder.path;
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                overflow: elide;
+            }
+        }
+        Text {
+            text: root.folder.docs;
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+        }
+        IconButton {
+            y: (parent.height - self.height) / 2;
+            icon: @image-url("icons/close.svg");
+            label: @tr("Remove folder {}", root.folder.path);
+            icon-size: 15px;
+            clicked => {
+                LibraryState.remove-folder(root.index);
+            }
+        }
+    }
 }
 
-component Card inherits Rectangle {
-    background: Theme.chrome;
-    border-radius: Theme.radius;
-    border-width: 1px;
-    border-color: Theme.border;
+// The folders the library looks in, under a button in the tool bar.
+component FoldersMenu inherits Rectangle {
+    width: btn.preferred-width;
+    height: Theme.control-height;
+
+    btn := Button {
+        width: root.width;
+        height: root.height;
+        text: @tr("Folders");
+        icon: @image-url("icons/folder.svg");
+        menu: true;
+        clicked => {
+            menu.show();
+        }
+    }
+
+    menu := PopupWindow {
+        x: Theme.rtl ? 0px : root.width - self.width;
+        y: root.height + 6px;
+        width: 440px;
+        height: card.preferred-height;
+        card := MenuCard {
+            if LibraryState.folders.length == 0: VerticalLayout {
+                padding: 8px;
+                Text {
+                    text: @tr("No folders yet. Add one to search the PDF files in it.");
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    wrap: word-wrap;
+                    // A fixed width, so that the wrapped height counts in the menu's.
+                    width: menu.width - 24px;
+                }
+            }
+            for f[i] in LibraryState.folders: FolderItem {
+                folder: f;
+                index: i;
+            }
+            if LibraryState.folders.length > 0: Rectangle {
+                height: 9px;
+                Rectangle {
+                    x: 10px;
+                    width: parent.width - 20px;
+                    height: 1px;
+                    background: Theme.border;
+                }
+            }
+            Pressable {
+                height: Theme.row-height;
+                border-radius: Theme.radius-small;
+                background: self.has-hover || self.has-focus ? Theme.hover : transparent;
+                label: @tr("Add folder…");
+                clicked => {
+                    LibraryState.add-folder();
+                    menu.close();
+                }
+                HorizontalLayout {
+                    padding-left: 10px;
+                    spacing: 10px;
+                    Image {
+                        accessible-role: none;
+                        source: @image-url("icons/plus.svg");
+                        width: 18px;
+                        height: 18px;
+                        y: (parent.height - self.height) / 2;
+                        colorize: Theme.muted;
+                    }
+                    Text {
+                        text: @tr("Add folder…");
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        accessible-role: none;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A document's first page, or a padlock or page sign where there is no picture.
+component Cover inherits Rectangle {
+    in property <image> picture;
+    in property <bool> locked;
+    property <length> box-w: 34px;
+    property <length> box-h: 44px;
+    property <float> aspect: picture.width > 0 ? picture.width / picture.height : 0.75;
+    property <bool> wide: aspect > box-w / box-h;
+    width: box-w;
+    height: box-h;
+    Rectangle {
+        width: root.wide ? root.box-w : root.box-h * root.aspect;
+        height: root.wide ? root.box-w / root.aspect : root.box-h;
+        border-radius: 3px;
+        background: root.picture.width > 0 ? #ffffff : Theme.canvas;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: root.picture.width > 0 ? 3px : 0px;
+        drop-shadow-offset-y: 1px;
+        drop-shadow-color: #00000022;
+        clip: true;
+        if root.picture.width > 0: Image {
+            x: 1px;
+            y: 1px;
+            width: parent.width - 2px;
+            height: parent.height - 2px;
+            source: root.picture;
+            image-fit: fill;
+            accessible-role: none;
+        }
+        if root.picture.width == 0: Image {
+            source: root.locked ? @image-url("icons/lock.svg") : @image-url("icons/file.svg");
+            width: 16px;
+            height: 16px;
+            colorize: Theme.faint;
+            accessible-role: none;
+        }
+    }
 }
 
 export component LibraryView inherits Rectangle {
@@ -56,7 +242,86 @@ export component LibraryView inherits Rectangle {
     accessible-label: @tr("Library");
     forward-focus: keys;
 
+    property <length> column: min(760px, root.width - 32px);
+    property <length> row-height: max(Theme.touch ? 68px : 60px, 26px + Theme.font-small * 1.4 + Theme.font-body * 1.4);
+    property <int> count: LibraryState.rows.length;
+    property <image> no-picture;
+    // The current row is marked while the list has the keyboard, or while typing a search
+    // (Enter opens it).
+    property <bool> show-current: results.has-focus || (field.has-focus && LibraryState.query != "");
+    property <int> current: LibraryState.current;
+    changed current => {
+        reveal();
+    }
+    property <int> serial: LibraryState.serial;
+    changed serial => {
+        lv.content-y = 0;
+    }
+    changed count => {
+        report();
+    }
+
+    // Scrolls the current row into view. A long jump makes the list snap to the top of a
+    // row on its own, so the position is set again once the rows there are made.
+    function reveal() {
+        place();
+        settling = true;
+    }
+    property <bool> settling;
+    Timer {
+        interval: 16ms;
+        running: root.settling;
+        triggered => {
+            root.settling = false;
+            root.place();
+        }
+    }
+    function place() {
+        if current < 0 {
+            return;
+        }
+        let top = current * row-height;
+        // A heading right above comes along; else a little of the row before or after.
+        let above = current > 0 && LibraryState.rows[current - 1].kind == 0 ? row-height : 12px;
+        if top - above < -lv.content-y {
+            lv.content-y = min(0px, -(top - above));
+        } else if top + row-height + 12px > -lv.content-y + lv.visible-height {
+            lv.content-y = -(top + row-height + 12px - lv.visible-height);
+        }
+    }
+    // Tells which rows are in view, and a few around them, for their pictures.
+    function report() {
+        LibraryState.rows-shown(max(0, floor(-lv.content-y / row-height) - 3), min(count, ceil((lv.visible-height - lv.content-y) / row-height) + 3));
+    }
+
+    // Moves the current row to `i`, past a heading or the space at the end in the direction
+    // `d` (they are never next to each other). Above the first row is the search field.
+    function select(i: int, d: int) {
+        if count == 0 {
+            return;
+        }
+        let j = clamp(i, 0, count - 1);
+        let k = LibraryState.rows[j].kind == 0 || LibraryState.rows[j].kind == 3 ? j + d : j;
+        if k < 0 || (d < 0 && i < 0) {
+            field.focus-input();
+            return;
+        }
+        if k < count && LibraryState.rows[k].kind != 3 {
+            LibraryState.current = k;
+        }
+    }
+
     keys := FocusScope {
+        capture-key-pressed(e) => {
+            if field.has-focus && e.text == Key.DownArrow && !e.modifiers.control && !e.modifiers.alt && !e.modifiers.meta && count > 0 {
+                if LibraryState.current < 0 {
+                    root.select(0, 1);
+                }
+                results.focus();
+                return accept;
+            }
+            reject
+        }
         key-pressed(e) => {
             if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
                 return accept;
@@ -83,28 +348,45 @@ export component LibraryView inherits Rectangle {
                             LibraryState.show(false);
                         }
                     }
-                    Text {
-                        text: @tr("Library");
-                        color: Theme.text;
-                        font-size: Theme.font-title;
-                        font-weight: 600;
-                        vertical-alignment: center;
-                    }
-                    Text {
-                        text: @tr("Search stays on this device.");
-                        color: Theme.faint;
-                        font-size: Theme.font-small;
-                        vertical-alignment: center;
+                    VerticalLayout {
+                        alignment: center;
                         horizontal-stretch: 1;
+                        spacing: 1px;
+                        Text {
+                            text: @tr("Library");
+                            color: Theme.text;
+                            font-size: Theme.font-title;
+                            font-weight: 600;
+                        }
+                        Text {
+                            text: LibraryState.status;
+                            color: Theme.muted;
+                            font-size: Theme.font-small;
+                            overflow: elide;
+                            accessible-role: text;
+                            accessible-label: @tr("Library status: {}", LibraryState.status);
+                            accessible-live-region: polite;
+                        }
                     }
-                    Button {
+                    if LibraryState.indexing: Button {
                         y: (parent.height - self.height) / 2;
                         height: Theme.control-height;
-                        text: @tr("Add folder…");
-                        icon: @image-url("icons/folder.svg");
+                        text: @tr("Cancel");
                         clicked => {
-                            LibraryState.add-folder();
+                            LibraryState.cancel();
                         }
+                    }
+                    if !LibraryState.indexing: Button {
+                        y: (parent.height - self.height) / 2;
+                        height: Theme.control-height;
+                        text: @tr("Update index");
+                        description: @tr("Look for new and changed documents");
+                        clicked => {
+                            LibraryState.reindex();
+                        }
+                    }
+                    FoldersMenu {
+                        y: (parent.height - self.height) / 2;
                     }
                 }
                 Rectangle {
@@ -112,231 +394,272 @@ export component LibraryView inherits Rectangle {
                     height: 1px;
                     background: Theme.border;
                 }
+                // Indexing: a line filling along the bottom of the bar.
+                if LibraryState.indexing: Rectangle {
+                    x: Theme.rtl ? parent.width - self.width : 0px;
+                    y: parent.height - 2px;
+                    height: 2px;
+                    width: parent.width * LibraryState.progress;
+                    background: Theme.accent;
+                    animate width { duration: 150ms; }
+                }
             }
 
-            HorizontalLayout {
+            VerticalLayout {
                 vertical-stretch: 1;
-                alignment: center;
-                VerticalLayout {
-                    width: min(760px, root.width - 32px);
-                    padding-top: 20px;
-                    padding-bottom: 12px;
-                    spacing: 12px;
-
+                padding-top: 16px;
+                spacing: 2px;
+                HorizontalLayout {
+                    alignment: center;
                     field := TextField {
-                        placeholder: @tr("Search all documents");
+                        width: root.column;
+                        icon: @image-url("icons/search.svg");
+                        placeholder: @tr("Search names, titles and text on this device");
                         label: @tr("Search library");
                         text <=> LibraryState.query;
                         edited(t) => {
                             LibraryState.search(t);
                         }
                         accepted(t) => {
-                            LibraryState.search(t);
+                            LibraryState.accept();
                         }
                     }
+                }
 
-                    HorizontalLayout {
-                        spacing: 8px;
-                        height: 24px;
-                        Text {
-                            text: LibraryState.status;
-                            color: Theme.muted;
-                            font-size: Theme.font-small;
-                            vertical-alignment: center;
-                            horizontal-stretch: 1;
-                            overflow: elide;
-                            accessible-role: text;
-                            accessible-label: @tr("Library status: {}", LibraryState.status);
-                            accessible-live-region: polite;
-                        }
-                        if LibraryState.indexing: Rectangle {
-                            width: 120px;
-                            height: 4px;
-                            y: (parent.height - 4px) / 2;
-                            border-radius: 2px;
-                            background: Theme.track;
-                            Rectangle {
-                                x: 0;
-                                width: parent.width * LibraryState.progress;
-                                border-radius: 2px;
-                                background: Theme.accent;
-                            }
-                        }
-                        if LibraryState.indexing: Button {
-                            height: 24px;
-                            text: @tr("Cancel");
-                            clicked => {
-                                LibraryState.cancel();
-                            }
-                        }
-                        if !LibraryState.indexing: Button {
-                            height: 24px;
-                            text: @tr("Update index");
-                            clicked => {
-                                LibraryState.reindex();
-                            }
+                // The whole width scrolls, with its scroll bar at the edge of the window. Once
+                // it is scrolled, a line marks where rows go under.
+                Rectangle {
+                    height: 1px;
+                    background: lv.content-y < 0 ? Theme.border : transparent;
+                }
+                results := FocusScope {
+                    vertical-stretch: 1;
+                    accessible-role: list;
+                    accessible-label: LibraryState.query == "" ? @tr("Documents") : @tr("Search results");
+                    accessible-value: LibraryState.current >= 0 && LibraryState.current < count ? LibraryState.rows[LibraryState.current].label : "";
+                    changed has-focus => {
+                        if self.has-focus {
+                            root.reveal();
                         }
                     }
+                    key-pressed(e) => {
+                        if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
+                            return reject;
+                        }
+                        let page = max(1, floor(lv.visible-height / root.row-height));
+                        if e.text == Key.UpArrow {
+                            root.select(LibraryState.current - 1, -1);
+                            return accept;
+                        }
+                        if e.text == Key.DownArrow {
+                            root.select(LibraryState.current + 1, 1);
+                            return accept;
+                        }
+                        if e.text == Key.Home {
+                            root.select(0, 1);
+                            return accept;
+                        }
+                        if e.text == Key.End {
+                            root.select(count - 1, -1);
+                            return accept;
+                        }
+                        if e.text == Key.PageUp {
+                            root.select(max(0, LibraryState.current - page), 1);
+                            return accept;
+                        }
+                        if e.text == Key.PageDown {
+                            root.select(LibraryState.current + page, -1);
+                            return accept;
+                        }
+                        if (e.text == Key.Return || e.text == " ") && LibraryState.current >= 0 {
+                            LibraryState.open-row(LibraryState.current);
+                            return accept;
+                        }
+                        reject
+                    }
 
-                    Flickable {
-                        vertical-stretch: 1;
-                        content-height: body.preferred-height;
-                        body := VerticalLayout {
-                            spacing: 10px;
+                    lv := ListView {
+                        accessible-role: none;
+                        changed content-y => {
+                            root.report();
+                        }
+                        changed visible-height => {
+                            root.report();
+                        }
+                        for r[idx] in LibraryState.rows: Rectangle {
+                            height: root.row-height;
+                            property <bool> selected: idx == LibraryState.current && root.show-current;
+                            property <int> t: idx - LibraryState.thumbs-start;
 
-                            if LibraryState.query != "": SectionTitle {
-                                // TRANSLATORS: heading of the search results
-                                text: LibraryState.hits.length == 0 ? @tr("No matches") : @tr("Matches");
+                            if r.kind == 0: HorizontalLayout {
+                                x: (parent.width - root.column) / 2;
+                                width: root.column;
+                                padding-left: 4px;
+                                padding-bottom: 8px;
+                                spacing: 8px;
+                                alignment: start;
+                                accessible-role: text;
+                                accessible-label: r.label;
+                                Text {
+                                    text: r.name;
+                                    color: Theme.muted;
+                                    font-size: Theme.font-small;
+                                    font-weight: 600;
+                                    vertical-alignment: bottom;
+                                    accessible-role: none;
+                                }
+                                Text {
+                                    text: r.side;
+                                    color: Theme.faint;
+                                    font-size: Theme.font-small;
+                                    vertical-alignment: bottom;
+                                    accessible-role: none;
+                                }
                             }
-                            if LibraryState.query != "" && LibraryState.hits.length > 0: Card {
-                                VerticalLayout {
-                                    padding: 4px;
-                                    for h[i] in LibraryState.hits: Pressable {
-                                        height: Theme.touch ? 64px : 56px;
-                                        border-radius: Theme.radius-small;
-                                        background: self.has-hover ? Theme.hover : transparent;
-                                        label: @tr("Open {} at page {}", h.name, h.label);
-                                        description: h.snippet;
-                                        clicked => {
-                                            LibraryState.open-hit(i);
+                            if r.kind == 1 || r.kind == 2: Rectangle {
+                                x: (parent.width - root.column) / 2;
+                                width: root.column;
+                                accessible-role: list-item;
+                                accessible-label: r.label;
+                                accessible-description: r.kind == 2 ? r.detail + r.matched + r.after : r.detail;
+                                accessible-item-selectable: true;
+                                accessible-item-selected: selected;
+                                accessible-action-default => {
+                                    LibraryState.open-row(idx);
+                                }
+                                // The group's card, rounded and edged only at its ends: the
+                                // rows in between show its middle.
+                                clip: true;
+                                Rectangle {
+                                    y: r.first ? 0px : -Theme.radius * 2;
+                                    height: parent.height + (r.first ? 0px : Theme.radius * 2) + (r.last ? 0px : Theme.radius * 2);
+                                    background: Theme.chrome;
+                                    border-radius: Theme.radius;
+                                    border-width: Theme.high-contrast ? 2px : 1px;
+                                    border-color: Theme.high-contrast ? Theme.text : Theme.border;
+                                }
+                                Rectangle {
+                                    x: 5px;
+                                    width: parent.width - 10px;
+                                    y: r.first ? 5px : 2px;
+                                    height: parent.height - (r.first ? 5px : 2px) - (r.last ? 5px : 2px);
+                                    border-radius: Theme.radius-small;
+                                    background: selected ? Theme.accent-soft : touch.has-hover ? Theme.hover : transparent;
+                                }
+                                if !r.last: Rectangle {
+                                    x: Theme.rtl ? 14px : 62px;
+                                    width: parent.width - 76px;
+                                    y: parent.height - 1px;
+                                    height: 1px;
+                                    background: Theme.border;
+                                }
+                                HorizontalLayout {
+                                    padding-left: 14px;
+                                    padding-right: 16px;
+                                    spacing: 14px;
+                                    Cover {
+                                        y: (parent.height - self.height) / 2;
+                                        picture: t >= 0 && t < LibraryState.thumbs.length ? LibraryState.thumbs[t] : root.no-picture;
+                                        locked: r.locked;
+                                    }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        horizontal-stretch: 1;
+                                        spacing: 3px;
+                                        Text {
+                                            text: r.name;
+                                            color: Theme.text;
+                                            font-weight: 500;
+                                            overflow: elide;
+                                            accessible-role: none;
                                         }
-                                        VerticalLayout {
-                                            padding-left: 10px;
-                                            padding-right: 10px;
-                                            alignment: center;
-                                            HorizontalLayout {
-                                                spacing: 8px;
-                                                Text {
-                                                    text: h.name;
-                                                    color: Theme.text;
-                                                    font-weight: 500;
-                                                    overflow: elide;
-                                                }
-                                                Text {
-                                                    text: @tr("page {}", h.label);
-                                                    color: Theme.faint;
-                                                    font-size: Theme.font-small;
-                                                    vertical-alignment: center;
-                                                    horizontal-stretch: 1;
-                                                }
-                                            }
-                                            Text {
-                                                text: h.snippet;
-                                                color: Theme.muted;
-                                                font-size: Theme.font-small;
-                                                overflow: elide;
-                                            }
+                                        if r.kind == 1: Text {
+                                            text: r.detail;
+                                            color: Theme.muted;
+                                            font-size: Theme.font-small;
+                                            overflow: elide;
+                                            accessible-role: none;
+                                        }
+                                        if r.kind == 2: StyledText {
+                                            text: @markdown("\{r.detail}**\{r.matched}**\{r.after}");
+                                            default-font-size: Theme.font-small;
+                                            default-color: Theme.muted;
+                                            max-lines: 1;
+                                            accessible-role: none;
+                                        }
+                                    }
+                                    if r.side != "": VerticalLayout {
+                                        alignment: center;
+                                        spacing: 3px;
+                                        Text {
+                                            text: r.side;
+                                            color: Theme.muted;
+                                            font-size: Theme.font-small;
+                                            horizontal-alignment: Theme.rtl ? left : right;
+                                            accessible-role: none;
+                                        }
+                                        if r.side2 != "": Text {
+                                            text: r.side2;
+                                            color: Theme.faint;
+                                            font-size: Theme.font-small;
+                                            horizontal-alignment: Theme.rtl ? left : right;
+                                            accessible-role: none;
                                         }
                                     }
                                 }
+                                FocusRing {
+                                    x: 5px;
+                                    y: r.first ? 5px : 2px;
+                                    width: parent.width - 10px;
+                                    height: parent.height - (r.first ? 5px : 2px) - (r.last ? 5px : 2px);
+                                    radius: Theme.radius-small;
+                                    show: selected && results.has-focus;
+                                }
+                                touch := TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        LibraryState.open-row(idx);
+                                    }
+                                }
                             }
+                        }
+                    }
 
-                            if LibraryState.query == "": SectionTitle {
-                                text: @tr("Documents");
-                            }
-                            if LibraryState.query == "" && LibraryState.docs.length == 0: Text {
+                    if count == 0 && LibraryState.query == "": VerticalLayout {
+                        alignment: start;
+                        padding-top: 40px;
+                        spacing: 14px;
+                        HorizontalLayout {
+                            alignment: center;
+                            Text {
+                                width: min(root.column, 420px);
                                 text: @tr("Documents you open and PDF files in folders you add show up here.");
                                 color: Theme.muted;
                                 wrap: word-wrap;
+                                horizontal-alignment: center;
                                 line-height-factor: 1.15;
                             }
-                            if LibraryState.query == "" && LibraryState.docs.length > 0: Card {
-                                VerticalLayout {
-                                    padding: 4px;
-                                    for d[i] in LibraryState.docs: Pressable {
-                                        height: Theme.touch ? 52px : 44px;
-                                        border-radius: Theme.radius-small;
-                                        background: self.has-hover ? Theme.hover : transparent;
-                                        label: @tr("Open {}", d.name);
-                                        description: d.pages;
-                                        clicked => {
-                                            LibraryState.open-doc(i);
-                                        }
-                                        HorizontalLayout {
-                                            padding-left: 10px;
-                                            padding-right: 10px;
-                                            spacing: 10px;
-                                            Image {
-                                                accessible-role: none;
-                                                source: @image-url("icons/file.svg");
-                                                width: 18px;
-                                                height: 18px;
-                                                y: (parent.height - self.height) / 2;
-                                                colorize: Theme.muted;
-                                            }
-                                            VerticalLayout {
-                                                alignment: center;
-                                                horizontal-stretch: 1;
-                                                Text {
-                                                    text: d.name;
-                                                    color: Theme.text;
-                                                    overflow: elide;
-                                                }
-                                                Text {
-                                                    text: d.folder;
-                                                    color: Theme.faint;
-                                                    font-size: Theme.font-small;
-                                                    overflow: elide;
-                                                }
-                                            }
-                                            Text {
-                                                text: d.pages;
-                                                color: Theme.faint;
-                                                font-size: Theme.font-small;
-                                                vertical-alignment: center;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            if LibraryState.query == "": SectionTitle {
-                                text: @tr("Folders");
-                            }
-                            if LibraryState.query == "" && LibraryState.folders.length == 0: Text {
-                                text: @tr("No folders yet. Add one to search the PDF files in it.");
-                                color: Theme.muted;
-                                wrap: word-wrap;
-                                line-height-factor: 1.15;
-                            }
-                            if LibraryState.query == "" && LibraryState.folders.length > 0: Card {
-                                VerticalLayout {
-                                    padding: 4px;
-                                    for f[i] in LibraryState.folders: Rectangle {
-                                        height: 40px;
-                                        HorizontalLayout {
-                                            padding-left: 10px;
-                                            padding-right: 4px;
-                                            spacing: 10px;
-                                            Image {
-                                                accessible-role: none;
-                                                source: @image-url("icons/folder.svg");
-                                                width: 18px;
-                                                height: 18px;
-                                                y: (parent.height - self.height) / 2;
-                                                colorize: Theme.muted;
-                                            }
-                                            Text {
-                                                text: f;
-                                                color: Theme.text;
-                                                vertical-alignment: center;
-                                                overflow: elide;
-                                                horizontal-stretch: 1;
-                                            }
-                                            IconButton {
-                                                y: (parent.height - self.height) / 2;
-                                                icon: @image-url("icons/close.svg");
-                                                label: @tr("Remove folder {}", f);
-                                                icon-size: 15px;
-                                                clicked => {
-                                                    LibraryState.remove-folder(i);
-                                                }
-                                            }
-                                        }
-                                    }
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            Button {
+                                primary: true;
+                                text: @tr("Add folder…");
+                                icon: @image-url("icons/folder.svg");
+                                clicked => {
+                                    LibraryState.add-folder();
                                 }
                             }
                         }
+                    }
+                    if count == 0 && LibraryState.query != "" && !LibraryState.searching: Text {
+                        y: 40px;
+                        x: (parent.width - root.column) / 2;
+                        width: root.column;
+                        // TRANSLATORS: the library's search found nothing
+                        text: @tr("No matches");
+                        color: Theme.muted;
+                        horizontal-alignment: center;
                     }
                 }
             }

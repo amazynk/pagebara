@@ -56,7 +56,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. where a link goes
-#: apps/desktop/src/app/compare.rs:338 apps/desktop/ui/library.slint:216 crates/app-core/src/reading_order.rs:347
+#: apps/desktop/src/app/compare.rs:338 apps/desktop/src/app/library.rs:361 crates/app-core/src/reading_order.rs:347
 msgid "page {}"
 msgstr ""
 
@@ -653,38 +653,75 @@ msgstr ""
 msgid "Follow the system"
 msgstr ""
 
-#: apps/desktop/src/app/library.rs:174
+#: apps/desktop/src/app/library.rs:220
+msgid "{n} document"
+msgid_plural "{n} documents"
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/desktop/src/app/library.rs:248
 msgid "Add a folder to the library"
 msgstr ""
 
 #. in the library list, a password-protected document
-#: apps/desktop/src/app/library.rs:207
+#: apps/desktop/src/app/library.rs:321
 msgid "locked"
 msgstr ""
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907 apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1907 apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/desktop/src/app/library.rs:243
-msgid "Looking for documents…"
+#: apps/desktop/src/app/library.rs:333 apps/desktop/ui/welcome.slint:111
+msgid "Open {}"
 msgstr ""
 
-#: apps/desktop/src/app/library.rs:261
-msgid "Indexing {} of {} documents…"
-msgstr ""
-
-#: apps/desktop/src/app/library.rs:284
-msgid "Indexing stopped · {n} document indexed ({} new or changed)"
-msgid_plural "Indexing stopped · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:350
+msgid "{n} page matches"
+msgid_plural "{n} pages match"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/desktop/src/app/library.rs:291
-msgid "Up to date · {n} document indexed ({} new or changed)"
-msgid_plural "Up to date · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:356
+msgid "Open {} at page {}"
+msgstr ""
+
+#. heading over the recently opened files
+#: apps/desktop/src/app/library.rs:416 apps/desktop/ui/welcome.slint:95 apps/mobile/ui/home.slint:63
+msgid "Recent"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:441
+msgid "In your folders"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:457
+msgid "Name or title"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:463
+msgid "In the text"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:632
+msgid "Looking for documents…"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:669
+msgid "Indexing {} of {} documents…"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:695
+msgid "{n} document · indexing stopped"
+msgid_plural "{n} documents · indexing stopped"
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/desktop/src/app/library.rs:701
+msgid "{n} document · up to date"
+msgid_plural "{n} documents · up to date"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -2720,7 +2757,7 @@ msgstr ""
 msgid "Shortcut {}"
 msgstr ""
 
-#: apps/desktop/ui/components/text-field.slint:63
+#: apps/desktop/ui/components/text-field.slint:74
 msgid "Not valid"
 msgstr ""
 
@@ -2793,7 +2830,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: apps/desktop/ui/conformance.slint:158 apps/desktop/ui/dialogs.slint:78 apps/desktop/ui/dialogs.slint:215 apps/desktop/ui/dialogs.slint:318 apps/desktop/ui/dialogs.slint:403 apps/desktop/ui/dialogs.slint:674 apps/desktop/ui/dialogs.slint:715 apps/desktop/ui/dialogs.slint:775 apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:301 apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:167 apps/desktop/ui/ocr.slint:119 apps/desktop/ui/optimize.slint:239 apps/desktop/ui/password-dialog.slint:131 apps/desktop/ui/print-dialog.slint:401 apps/desktop/ui/redaction.slint:288 apps/desktop/ui/signing.slint:557 apps/desktop/ui/signing.slint:616 apps/desktop/ui/stamps.slint:822 apps/mobile/ui/main.slint:500 apps/mobile/ui/prep-bar.slint:316 apps/mobile/ui/sheets.slint:394 apps/mobile/ui/sheets.slint:694
+#: apps/desktop/ui/conformance.slint:158 apps/desktop/ui/dialogs.slint:78 apps/desktop/ui/dialogs.slint:215 apps/desktop/ui/dialogs.slint:318 apps/desktop/ui/dialogs.slint:403 apps/desktop/ui/dialogs.slint:674 apps/desktop/ui/dialogs.slint:715 apps/desktop/ui/dialogs.slint:775 apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:301 apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:374 apps/desktop/ui/ocr.slint:119 apps/desktop/ui/optimize.slint:239 apps/desktop/ui/password-dialog.slint:131 apps/desktop/ui/print-dialog.slint:401 apps/desktop/ui/redaction.slint:288 apps/desktop/ui/signing.slint:557 apps/desktop/ui/signing.slint:616 apps/desktop/ui/stamps.slint:822 apps/mobile/ui/main.slint:500 apps/mobile/ui/prep-bar.slint:316 apps/mobile/ui/sheets.slint:394 apps/mobile/ui/sheets.slint:694
 msgid "Cancel"
 msgstr ""
 
@@ -3301,7 +3338,7 @@ msgstr ""
 msgid "Not now"
 msgstr ""
 
-#: apps/desktop/ui/find-results.slint:36 apps/desktop/ui/library.slint:189
+#: apps/desktop/ui/find-results.slint:36
 msgid "Matches"
 msgstr ""
 
@@ -3313,69 +3350,65 @@ msgstr ""
 msgid "Whole words"
 msgstr ""
 
-#: apps/desktop/ui/library.slint:56 apps/desktop/ui/library.slint:87 apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50 apps/desktop/ui/welcome.slint:42
-msgid "Library"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:81
-msgid "Close library"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:94
-msgid "Search stays on this device."
-msgstr ""
-
-#: apps/desktop/ui/library.slint:103
-msgid "Add folder…"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:127
-msgid "Search all documents"
+#: apps/desktop/ui/library.slint:111
+msgid "Remove folder {}"
 msgstr ""
 
 #: apps/desktop/ui/library.slint:128
-msgid "Search library"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:149
-msgid "Library status: {}"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:174
-msgid "Update index"
-msgstr ""
-
-#. heading of the search results
-#: apps/desktop/ui/library.slint:189 crates/app-core/src/find.rs:441
-msgid "No matches"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:198
-msgid "Open {} at page {}"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:235 apps/desktop/ui/shortcuts.slint:38 apps/desktop/ui/vim-bindings.slint:85
-msgid "Documents"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:238
-msgid "Documents you open and PDF files in folders you add show up here."
-msgstr ""
-
-#: apps/desktop/ui/library.slint:250 apps/desktop/ui/welcome.slint:111
-msgid "Open {}"
-msgstr ""
-
-#: apps/desktop/ui/library.slint:294
 msgid "Folders"
 msgstr ""
 
-#: apps/desktop/ui/library.slint:297
+#: apps/desktop/ui/library.slint:145
 msgid "No folders yet. Add one to search the PDF files in it."
 msgstr ""
 
-#: apps/desktop/ui/library.slint:329
-msgid "Remove folder {}"
+#: apps/desktop/ui/library.slint:170 apps/desktop/ui/library.slint:187 apps/desktop/ui/library.slint:647
+msgid "Add folder…"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:242 apps/desktop/ui/library.slint:356 apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50 apps/desktop/ui/welcome.slint:42
+msgid "Library"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:346
+msgid "Close library"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:367
+msgid "Library status: {}"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:382
+msgid "Update index"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:383
+msgid "Look for new and changed documents"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:417
+msgid "Search names, titles and text on this device"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:418
+msgid "Search library"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/shortcuts.slint:38 apps/desktop/ui/vim-bindings.slint:85
+msgid "Documents"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/vim-bindings.slint:47
+msgid "Search results"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:636
+msgid "Documents you open and PDF files in folders you add show up here."
+msgstr ""
+
+#. the library's search found nothing
+#: apps/desktop/ui/library.slint:660 crates/app-core/src/find.rs:441
+msgid "No matches"
 msgstr ""
 
 #: apps/desktop/ui/notices.slint:36
@@ -6016,10 +6049,6 @@ msgstr ""
 msgid "Cancel search"
 msgstr ""
 
-#: apps/desktop/ui/vim-bindings.slint:47
-msgid "Search results"
-msgstr ""
-
 #: apps/desktop/ui/vim-bindings.slint:49
 msgid "Advance three matches"
 msgstr ""
@@ -6286,11 +6315,6 @@ msgstr ""
 
 #: apps/desktop/ui/welcome.slint:78
 msgid "Set up…"
-msgstr ""
-
-#. heading over the recently opened files
-#: apps/desktop/ui/welcome.slint:95 apps/mobile/ui/home.slint:63
-msgid "Recent"
 msgstr ""
 
 #: apps/mobile/src/app/document.rs:70 apps/mobile/ui/sheets.slint:766
@@ -7197,7 +7221,7 @@ msgstr ""
 msgid "Signature: checking…"
 msgstr ""
 
-#: crates/app-core/src/library.rs:203
+#: crates/app-core/src/library.rs:273
 msgid "needs a password"
 msgstr ""
 

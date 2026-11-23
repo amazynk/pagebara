@@ -59,7 +59,7 @@ msgstr[0] "{n} değişiklik: {} sözcük eklendi, {} silindi, {} taşındı · {
 msgstr[1] "{n} değişiklik: {} sözcük eklendi, {} silindi, {} taşındı · {} sayfa eklendi, {} kaldırıldı, {} farklı görünüyor · {} sn"
 
 #. where a link goes
-#: apps/desktop/src/app/compare.rs:338 apps/desktop/ui/library.slint:216
+#: apps/desktop/src/app/compare.rs:338 apps/desktop/src/app/library.rs:361
 #: crates/app-core/src/reading_order.rs:347
 msgid "page {}"
 msgstr "sayfa {}"
@@ -688,39 +688,77 @@ msgstr "Önce Ctrl+A ile veya işaretçiyle metin seçin ya da alan işaretlemey
 msgid "Follow the system"
 msgstr "Sistem ayarını kullan"
 
-#: apps/desktop/src/app/library.rs:174
+#: apps/desktop/src/app/library.rs:220
+msgid "{n} document"
+msgid_plural "{n} documents"
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/desktop/src/app/library.rs:248
 msgid "Add a folder to the library"
 msgstr "Kitaplığa klasör ekle"
 
 #. in the library list, a password-protected document
-#: apps/desktop/src/app/library.rs:207
+#: apps/desktop/src/app/library.rs:321
 msgid "locked"
 msgstr "kilitli"
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1907
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
 msgstr[0] "{n} sayfa"
 msgstr[1] "{n} sayfa"
 
-#: apps/desktop/src/app/library.rs:243
-msgid "Looking for documents…"
-msgstr "Belgeler aranıyor…"
+#: apps/desktop/src/app/library.rs:333 apps/desktop/ui/welcome.slint:111
+msgid "Open {}"
+msgstr "Aç: {}"
 
-#: apps/desktop/src/app/library.rs:261
-msgid "Indexing {} of {} documents…"
-msgstr "Belgeler dizine ekleniyor: {} / {}…"
-
-#: apps/desktop/src/app/library.rs:284
-msgid "Indexing stopped · {n} document indexed ({} new or changed)"
-msgid_plural "Indexing stopped · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:350
+msgid "{n} page matches"
+msgid_plural "{n} pages match"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/desktop/src/app/library.rs:291
-msgid "Up to date · {n} document indexed ({} new or changed)"
-msgid_plural "Up to date · {n} documents indexed ({} new or changed)"
+#: apps/desktop/src/app/library.rs:356
+msgid "Open {} at page {}"
+msgstr "{} belgesini {}. sayfada aç"
+
+#. heading over the recently opened files
+#: apps/desktop/src/app/library.rs:416 apps/desktop/ui/welcome.slint:95
+#: apps/mobile/ui/home.slint:63
+msgid "Recent"
+msgstr "Son kullanılanlar"
+
+#: apps/desktop/src/app/library.rs:441
+msgid "In your folders"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:457
+msgid "Name or title"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:463
+msgid "In the text"
+msgstr ""
+
+#: apps/desktop/src/app/library.rs:632
+msgid "Looking for documents…"
+msgstr "Belgeler aranıyor…"
+
+#: apps/desktop/src/app/library.rs:669
+msgid "Indexing {} of {} documents…"
+msgstr "Belgeler dizine ekleniyor: {} / {}…"
+
+#: apps/desktop/src/app/library.rs:695
+msgid "{n} document · indexing stopped"
+msgid_plural "{n} documents · indexing stopped"
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/desktop/src/app/library.rs:701
+msgid "{n} document · up to date"
+msgid_plural "{n} documents · up to date"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -2842,7 +2880,7 @@ msgstr "Paneli kapat"
 msgid "Shortcut {}"
 msgstr "Kısayol {}"
 
-#: apps/desktop/ui/components/text-field.slint:63
+#: apps/desktop/ui/components/text-field.slint:74
 msgid "Not valid"
 msgstr "Geçersiz"
 
@@ -2934,7 +2972,7 @@ msgstr "Kapat"
 #: apps/desktop/ui/dialogs.slint:403 apps/desktop/ui/dialogs.slint:674
 #: apps/desktop/ui/dialogs.slint:715 apps/desktop/ui/dialogs.slint:775
 #: apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:301
-#: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:167
+#: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:374
 #: apps/desktop/ui/ocr.slint:119 apps/desktop/ui/optimize.slint:239
 #: apps/desktop/ui/password-dialog.slint:131
 #: apps/desktop/ui/print-dialog.slint:401 apps/desktop/ui/redaction.slint:288
@@ -3499,7 +3537,7 @@ msgstr "Sözlük indiriliyor… %{}"
 msgid "Not now"
 msgstr "Şimdi değil"
 
-#: apps/desktop/ui/find-results.slint:36 apps/desktop/ui/library.slint:189
+#: apps/desktop/ui/find-results.slint:36
 msgid "Matches"
 msgstr "Eşleşmeler"
 
@@ -3513,73 +3551,70 @@ msgstr "Büyük/küçük harf eşleştir"
 msgid "Whole words"
 msgstr "Tam sözcükler"
 
-#: apps/desktop/ui/library.slint:56 apps/desktop/ui/library.slint:87
+#: apps/desktop/ui/library.slint:111
+msgid "Remove folder {}"
+msgstr "{} klasörünü kaldır"
+
+#: apps/desktop/ui/library.slint:128
+msgid "Folders"
+msgstr "Klasörler"
+
+#: apps/desktop/ui/library.slint:145
+msgid "No folders yet. Add one to search the PDF files in it."
+msgstr "Henüz klasör yok. İçindeki PDF dosyalarında arama yapmak için bir klasör ekleyin."
+
+#: apps/desktop/ui/library.slint:170 apps/desktop/ui/library.slint:187
+#: apps/desktop/ui/library.slint:647
+msgid "Add folder…"
+msgstr "Klasör ekle…"
+
+#: apps/desktop/ui/library.slint:242 apps/desktop/ui/library.slint:356
 #: apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50
 #: apps/desktop/ui/welcome.slint:42
 msgid "Library"
 msgstr "Kitaplık"
 
-#: apps/desktop/ui/library.slint:81
+#: apps/desktop/ui/library.slint:346
 msgid "Close library"
 msgstr "Kitaplığı kapat"
 
-#: apps/desktop/ui/library.slint:94
-msgid "Search stays on this device."
-msgstr "Arama bu cihazda kalır."
-
-#: apps/desktop/ui/library.slint:103
-msgid "Add folder…"
-msgstr "Klasör ekle…"
-
-#: apps/desktop/ui/library.slint:127
-msgid "Search all documents"
-msgstr "Tüm belgelerde ara"
-
-#: apps/desktop/ui/library.slint:128
-msgid "Search library"
-msgstr "Kitaplıkta ara"
-
-#: apps/desktop/ui/library.slint:149
+#: apps/desktop/ui/library.slint:367
 msgid "Library status: {}"
 msgstr "Kitaplık durumu: {}"
 
-#: apps/desktop/ui/library.slint:174
+#: apps/desktop/ui/library.slint:382
 msgid "Update index"
 msgstr "Dizini güncelle"
 
-#. heading of the search results
-#: apps/desktop/ui/library.slint:189 crates/app-core/src/find.rs:441
-msgid "No matches"
-msgstr "Eşleşme yok"
+#: apps/desktop/ui/library.slint:383
+msgid "Look for new and changed documents"
+msgstr ""
 
-#: apps/desktop/ui/library.slint:198
-msgid "Open {} at page {}"
-msgstr "{} belgesini {}. sayfada aç"
+#: apps/desktop/ui/library.slint:417
+msgid "Search names, titles and text on this device"
+msgstr ""
 
-#: apps/desktop/ui/library.slint:235 apps/desktop/ui/shortcuts.slint:38
+#: apps/desktop/ui/library.slint:418
+msgid "Search library"
+msgstr "Kitaplıkta ara"
+
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/shortcuts.slint:38
 #: apps/desktop/ui/vim-bindings.slint:85
 msgid "Documents"
 msgstr "Belgeler"
 
-#: apps/desktop/ui/library.slint:238
+#: apps/desktop/ui/library.slint:438 apps/desktop/ui/vim-bindings.slint:47
+msgid "Search results"
+msgstr ""
+
+#: apps/desktop/ui/library.slint:636
 msgid "Documents you open and PDF files in folders you add show up here."
 msgstr "Açtığınız belgeler ve eklediğiniz klasörlerdeki PDF dosyaları burada görünür."
 
-#: apps/desktop/ui/library.slint:250 apps/desktop/ui/welcome.slint:111
-msgid "Open {}"
-msgstr "Aç: {}"
-
-#: apps/desktop/ui/library.slint:294
-msgid "Folders"
-msgstr "Klasörler"
-
-#: apps/desktop/ui/library.slint:297
-msgid "No folders yet. Add one to search the PDF files in it."
-msgstr "Henüz klasör yok. İçindeki PDF dosyalarında arama yapmak için bir klasör ekleyin."
-
-#: apps/desktop/ui/library.slint:329
-msgid "Remove folder {}"
-msgstr "{} klasörünü kaldır"
+#. the library's search found nothing
+#: apps/desktop/ui/library.slint:660 crates/app-core/src/find.rs:441
+msgid "No matches"
+msgstr "Eşleşme yok"
 
 #: apps/desktop/ui/notices.slint:36
 msgid "Status: {}"
@@ -6289,10 +6324,6 @@ msgstr ""
 msgid "Cancel search"
 msgstr ""
 
-#: apps/desktop/ui/vim-bindings.slint:47
-msgid "Search results"
-msgstr ""
-
 #: apps/desktop/ui/vim-bindings.slint:49
 msgid "Advance three matches"
 msgstr ""
@@ -6563,11 +6594,6 @@ msgstr "İsteğe bağlı: küçük resimler, dosya yöneticisi menüleri, varsay
 #: apps/desktop/ui/welcome.slint:78
 msgid "Set up…"
 msgstr "Ayarla…"
-
-#. heading over the recently opened files
-#: apps/desktop/ui/welcome.slint:95 apps/mobile/ui/home.slint:63
-msgid "Recent"
-msgstr "Son kullanılanlar"
 
 #: apps/mobile/src/app/document.rs:70 apps/mobile/ui/sheets.slint:766
 msgid "Add page numbers"
@@ -7480,7 +7506,7 @@ msgstr "bayt aralığı hatalı"
 msgid "Signature: checking…"
 msgstr "İmza: denetleniyor…"
 
-#: crates/app-core/src/library.rs:203
+#: crates/app-core/src/library.rs:273
 msgid "needs a password"
 msgstr "parola gerekiyor"
 

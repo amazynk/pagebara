@@ -4178,6 +4178,7 @@ dependencies = [
  "pagebara-identity",
  "pagebara-ocr",
  "pagebara-pages",
+ "pagebara-png",
  "pagebara-redact",
  "pagebara-render",
  "pagebara-sign",

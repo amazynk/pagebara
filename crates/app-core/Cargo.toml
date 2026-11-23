@@ -13,6 +13,7 @@ pagebara-annot.workspace = true
 pagebara-content.workspace = true
 pagebara-tagged.workspace = true
 pagebara-render.workspace = true
+pagebara-png.workspace = true
 pagebara-forms.workspace = true
 pagebara-fdf.workspace = true
 pagebara-formdetect.workspace = true

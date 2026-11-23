@@ -60,9 +60,10 @@ pub fn call(
         "library" => library::show(app, s, ui, arg(0)? != "hide"),
         "library-add" => library::add_folder(app, s, ui, Path::new(arg(0)?)),
         "library-search" => library::search(app, s, ui, arg(0)?),
-        "library-open-hit" => library::open_hit(
+        "library-open-hit" => library::open_found(
             app,
             s,
+            ui,
             arg(0)?
                 .parse::<usize>()
                 .map_err(|_| "library-open-hit needs a number")?
@@ -175,24 +176,40 @@ pub fn query(s: &mut State, ui: &AppWindow, key: &str) -> Option<Result<String, 
             .join("; "),
         "library.visible" => ls.get_visible().to_string(),
         "library.indexing" => s.library.is_indexing().to_string(),
-        "library.docs" => s.library.doc_count().to_string(),
-        "library.hits" => ls.get_hits().row_count().to_string(),
+        "library.docs" => s.library.doc_count(s.recent.paths()).to_string(),
+        "library.hits" => s.library.found.len().to_string(),
         "library.hit" => {
             let n: usize = arg.parse().unwrap_or(1);
             s.library
-                .hits
+                .found
                 .get(n.saturating_sub(1))
                 .map(hit_label)
                 .unwrap_or_default()
         }
         "library.hit-list" => s
             .library
-            .hits
+            .found
             .iter()
             .map(hit_label)
             .collect::<Vec<_>>()
             .join("; "),
         "library.status" => ls.get_status().to_string(),
+        "library.query" => ls.get_query().to_string(),
+        "library.searching" => ls.get_searching().to_string(),
+        "library.changed" => s.library.changed.to_string(),
+        "library.thumbnails" => s.library.thumbnails().to_string(),
+        // What Enter opens: the current row's label.
+        "library.current" => usize::try_from(ls.get_current())
+            .ok()
+            .and_then(|i| ls.get_rows().row_data(i))
+            .map(|r| r.label.to_string())
+            .unwrap_or_default(),
+        "library.folders" => ls
+            .get_folders()
+            .iter()
+            .map(|f| f.name.to_string())
+            .collect::<Vec<_>>()
+            .join("; "),
         "print.visible" => ps.get_visible().to_string(),
         "print.printers" => ps
             .get_printers()
@@ -297,7 +314,11 @@ fn luma(s: &mut State, ui: &AppWindow, arg: &str) -> Result<String, String> {
     Ok((sum / n).to_string())
 }
 
-fn hit_label(h: &pagebara_app_core::library::Hit) -> String {
-    let name = h.path.file_name().unwrap_or_default().to_string_lossy();
-    format!("{name} p{}", h.page + 1)
+/// A document found: its name, and the page of the match in its text.
+fn hit_label(f: &pagebara_app_core::library::Found) -> String {
+    let name = f.path.file_name().unwrap_or_default().to_string_lossy();
+    match f.page {
+        Some(p) => format!("{name} p{}", p + 1),
+        None => name.into_owned(),
+    }
 }
