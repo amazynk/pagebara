@@ -1,0 +1,35 @@
+# Read-aloud voices, with the test engine only (run.sh uses it; the system's voices differ
+# from one system to another): the most natural voice for the text's language reads
+# without being chosen (the test engine has a robotic voice and natural English and French
+# ones); the bar's voice menu lists them, and the voice chosen there reads and is kept.
+cursor off
+open "$SAMPLES/tagged.pdf"
+wait 800
+assert speech.available == true
+key ctrl+shift+v
+await speech.playing == false 60000
+assert speech.voice == Natural English
+assert speech.voice-name == Natural English
+click "Voice" 300
+await speech.voices contains Robot 5000
+wait 200
+screenshot 37-voices.png
+# The menu opens on the voice chosen, Automatic; Robot is two rows down.
+key down
+key down
+key return
+wait 200
+assert speech.voice-name == Robot
+call speech-clear
+page 1
+wait 400
+key ctrl+shift+v
+await speech.playing == false 60000
+assert speech.voice == Robot
+click "Voice" 300
+wait 200
+key up
+key up
+key return
+wait 200
+assert speech.voice-name == Natural English

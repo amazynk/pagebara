@@ -179,7 +179,11 @@ fn new_tiles_appear_a_few_per_frame_while_moving() {
         PageView::<crate::tiles::tests::VecBuf>::new(layout(100), renderer, 64 << 20, move || {
             let _ = tx.send(());
         });
-    let cap = view.tuning.uploads_per_frame;
+    // One new tile per frame while moving. The allowance refills with the time since the
+    // last frame, which on a slow machine is long enough to show the few tiles coming back
+    // all at once: with one per frame they are spread over frames however slow it runs.
+    view.tuning.uploads_per_frame = 1;
+    let cap = 1;
     view.viewport.set_size(1200.0, 800.0);
     // At rest a whole screen of tiles appears at once.
     settle(&mut view, &rx);

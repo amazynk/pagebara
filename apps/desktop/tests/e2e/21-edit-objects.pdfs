@@ -23,10 +23,10 @@ screenshot 21-selected.png
 drag-hold object 1 4 page 1 470,247 700
 screenshot 21-dragging.png
 assert edit.preview-sharp == true
-assert edit.preview-scale < 2.2
+assert edit.preview-zoom == 100
 zoom 150 300
 assert edit.preview-sharp == true
-assert edit.preview-scale > 2.7
+assert edit.preview-zoom == 150
 screenshot 21-dragging-zoomed.png
 zoom 100 300
 assert edit.preview-sharp == true

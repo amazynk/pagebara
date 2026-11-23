@@ -266,9 +266,8 @@ fn collect_gathers_the_files_of_one_click() {
     }
     let mut got = first.join().unwrap().unwrap();
     got.sort();
-    assert_eq!(
-        got,
-        [PathBuf::from("/a.pdf"), "/b.pdf".into(), "/c.pdf".into()]
-    );
+    // Made absolute: on Windows "/a.pdf" is on the current drive.
+    let abs = |p: &str| std::path::absolute(p).unwrap();
+    assert_eq!(got, [abs("/a.pdf"), abs("/b.pdf"), abs("/c.pdf")]);
     let _ = std::fs::remove_dir_all(run_dir);
 }

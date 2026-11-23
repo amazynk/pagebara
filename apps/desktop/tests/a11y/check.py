@@ -302,10 +302,11 @@ def check_states_and_actions(app, link):
     sidebar = app.get(R.TOGGLE_BUTTON, "Show sidebar")
     check(sidebar is not None and sidebar.has(S.PRESSED), "the sidebar toggle is pressed")
     check(sidebar is not None and sidebar.has(S.FOCUSABLE), "and focusable")
-    sel = app.find(R.PAGE_TAB, "Select")
-    check(sel is not None and sel.has(S.SELECTED), "the Select tool is the selected tab")
-    hl = app.find(R.PAGE_TAB, "Highlight")
-    check(hl is not None and not hl.has(S.SELECTED), "Highlight is not selected")
+    # The modes are tabs; a document opens in View.
+    view = app.find(R.PAGE_TAB, "View")
+    check(view is not None and view.has(S.SELECTED), "the View mode is the selected tab")
+    annotate = app.find(R.PAGE_TAB, "Annotate")
+    check(annotate is not None and not annotate.has(S.SELECTED), "Annotate is not selected")
     pages_tab = app.find(R.PAGE_TAB, "Pages")
     check(pages_tab is not None and pages_tab.has(S.SELECTED), "the Pages sidebar tab is selected")
     page1 = app.find(R.LIST_ITEM, "Page 1")
@@ -327,16 +328,31 @@ def check_states_and_actions(app, link):
     app.find(R.PUSH_BUTTON, "Zoom out").act()
     check(wait_for(lambda: zoom_level() not in (None, after)), f"and Zoom out zooms out: {zoom_level()}")
 
+    if annotate:
+        annotate.act()
+    check(wait_for(lambda: (n := app.find(R.PAGE_TAB, "Annotate")) and n.has(S.SELECTED)),
+          "choosing Annotate through AT-SPI selects it")
+    check(wait_for(lambda: (n := app.find(R.PAGE_TAB, "View")) and not n.has(S.SELECTED)),
+          "and View is then not selected")
+    check(any(e[0] == "object:state-changed:selected" and e[3] == "Annotate" for e in events),
+          "selection changes are events")
+    # Its tools are toggle buttons, pressed when chosen.
+    sel = wait_for(lambda: app.find(R.TOGGLE_BUTTON, "Select"))
+    check(sel is not None and sel.has(S.PRESSED), "the Select tool is pressed")
+    hl = app.find(R.TOGGLE_BUTTON, "Highlight")
+    check(hl is not None and not hl.has(S.PRESSED), "Highlight is not pressed")
     if hl:
         hl.act()
-    check(wait_for(lambda: (n := app.find(R.PAGE_TAB, "Highlight")) and n.has(S.SELECTED)),
-          "choosing Highlight through AT-SPI selects it")
-    check(wait_for(lambda: (n := app.find(R.PAGE_TAB, "Select")) and not n.has(S.SELECTED)),
-          "and Select is then not selected")
-    check(any(e[0] == "object:state-changed:selected" and e[3] == "Highlight" for e in events),
-          "selection changes are events")
-    app.find(R.PAGE_TAB, "Select").act()
-    wait_for(lambda: (n := app.find(R.PAGE_TAB, "Select")) and n.has(S.SELECTED))
+    check(wait_for(lambda: (n := app.find(R.TOGGLE_BUTTON, "Highlight")) and n.has(S.PRESSED)),
+          "choosing Highlight through AT-SPI presses it")
+    check(wait_for(lambda: (n := app.find(R.TOGGLE_BUTTON, "Select")) and not n.has(S.PRESSED)),
+          "and Select is then not pressed")
+    # Back to Select and View for the checks that follow.
+    if sel:
+        app.find(R.TOGGLE_BUTTON, "Select").act()
+        wait_for(lambda: (n := app.find(R.TOGGLE_BUTTON, "Select")) and n.has(S.PRESSED))
+    app.find(R.PAGE_TAB, "View").act()
+    wait_for(lambda: (n := app.find(R.PAGE_TAB, "View")) and n.has(S.SELECTED))
 
     take_events("object:state-changed")
     sidebar.act()
@@ -394,16 +410,13 @@ def check_focus(app, pid):
 
 
 def check_find_and_announcements(app):
-    search = app.get(R.TOGGLE_BUTTON, "Search")
-    check(search is not None and not search.has(S.PRESSED), "Search is a toggle, off")
-    focused()
-    search.act()
+    # At this window size the search field is always in the toolbar; Ctrl+F goes to it.
     field = app.get(R.ENTRY, "Find", within="Find in document")
     check(field is not None, f"the find field is named: {field}")
+    focused()
+    key("ctrl+f")
     got = wait_for(focused, 3) or []
-    check(("Find", "entry") in got, f"the find field takes the focus: {got}")
-    check(wait_for(lambda: (n := app.find(R.TOGGLE_BUTTON, "Search")) and n.has(S.PRESSED)),
-          "Search is then pressed")
+    check(("Find", "entry") in got, f"Ctrl+F gives the find field the focus: {got}")
     take_events("object:announcement")
     type_text("paragraph")
     key("Return")
@@ -413,7 +426,8 @@ def check_find_and_announcements(app):
     check(wait_for(lambda: (f := app.find(R.ENTRY, "Find")) and f.text() == "paragraph"),
           "the field's text is exposed")
     key("Escape")
-    check(wait_for(lambda: app.find(R.ENTRY, "Find") is None), "Escape closes the find bar")
+    check(wait_for(lambda: (f := app.find(R.ENTRY, "Find")) is not None and f.text() == ""),
+          "Escape closes the search, emptying the field")
 
 
 def check_read_aloud(app):
@@ -442,21 +456,27 @@ def check_read_aloud(app):
 
 
 def check_menu(app):
-    """The More menu: a popup whose rows are buttons that say their shortcuts."""
-    more = app.get(R.PUSH_BUTTON, "More")
+    """The file menu, under the document's name: a popup whose rows are buttons that say
+    their shortcuts."""
+    doc = app.get(R.PUSH_BUTTON, "tagged.pdf")
     focused()
-    more.act()
-    rows = wait_for(lambda: [n for n in app.nodes()
-                             if "/More/" in n.path and n.role == R.PUSH_BUTTON]) or []
-    names = [n.name for n in rows]
-    check("Print…" in names and "Keyboard shortcuts" in names, f"More opens the menu: {names[:4]}")
-    p = next((n for n in rows if n.name == "Print…"), None)
+    if doc:
+        doc.act()
+
+    def rows():
+        return [n for n in app.nodes() if n.role == R.PUSH_BUTTON
+                and n.name in ("Open…", "Print…", "Close document")]
+
+    names = [n.name for n in wait_for(lambda: len(rows()) == 3 and rows()) or []]
+    check("Open…" in names and "Print…" in names,
+          f"the document's name opens the file menu: {names}")
+    p = next((n for n in rows() if n.name == "Print…"), None)
     check(p is not None and p.description == "Shortcut Ctrl+P", "menu rows say their shortcut")
     got = wait_for(focused, 2) or []
-    check(("Open…", "button") in got, f"the first row takes the focus: {got}")
+    check(("Open…", "push button") in got, f"the first row takes the focus: {got}")
     check_names(app, "menu open")
     key("Escape")
-    check(wait_for(lambda: not any("/More/" in n.path for n in app.nodes())), "Escape closes it")
+    check(wait_for(lambda: not rows()), "Escape closes it")
 
 
 def main():

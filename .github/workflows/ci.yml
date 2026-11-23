@@ -71,13 +71,15 @@ jobs:
       - name: Toolchain
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
-      # The Latin OCR models (Apache-2.0, PaddlePaddle PP-OCRv5), pinned in pagebara_ocr::model.
+      # The Latin OCR models and the page and line orientation classifiers (Apache-2.0,
+      # PaddlePaddle PP-OCRv5 and PP-LCNet), pinned in pagebara_ocr::model: every file of
+      # Script::files, or the app offers to download the missing ones instead of recognising.
       - name: Cache OCR models
         id: models
         uses: actions/cache@v4
         with:
           path: .ocr-models
-          key: ocr-models-${{ hashFiles('crates/ocr/src/model.rs') }}
+          key: ocr-models-5-${{ hashFiles('crates/ocr/src/model.rs') }}
       - name: Download OCR models
         if: steps.models.outputs.cache-hit != 'true'
         run: |
@@ -86,6 +88,8 @@ jobs:
           curl -fsSL -o ppocrv5-mobile-det.onnx "$hf/PP-OCRv5_mobile_det_onnx/resolve/e6f4fa85f00e168c862bc462aebca69eef9b3d3d/inference.onnx"
           curl -fsSL -o ppocrv5-latin-rec.onnx "$hf/latin_PP-OCRv5_mobile_rec_onnx/resolve/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f/inference.onnx"
           curl -fsSL -o ppocrv5-latin-rec.yml "$hf/latin_PP-OCRv5_mobile_rec_onnx/resolve/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f/inference.yml"
+          curl -fsSL -o pplcnet-doc-ori.onnx "$hf/PP-LCNet_x1_0_doc_ori_onnx/resolve/7330ab7039123e46af2dc03154b9969aa412c61d/inference.onnx"
+          curl -fsSL -o pplcnet-textline-ori.onnx "$hf/PP-LCNet_x1_0_textline_ori_onnx/resolve/7fdcf3cf7061163eda7183b224aa334bd33068f7/inference.onnx"
       - name: Verify OCR models
         working-directory: .ocr-models
         run: |
@@ -93,6 +97,8 @@ jobs:
           a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d  ppocrv5-mobile-det.onnx
           7888113072263cb471b93f66dd5e2ad70548dc526fa1ace760d0d973dd121498  ppocrv5-latin-rec.onnx
           0bbe984570f597af3638e50bdf2e8276f3ab26a61966096538b3b0d1849f5c84  ppocrv5-latin-rec.yml
+          af9a0a4f317ff0709ce752067807f819cb15d883f8ecad89f28df1c6ee2d9c92  pplcnet-doc-ori.onnx
+          38aa97cd4be591e0ad304e659f07ba30d946f27a63315433f6659c69c8778345  pplcnet-textline-ori.onnx
           END
       - name: Build
         run: cargo build --locked -p pagebara-app

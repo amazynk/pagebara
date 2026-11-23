@@ -611,7 +611,10 @@ mod tests {
                 let data = std::fs::read(&f.path).ok()?;
                 let font = Font::parse(data.clone())?;
                 let s = font.as_sfnt()?;
-                (s.glyph_for_char('J').is_some() && s.glyph_for_char('e').is_some()).then_some(data)
+                // Two glyphs of their own: a placeholder font (macOS's LastResort) draws
+                // every character with the same few.
+                let (j, e) = (s.glyph_for_char('J')?, s.glyph_for_char('e')?);
+                (j != e).then_some(data)
             })
     }
 

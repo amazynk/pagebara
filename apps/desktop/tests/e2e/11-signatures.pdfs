@@ -52,6 +52,7 @@ tool select
 open "$SAMPLES/form.pdf"
 await sigs.verdict == none 20000
 call sign-dialog
+await sign.store-loading == false 10000
 assert dialog == signcert
 click "Create a self-signed ID…" 400
 assert dialog == createid
@@ -74,6 +75,7 @@ screenshot 11-trusted.png
 key escape
 # A wrong password is refused in the dialog.
 call sign-dialog
+await sign.store-loading == false 10000
 call sign-id "$OUT/profile/ids/Test Signer.p12" "wrong"
 call sign-place 1
 call sign "$OUT/never.pdf"

@@ -193,11 +193,15 @@ fn cff_subset_loses_removed_glyphs() {
             let data = std::fs::read(&f.path).ok()?;
             let p = Program::parse(data.clone())?;
             let s = p.as_sfnt()?;
+            // A glyph of its own for each letter: a placeholder font (macOS's LastResort)
+            // draws them all with the same one.
+            let glyphs: Option<std::collections::HashSet<u16>> = "PublicJanehrOtkx"
+                .chars()
+                .map(|c| s.glyph_for_char(c))
+                .collect();
             let ok = !s.has_glyf()
                 && s.cff().is_some_and(|c| !c.is_cff2())
-                && "PublicJanehrOtkx"
-                    .chars()
-                    .all(|c| s.glyph_for_char(c).is_some());
+                && glyphs.is_some_and(|g| g.len() == "PublicJanehrOtkx".len());
             ok.then_some(data)
         });
     match otf {
