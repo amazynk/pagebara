@@ -471,7 +471,7 @@ msgstr "Текст заканчивается на {} пт ниже прежне
 #. filter: show differences in the text
 #. kinds of form field
 #. what redaction searches for: plain text
-#: apps/desktop/src/app/forms.rs:85 apps/desktop/ui/app.slint:269
+#: apps/desktop/src/app/forms.rs:85 apps/desktop/ui/app.slint:272
 #: apps/desktop/ui/compare.slint:220 apps/desktop/ui/stamps.slint:185
 #: apps/desktop/ui/stamps.slint:700 apps/mobile/ui/prep-bar.slint:150
 #: crates/app-core/src/object_edit/select.rs:76
@@ -702,7 +702,7 @@ msgstr "Добавить папку в библиотеку"
 msgid "locked"
 msgstr "защищен"
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1902
+#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
@@ -786,12 +786,12 @@ msgstr "Проверить наличие обновлений…"
 msgid "Quit {}"
 msgstr "Завершить {}"
 
-#: apps/desktop/src/app/mod.rs:1176 apps/mobile/src/platform/host.rs:73
+#: apps/desktop/src/app/mod.rs:1177 apps/mobile/src/platform/host.rs:73
 #: apps/mobile/ui/home.slint:38
 msgid "Open a PDF"
 msgstr "Открыть PDF"
 
-#: apps/desktop/src/app/mod.rs:1177 apps/desktop/src/app/organize.rs:402
+#: apps/desktop/src/app/mod.rs:1178 apps/desktop/src/app/organize.rs:402
 #: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
@@ -800,28 +800,28 @@ msgid "PDF documents"
 msgstr "Документы PDF"
 
 #. verb, on a button that opens the document
-#: apps/desktop/src/app/mod.rs:1208 apps/desktop/src/app/preopen.rs:71
+#: apps/desktop/src/app/mod.rs:1209 apps/desktop/src/app/preopen.rs:71
 #: apps/desktop/ui/password-dialog.slint:138
 msgid "Opening…"
 msgstr "Открытие…"
 
-#: apps/desktop/src/app/mod.rs:1217
+#: apps/desktop/src/app/mod.rs:1218
 msgid "Could not fill in the form: {}."
 msgstr "Не удалось заполнить форму: {}."
 
-#: apps/desktop/src/app/mod.rs:1256
+#: apps/desktop/src/app/mod.rs:1257
 msgid "Could not open “{}”"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1257
+#: apps/desktop/src/app/mod.rs:1258
 msgid "Could not open the file"
 msgstr "Не удалось открыть файл"
 
-#: apps/desktop/src/app/mod.rs:1736
+#: apps/desktop/src/app/mod.rs:1741
 msgid "There is no page “{}”."
 msgstr "Страницы «{}» нет."
 
-#: apps/desktop/src/app/mod.rs:1896
+#: apps/desktop/src/app/mod.rs:1901
 msgid "{n} page · Unsaved changes"
 msgid_plural "{n} pages · Unsaved changes"
 msgstr[0] "{n} страница · Есть несохраненные изменения"
@@ -1078,7 +1078,7 @@ msgstr "Ссылка"
 msgid "Link to {}"
 msgstr "Ссылка на {}"
 
-#: apps/desktop/src/app/page_text.rs:202 apps/desktop/ui/reading.slint:314
+#: apps/desktop/src/app/page_text.rs:202 apps/desktop/ui/reading.slint:437
 msgid "Heading level {}"
 msgstr "Заголовок уровня {}"
 
@@ -1124,10 +1124,10 @@ msgstr "{}, язык {}"
 msgid "Recent files"
 msgstr "Недавние файлы"
 
-#: apps/desktop/src/app/panel.rs:54 apps/desktop/src/app/reading.rs:486
-#: apps/desktop/src/app/reading.rs:580 apps/desktop/ui/find-results.slint:88
+#: apps/desktop/src/app/panel.rs:54 apps/desktop/src/app/reading.rs:603
+#: apps/desktop/src/app/reading.rs:737 apps/desktop/ui/find-results.slint:88
 #: apps/desktop/ui/find-results.slint:120 apps/desktop/ui/organize.slint:17
-#: apps/desktop/ui/page-view.slint:363 apps/desktop/ui/reading.slint:493
+#: apps/desktop/ui/page-view.slint:363 apps/desktop/ui/reading.slint:591
 #: apps/desktop/ui/sidebar.slint:16 apps/desktop/ui/sidebar.slint:255
 #: apps/mobile/ui/page-view.slint:195 apps/mobile/ui/sheets.slint:44
 msgid "Page {}"
@@ -1794,7 +1794,7 @@ msgstr "Чтение завершено."
 msgid "Reading aloud stopped: the speech engine is not working."
 msgstr "Чтение вслух остановлено: синтезатор речи не работает."
 
-#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:692
+#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:842
 #: apps/desktop/ui/page-view.slint:472 apps/mobile/src/app/mod.rs:701
 msgid "Page {} of {}"
 msgstr "Страница {} из {}"
@@ -1803,30 +1803,30 @@ msgstr "Страница {} из {}"
 msgid "Page {} ({} of {})"
 msgstr ""
 
-#: apps/desktop/src/app/reading.rs:468
+#: apps/desktop/src/app/reading.rs:585
 msgid "Bookmarked page {}."
 msgstr "Добавлена закладка на страницу {}."
 
-#: apps/desktop/src/app/reading.rs:470
+#: apps/desktop/src/app/reading.rs:587
 msgid "Removed the bookmark on page {}."
 msgstr "Закладка на странице {} удалена."
 
-#: apps/desktop/src/app/reading.rs:485
+#: apps/desktop/src/app/reading.rs:602
 msgid "{} (page {})"
 msgstr "{} (страница {})"
 
-#: apps/desktop/src/app/reading.rs:507
+#: apps/desktop/src/app/reading.rs:624
 msgid "Add bookmarks to outline"
 msgstr "Добавить закладки в оглавление"
 
-#: apps/desktop/src/app/reading.rs:517
+#: apps/desktop/src/app/reading.rs:634
 msgid "Added {n} bookmark to the outline. Save to keep it in the file."
 msgid_plural "Added {n} bookmarks to the outline. Save to keep them in the file."
 msgstr[0] "Добавлена {n} закладка в оглавление. Сохраните документ, чтобы она осталась в файле."
 msgstr[1] "Добавлены {n} закладки в оглавление. Сохраните документ, чтобы они остались в файле."
 msgstr[2] "Добавлено {n} закладок в оглавление. Сохраните документ, чтобы они остались в файле."
 
-#: apps/desktop/src/app/reading.rs:524
+#: apps/desktop/src/app/reading.rs:641
 msgid "Could not change the outline"
 msgstr "Не удалось изменить оглавление"
 
@@ -2707,18 +2707,18 @@ msgstr "Сведения о сторонних компонентах"
 
 #. panel headings named after the tools, as on the toolbar
 #. a kind of difference between two documents: document properties
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/tool-row.slint:754
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/tool-row.slint:754
 #: apps/mobile/ui/prep-bar.slint:101 crates/compare/src/lib.rs:123
 msgid "Properties"
 msgstr "Свойства"
 
 #. filter: show differences in document properties
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/compare.slint:246
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/compare.slint:246
 msgid "Document"
 msgstr "Документ"
 
 #. noun, a kind of annotation
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/page-view.slint:635
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/page-view.slint:635
 #: apps/desktop/ui/palette.slint:52 apps/desktop/ui/right-panel.slint:277
 #: apps/desktop/ui/tool-row.slint:326 apps/desktop/ui/tool-row.slint:343
 #: apps/mobile/ui/header.slint:26 apps/mobile/ui/main.slint:268
@@ -2726,36 +2726,36 @@ msgstr "Документ"
 msgid "Highlight"
 msgstr "Выделение"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:53
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:53
 #: apps/desktop/ui/tool-row.slint:364 apps/mobile/ui/header.slint:35
 msgid "Draw"
 msgstr "Рисование"
 
 #. verb, the tool for placing a handwritten signature
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:57
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
 #: apps/desktop/ui/tool-row.slint:486 apps/mobile/ui/header.slint:44
 #: crates/integration/src/catalog.rs:123
 msgid "Sign"
 msgstr "Подписать"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:56
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
 #: apps/desktop/ui/tool-row.slint:474
 msgid "Fill forms"
 msgstr "Заполнить форму"
 
 #. the tool that marks what to remove for good
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:63
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:63
 #: apps/desktop/ui/tool-row.slint:559
 msgid "Redact"
 msgstr "Скрыть"
 
 #. changing the text and images of the pages,
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/top-bar.slint:180
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/top-bar.slint:180
 #: apps/mobile/ui/header.slint:62
 msgid "Edit"
 msgstr "Редактировать"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:58
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:58
 #: apps/desktop/ui/right-panel.slint:422 apps/desktop/ui/tool-row.slint:500
 #: apps/mobile/ui/prep-bar.slint:49 apps/mobile/ui/sheets.slint:718
 msgid "Prepare form"
@@ -2770,7 +2770,7 @@ msgstr "Оформление"
 msgid "Light"
 msgstr "Светлое"
 
-#: apps/desktop/ui/appearance-picker.slint:95 apps/desktop/ui/reading.slint:156
+#: apps/desktop/ui/appearance-picker.slint:95 apps/desktop/ui/reading.slint:174
 #: apps/mobile/ui/sheets.slint:288
 msgid "Dark"
 msgstr "Темное"
@@ -2889,7 +2889,7 @@ msgstr "Цвет"
 msgid "Close panel"
 msgstr "Закрыть панель"
 
-#: apps/desktop/ui/components/panel.slint:219 apps/desktop/ui/reading.slint:77
+#: apps/desktop/ui/components/panel.slint:219 apps/desktop/ui/reading.slint:95
 msgid "Shortcut {}"
 msgstr "Сочетание клавиш: {}"
 
@@ -2908,7 +2908,7 @@ msgstr "Размер шрифта"
 #. on the font size button when the selected texts have different sizes
 #: apps/desktop/ui/components/tool-button.slint:311
 #: apps/desktop/ui/components/tool-button.slint:328
-#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:257
+#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:315
 #: apps/desktop/ui/right-panel.slint:196 apps/desktop/ui/right-panel.slint:206
 #: apps/desktop/ui/right-panel.slint:331 apps/desktop/ui/right-panel.slint:363
 #: apps/desktop/ui/tool-row.slint:444 apps/desktop/ui/tool-row.slint:460
@@ -3510,7 +3510,7 @@ msgid "Arrange"
 msgstr "Порядок"
 
 #. heading of the actions for a selected image
-#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:325
+#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:449
 #: crates/app-core/src/object_edit/select.rs:77
 msgid "Image"
 msgstr "Изображение"
@@ -3992,8 +3992,8 @@ msgstr "Свести…"
 msgid "Compare…"
 msgstr "Сравнить…"
 
-#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:166
-#: apps/desktop/ui/reading.slint:209 apps/desktop/ui/reading.slint:242
+#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:184
+#: apps/desktop/ui/reading.slint:229 apps/desktop/ui/reading.slint:300
 #: apps/desktop/ui/shortcuts.slint:69 apps/desktop/ui/tool-row.slint:253
 msgid "Reading view"
 msgstr "Режим чтения"
@@ -4003,13 +4003,13 @@ msgstr "Режим чтения"
 msgid "Read aloud"
 msgstr "Читать вслух"
 
-#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:175
+#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:193
 #: apps/desktop/ui/shortcuts.slint:70 apps/desktop/ui/tool-row.slint:278
 msgid "Present"
 msgstr "Презентация"
 
-#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:193
-#: apps/desktop/ui/reading.slint:446 apps/desktop/ui/reading.slint:455
+#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:211
+#: apps/desktop/ui/reading.slint:544 apps/desktop/ui/reading.slint:553
 #: apps/desktop/ui/tool-row.slint:300
 msgid "Bookmarks"
 msgstr "Закладки"
@@ -4658,119 +4658,119 @@ msgstr "Быстрее"
 msgid "Close read aloud"
 msgstr "Закрыть чтение вслух"
 
-#: apps/desktop/ui/reading.slint:128
+#: apps/desktop/ui/reading.slint:146
 msgid "Reading options"
 msgstr "Параметры чтения"
 
-#: apps/desktop/ui/reading.slint:141
+#: apps/desktop/ui/reading.slint:159
 msgid "Layout"
 msgstr "Макет"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Continuous"
 msgstr "Непрерывно"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Single page"
 msgstr "Одна страница"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Two pages"
 msgstr "Две страницы"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Book"
 msgstr "Книга"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Horizontal"
 msgstr "Горизонтально"
 
-#: apps/desktop/ui/reading.slint:154 apps/mobile/ui/sheets.slint:274
+#: apps/desktop/ui/reading.slint:172 apps/mobile/ui/sheets.slint:274
 msgid "Page colours"
 msgstr "Цвета страниц"
 
 #. page colours
-#: apps/desktop/ui/reading.slint:156 apps/mobile/ui/sheets.slint:287
+#: apps/desktop/ui/reading.slint:174 apps/mobile/ui/sheets.slint:287
 msgid "Normal"
 msgstr "Обычные"
 
-#: apps/desktop/ui/reading.slint:156 apps/mobile/ui/sheets.slint:289
+#: apps/desktop/ui/reading.slint:174 apps/mobile/ui/sheets.slint:289
 msgid "Sepia"
 msgstr "Сепия"
 
-#: apps/desktop/ui/reading.slint:156 apps/desktop/ui/settings.slint:163
+#: apps/desktop/ui/reading.slint:174 apps/desktop/ui/settings.slint:163
 #: apps/mobile/ui/sheets.slint:290
 msgid "High contrast"
 msgstr "Высокая контрастность"
 
-#: apps/desktop/ui/reading.slint:184 apps/desktop/ui/reading.slint:470
+#: apps/desktop/ui/reading.slint:202 apps/desktop/ui/reading.slint:568
 #: apps/desktop/ui/tool-row.slint:288
 msgid "Remove bookmark"
 msgstr "Удалить закладку"
 
-#: apps/desktop/ui/reading.slint:184 apps/desktop/ui/reading.slint:470
+#: apps/desktop/ui/reading.slint:202 apps/desktop/ui/reading.slint:568
 #: apps/desktop/ui/tool-row.slint:288
 msgid "Bookmark this page"
 msgstr "Добавить закладку на эту страницу"
 
-#: apps/desktop/ui/reading.slint:242
+#: apps/desktop/ui/reading.slint:300
 msgid "Reading view · preparing…"
 msgstr "Режим чтения · подготовка…"
 
-#: apps/desktop/ui/reading.slint:251
+#: apps/desktop/ui/reading.slint:309
 msgid "Smaller text"
 msgstr "Меньше текст"
 
-#: apps/desktop/ui/reading.slint:267
+#: apps/desktop/ui/reading.slint:325
 msgid "Larger text"
 msgstr "Больше текст"
 
-#: apps/desktop/ui/reading.slint:278
+#: apps/desktop/ui/reading.slint:336
 msgid "Show pages"
 msgstr "Показать страницы"
 
-#: apps/desktop/ui/reading.slint:304
+#: apps/desktop/ui/reading.slint:374
 msgid "This document has no text to show. Scanned pages need text recognition first."
 msgstr "В этом документе нет текста для отображения. Для отсканированных страниц сначала нужно распознать текст."
 
-#: apps/desktop/ui/reading.slint:325 crates/app-core/src/utterances.rs:28
+#: apps/desktop/ui/reading.slint:449 crates/app-core/src/utterances.rs:28
 msgid "Figure: {}"
 msgstr "Иллюстрация: {}"
 
-#: apps/desktop/ui/reading.slint:326
+#: apps/desktop/ui/reading.slint:450
 msgid "Shown on page {}. Enter shows the page"
 msgstr "Показано на странице {}. Enter — показать страницу"
 
-#: apps/desktop/ui/reading.slint:335
+#: apps/desktop/ui/reading.slint:459
 msgid "Image (shown on page {})"
 msgstr "Изображение (показано на странице {})"
 
-#: apps/desktop/ui/reading.slint:382
+#: apps/desktop/ui/reading.slint:480
 msgid "Presentation"
 msgstr "Презентация"
 
-#: apps/desktop/ui/reading.slint:463
+#: apps/desktop/ui/reading.slint:561
 msgid "Close bookmarks"
 msgstr "Закрыть закладки"
 
-#: apps/desktop/ui/reading.slint:477
+#: apps/desktop/ui/reading.slint:575
 msgid "No bookmarks yet. Press Ctrl+D to bookmark the page you are reading."
 msgstr "Закладок пока нет. Нажмите Ctrl+D, чтобы добавить закладку на читаемую страницу."
 
-#: apps/desktop/ui/reading.slint:515
+#: apps/desktop/ui/reading.slint:613
 msgid "Bookmark name"
 msgstr "Имя закладки"
 
-#: apps/desktop/ui/reading.slint:534
+#: apps/desktop/ui/reading.slint:632
 msgid "Rename bookmark"
 msgstr "Переименовать закладку"
 
-#: apps/desktop/ui/reading.slint:543
+#: apps/desktop/ui/reading.slint:641
 msgid "Delete bookmark"
 msgstr "Удалить закладку"
 
-#: apps/desktop/ui/reading.slint:554
+#: apps/desktop/ui/reading.slint:652
 msgid "Add to document outline"
 msgstr "Добавить в оглавление документа"
 

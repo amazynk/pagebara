@@ -88,7 +88,11 @@ screenshot 14-high-contrast.png
 call page-theme normal
 wait 1200
 assert luma:1,20,20,100,100 > 230
-# The reading view: text in one column, headings by size, adjustable size.
+# The reading view: text in one column, headings by size, adjustable size. It opens at
+# the current page, follows the page number and Left and Right, scrolling it changes the
+# current page, and the pages come back where reading stopped.
+page 5
+wait 400
 call reflow on
 wait 1500
 assert reflow == true
@@ -96,10 +100,34 @@ assert reflow.busy == false
 assert reflow.blocks > 20
 assert reflow.text contains Quarterly report
 assert reflow.text contains Revenue grew in every region
+assert reflow.page == 5
+key right
+assert reflow.page == 6
+assert page == 6
+# Home only changes the page if Right really scrolled the view.
+key home
+wait 300
+assert reflow.page == 1
+assert page == 1
+key pagedown
+key pagedown
+key pagedown
+wait 300
+assert page > 1
+page 9
+wait 400
+assert reflow.page == 9
 click "Larger text" 300
+# A click on the text gives the keys back to the reading view.
+click 700,500 300
+key end
+wait 300
+assert reflow.page == 12
 screenshot 14-reflow.png
 key escape
+wait 400
 assert reflow == false
+assert page == 12
 # Presenting: full screen, keys and clicks move on, B blanks, Esc stops.
 page 2
 wait 400

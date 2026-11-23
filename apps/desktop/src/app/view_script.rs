@@ -143,7 +143,15 @@ pub fn query(s: &mut State, ui: &AppWindow, key: &str) -> Option<Result<String, 
             .to_owned(),
         "reflow" => rs.get_reflow().to_string(),
         "reflow.busy" => rs.get_reflow_busy().to_string(),
-        "reflow.blocks" => rs.get_reflow_rows().row_count().to_string(),
+        "reflow.blocks" => s
+            .tab_ref()
+            .map_or(0, |t| t.reading.reflow_blocks())
+            .to_string(),
+        // The page being read in the reading view.
+        "reflow.page" => s
+            .tab_ref()
+            .map_or(0, |t| t.reading.reflow_page + 1)
+            .to_string(),
         "reflow.text" => s
             .tab_ref()
             .map(|t| t.reading.reflow_text())

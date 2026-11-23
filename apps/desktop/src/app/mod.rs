@@ -753,7 +753,7 @@ impl App {
                 return library::shortcut(self, s, &ui, c, ctrl).unwrap_or(false);
             }
             KeyboardOwner::Presentation => {
-                return reading::shortcut(self, s, &ui, c, ctrl, shift).unwrap_or(false);
+                return reading::shortcut(self, s, &ui, c, ctrl, shift, alt).unwrap_or(false);
             }
             KeyboardOwner::Dialog => return false,
         }
@@ -800,7 +800,7 @@ impl App {
         }
         if let Some(handled) = print::shortcut(self, s, &ui, c, ctrl)
             .or_else(|| library::shortcut(self, s, &ui, c, ctrl))
-            .or_else(|| reading::shortcut(self, s, &ui, c, ctrl, shift))
+            .or_else(|| reading::shortcut(self, s, &ui, c, ctrl, shift, alt))
         {
             return handled;
         }
@@ -993,6 +993,7 @@ impl App {
         let t = &mut s.tabs[s.active];
         let start = Instant::now();
         let arrived = t.view.update(ui, start);
+        reading::current_page(t);
         if t.first_pixels.is_some() && !arrived.is_empty() {
             crate::startup::mark("tiles arrived");
         }
@@ -1689,11 +1690,13 @@ impl App {
         if i >= t.session.page_count() {
             return;
         }
+        reading::settle(t);
         t.push_nav();
         match v {
             Some(v) => t.view.glide_to(i, v, 24.0),
             None => t.view.glide_to_page(i),
         }
+        reading::follow(t, ui, i);
         self.doc_nav_state(s, ui);
         self.view_op(s, ui, |_| {});
     }
@@ -1708,6 +1711,7 @@ impl App {
 
     fn nav(self: &Rc<Self>, s: &mut State, ui: &AppWindow, forward: bool) {
         let Some(t) = s.tab() else { return };
+        reading::settle(t);
         let here = t.view.position();
         let target = if forward {
             t.nav.forward.pop()
@@ -1721,6 +1725,7 @@ impl App {
             t.nav.forward.push(here);
         }
         t.view.glide_to(page, v, 0.0);
+        reading::follow(t, ui, page);
         self.doc_nav_state(s, ui);
         self.view_op(s, ui, |_| {});
     }

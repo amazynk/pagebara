@@ -16,6 +16,13 @@ All notable changes to Pagebara are listed here. The format follows
 
 ### Fixed
 
+- The reading view scrolls to the end of the document. Each paragraph counted as one line
+  in its length, so with long paragraphs it stopped after the first page or two.
+- The reading view follows the page number: the tool row's arrows, a typed page number,
+  the outline, links and Left and Right go to that page in the reading view, and it opens
+  at the page you were reading instead of the first page. Scrolling it updates the page
+  number, and Show pages returns to the page you reached. It has a scroll bar, Home and
+  End go to the start and the end, and a click on the text gives the keys back to it.
 - Saving a damaged file whose trailer names object 0 as the catalog, when the file has no
   such object, no longer crashes the app.
 - The Linux AppStream file names its developer in the form AppStream accepts.

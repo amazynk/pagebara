@@ -18,7 +18,7 @@ use slint::{
 };
 
 use super::{App, State, Tab, post_act};
-use crate::{AppState, AppWindow, BookmarkRow, Mode, ReadingState, ReflowRow};
+use crate::{AppState, AppWindow, BookmarkRow, Mode, ReadingState, ReflowPage, ReflowRow};
 
 /// Reading view text sizes, in points.
 const REFLOW_SIZES: [f32; 9] = [12.0, 14.0, 15.0, 17.0, 19.0, 22.0, 26.0, 30.0, 36.0];
@@ -66,8 +66,15 @@ pub struct TabReading {
     pub key: Option<String>,
     pub state: DocState,
     pub reflow: bool,
-    /// The reading view's rows, for a session generation.
-    pub reflow_rows: Option<(u64, Rc<VecModel<ReflowRow>>)>,
+    /// The reading view's pages, for a session generation.
+    pub reflow_pages: Option<(u64, Rc<VecModel<ReflowPage>>)>,
+    /// The page of each entry of `reflow_pages` (pages without text have none).
+    reflow_index: Vec<usize>,
+    /// The entry of `reflow_pages` being read: the last one whose start is scrolled past
+    /// the top of the reading view.
+    reflow_at: usize,
+    /// The page being read, the current page while the reading view is shown.
+    pub reflow_page: usize,
     reflow_busy: bool,
     shown_page: Option<usize>,
 }
@@ -84,16 +91,24 @@ impl std::fmt::Debug for TabReading {
 
 impl TabReading {
     pub fn reflow_text(&self) -> String {
-        self.reflow_rows
+        self.reflow_pages
             .as_ref()
             .map(|(_, m)| {
                 m.iter()
+                    .flat_map(|p| p.blocks.iter().collect::<Vec<_>>())
                     .filter(|r| r.kind < 4 || (r.kind == 4 && !r.text.is_empty()))
                     .map(|r| r.text.to_string())
                     .collect::<Vec<_>>()
                     .join("\n")
             })
             .unwrap_or_default()
+    }
+
+    /// How many blocks the reading view has.
+    pub fn reflow_blocks(&self) -> usize {
+        self.reflow_pages
+            .as_ref()
+            .map_or(0, |(_, m)| m.iter().map(|p| p.blocks.row_count()).sum())
     }
 }
 
@@ -138,6 +153,13 @@ pub fn wire(app: &Rc<App>, ui: &AppWindow) {
         set_reflow(app, s, ui, false);
         app.jump(s, ui, page.max(0) as usize, None);
     });
+    on!(on_reflow_reached, |app, s, ui, i, reached| reflow_reached(
+        app,
+        s,
+        ui,
+        i.max(0) as usize,
+        reached
+    ));
     on!(on_present, |app, s, ui| present(app, s, ui));
     on!(on_present_step, |app, s, ui, forward| present_step(
         app,
@@ -207,6 +229,7 @@ pub fn shortcut(
     c: char,
     ctrl: bool,
     shift: bool,
+    alt: bool,
 ) -> Option<bool> {
     use slint::platform::Key;
     let key = |k: Key| c == char::from(k);
@@ -272,6 +295,14 @@ pub fn shortcut(
         }
         if ctrl && matches!(c, '+' | '=' | '-') {
             reflow_zoom(app, s, ui, if c == '-' { -1 } else { 1 });
+            return Some(true);
+        }
+        // Left and Right turn the pages, as in the page view.
+        if !ctrl && !alt && (key(Key::LeftArrow) || key(Key::RightArrow)) {
+            let forward = key(Key::RightArrow);
+            if let Some(page) = s.tab_ref().and_then(|t| turned(&t.reading, forward)) {
+                app.jump(s, ui, page, None);
+            }
             return Some(true);
         }
         // Scrolling keys go to the reading view, not the hidden pages.
@@ -347,11 +378,97 @@ pub fn show(s: &mut State, ui: &AppWindow) {
     rs.set_reflow(t.reading.reflow);
     rs.set_reflow_size(REFLOW_SIZES[s.reading.reflow_size]);
     t.reading.shown_page = None;
-    if let Some((_, rows)) = &t.reading.reflow_rows {
-        rs.set_reflow_rows(ModelRc::from(rows.clone()));
+    match &t.reading.reflow_pages {
+        Some((_, pages)) => rs.set_reflow_pages(ModelRc::from(pages.clone())),
+        None => rs.set_reflow_pages(ModelRc::default()),
     }
     rs.set_reflow_busy(t.reading.reflow_busy);
+    if t.reading.reflow {
+        scroll_reflow(ui, t.reading.reflow_at);
+    }
     sync_page(t, ui);
+}
+
+/// Scrolls the reading view to the start of its entry `at`.
+fn scroll_reflow(ui: &AppWindow, at: usize) {
+    let rs = ui.global::<ReadingState>();
+    rs.set_reflow_target(at as i32);
+    rs.set_reflow_serial(rs.get_reflow_serial().wrapping_add(1));
+}
+
+/// The reading view's entry for `page`: the first one at or after it, else the last.
+fn reflow_entry(r: &TabReading, page: usize) -> usize {
+    r.reflow_index
+        .partition_point(|&p| p < page)
+        .min(r.reflow_index.len().saturating_sub(1))
+}
+
+/// The page after (or before) the one being read that has an entry in the reading view.
+fn turned(r: &TabReading, forward: bool) -> Option<usize> {
+    if !r.reflow {
+        return None;
+    }
+    let at = r.reflow_at;
+    let to = if forward { at + 1 } else { at.checked_sub(1)? };
+    r.reflow_index.get(to).copied()
+}
+
+/// While the reading view is shown, it follows the page number: it scrolls to `page`, the
+/// page asked for (from the tool row, the outline, a link, reading aloud).
+pub fn follow(t: &mut Tab, ui: &AppWindow, page: usize) {
+    if !t.reading.reflow {
+        return;
+    }
+    t.reading.reflow_page = page;
+    if t.reading.reflow_index.is_empty() {
+        return;
+    }
+    let at = reflow_entry(&t.reading, page);
+    t.reading.reflow_at = at;
+    t.reading.reflow_page = t.reading.reflow_index[at];
+    scroll_reflow(ui, at);
+}
+
+/// While the reading view is shown, the pages under it stay where they were: before a
+/// jump is remembered (for Back), they are moved to the page being read.
+pub fn settle(t: &mut Tab) {
+    let page = t.reading.reflow_page;
+    if t.reading.reflow && t.view.view.viewport.current_page() != page {
+        t.view.view.viewport.go_to_page(page);
+    }
+}
+
+/// While the reading view is shown, the page being read is the current page.
+pub fn current_page(t: &mut Tab) {
+    if t.reading.reflow {
+        t.view.current_page = t.reading.reflow_page;
+    }
+}
+
+/// The start of the reading view's entry `i` scrolled past the top of the view, or back
+/// below it: the page being read changes. Those that have scrolled past are always the
+/// first ones, so after a jump the events may come in any order.
+fn reflow_reached(app: &Rc<App>, s: &mut State, ui: &AppWindow, i: usize, reached: bool) {
+    let Some(t) = s.tabs.get_mut(s.active) else {
+        return;
+    };
+    let r = &mut t.reading;
+    if !r.reflow {
+        return;
+    }
+    let at = if reached {
+        r.reflow_at.max(i)
+    } else {
+        r.reflow_at.min(i.saturating_sub(1))
+    };
+    if at == r.reflow_at {
+        return;
+    }
+    r.reflow_at = at;
+    if let Some(&page) = r.reflow_index.get(at) {
+        r.reflow_page = page;
+        app.refresh(s, ui);
+    }
 }
 
 fn set_colours(ui: &AppWindow, theme: PageTheme) {
@@ -530,26 +647,38 @@ pub fn set_reflow(app: &Rc<App>, s: &mut State, ui: &AppWindow, on: bool) {
     let Some(t) = s.tabs.get_mut(s.active) else {
         return;
     };
+    if t.reading.reflow == on {
+        return;
+    }
     t.reading.reflow = on;
     ui.global::<ReadingState>().set_reflow(on);
     if !on {
+        // The pages come back at the page that was being read.
+        t.reading.reflow = true;
+        settle(t);
+        t.reading.reflow = false;
+        app.view_op(s, ui, |_| {});
         ui.invoke_focus_view();
         return;
     }
+    t.reading.reflow_page = t.view.current_page;
     let generation = t.session.generation();
     if t.reading
-        .reflow_rows
+        .reflow_pages
         .as_ref()
         .is_some_and(|(g, _)| *g == generation)
     {
+        t.reading.reflow_at = reflow_entry(&t.reading, t.reading.reflow_page);
         show(s, ui);
         return;
     }
-    let rows = Rc::new(VecModel::default());
-    t.reading.reflow_rows = Some((generation, rows.clone()));
+    let pages = Rc::new(VecModel::default());
+    t.reading.reflow_pages = Some((generation, pages.clone()));
+    t.reading.reflow_index.clear();
+    t.reading.reflow_at = 0;
     t.reading.reflow_busy = true;
     let rs = ui.global::<ReadingState>();
-    rs.set_reflow_rows(ModelRc::from(rows));
+    rs.set_reflow_pages(ModelRc::from(pages));
     rs.set_reflow_busy(true);
     rs.set_reflow_size(size);
     let uid = t.uid;
@@ -560,7 +689,6 @@ pub fn set_reflow(app: &Rc<App>, s: &mut State, ui: &AppWindow, on: bool) {
     let labels: Vec<String> = (0..t.session.page_count())
         .map(|i| t.session.page_label(i))
         .collect();
-    let _ = app;
     pagebara_thread::spawn("reflow", move || {
         let flows: Vec<(usize, PageFlow)> = refs
             .iter()
@@ -571,37 +699,52 @@ pub fn set_reflow(app: &Rc<App>, s: &mut State, ui: &AppWindow, on: bool) {
             })
             .filter(|(_, f)| !f.is_empty())
             .collect();
-        let blocks = reflow::build(&flows);
-        let mut rows = Vec::with_capacity(blocks.len() + flows.len());
-        let mut page = None;
-        for b in blocks {
-            if page != Some(b.page) {
-                page = Some(b.page);
-                rows.push((b.page, 5, tr!("Page {}", labels[b.page])));
-            }
+        // Blocks by page, in order.
+        let mut pages: Vec<(usize, Vec<(i32, String)>)> = Vec::with_capacity(flows.len());
+        for b in reflow::build(&flows) {
             let kind = match b.kind {
                 BlockKind::Paragraph => 0,
                 BlockKind::Heading(l) => i32::from(l.clamp(1, 3)),
                 BlockKind::Image => 4,
             };
-            rows.push((b.page, kind, b.text));
+            match pages.last_mut() {
+                Some((p, blocks)) if *p == b.page => blocks.push((kind, b.text)),
+                _ => pages.push((b.page, vec![(kind, b.text)])),
+            }
         }
         post_act(move |_app, s, ui| {
             let Some(i) = s.tab_index(uid) else { return };
             let t = &mut s.tabs[i];
             t.reading.reflow_busy = false;
-            if let Some((g, model)) = &t.reading.reflow_rows
+            if let Some((g, model)) = &t.reading.reflow_pages
                 && *g == generation
             {
+                t.reading.reflow_index = pages.iter().map(|(p, _)| *p).collect();
                 model.set_vec(
-                    rows.into_iter()
-                        .map(|(p, kind, text)| ReflowRow {
-                            page: p as i32 + 1,
-                            kind,
-                            text: text.into(),
+                    pages
+                        .into_iter()
+                        .map(|(p, blocks)| {
+                            let blocks: Vec<ReflowRow> = blocks
+                                .into_iter()
+                                .map(|(kind, text)| ReflowRow {
+                                    page: p as i32 + 1,
+                                    kind,
+                                    text: text.into(),
+                                })
+                                .collect();
+                            ReflowPage {
+                                page: p as i32 + 1,
+                                label: tr!("Page {}", labels[p]).into(),
+                                blocks: ModelRc::new(VecModel::from(blocks)),
+                            }
                         })
                         .collect::<Vec<_>>(),
                 );
+                let at = reflow_entry(&t.reading, t.reading.reflow_page);
+                t.reading.reflow_at = at;
+                if i == s.active && t.reading.reflow {
+                    scroll_reflow(ui, at);
+                }
             }
             if i == s.active {
                 ui.global::<ReadingState>().set_reflow_busy(false);
@@ -615,6 +758,12 @@ fn reflow_zoom(_app: &Rc<App>, s: &mut State, ui: &AppWindow, steps: i32) {
     s.reading.reflow_size = i as usize;
     ui.global::<ReadingState>()
         .set_reflow_size(REFLOW_SIZES[i as usize]);
+    // The page being read stays in view as the text grows or shrinks.
+    if let Some(t) = s.tabs.get(s.active)
+        && t.reading.reflow
+    {
+        scroll_reflow(ui, t.reading.reflow_at);
+    }
 }
 
 fn present(app: &Rc<App>, s: &mut State, ui: &AppWindow) {
@@ -649,6 +798,7 @@ fn stop_presenting(app: &Rc<App>, s: &mut State, ui: &AppWindow) {
         app.select_tab(s, ui, i);
         if let Some(t) = s.tab() {
             t.view.glide_to_page(p.page);
+            follow(t, ui, p.page);
         }
         app.view_op(s, ui, |_| {});
     }

@@ -467,7 +467,7 @@ msgstr "Le texte descend {} points plus bas que sa fin d’origine ; il peut r
 #. filter: show differences in the text
 #. kinds of form field
 #. what redaction searches for: plain text
-#: apps/desktop/src/app/forms.rs:85 apps/desktop/ui/app.slint:269
+#: apps/desktop/src/app/forms.rs:85 apps/desktop/ui/app.slint:272
 #: apps/desktop/ui/compare.slint:220 apps/desktop/ui/stamps.slint:185
 #: apps/desktop/ui/stamps.slint:700 apps/mobile/ui/prep-bar.slint:150
 #: crates/app-core/src/object_edit/select.rs:76
@@ -697,7 +697,7 @@ msgstr "Ajouter un dossier à la bibliothèque"
 msgid "locked"
 msgstr "verrouillé"
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1902
+#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
@@ -776,12 +776,12 @@ msgstr "Rechercher des mises à jour…"
 msgid "Quit {}"
 msgstr "Quitter {}"
 
-#: apps/desktop/src/app/mod.rs:1176 apps/mobile/src/platform/host.rs:73
+#: apps/desktop/src/app/mod.rs:1177 apps/mobile/src/platform/host.rs:73
 #: apps/mobile/ui/home.slint:38
 msgid "Open a PDF"
 msgstr "Ouvrir un PDF"
 
-#: apps/desktop/src/app/mod.rs:1177 apps/desktop/src/app/organize.rs:402
+#: apps/desktop/src/app/mod.rs:1178 apps/desktop/src/app/organize.rs:402
 #: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
@@ -790,28 +790,28 @@ msgid "PDF documents"
 msgstr "Documents PDF"
 
 #. verb, on a button that opens the document
-#: apps/desktop/src/app/mod.rs:1208 apps/desktop/src/app/preopen.rs:71
+#: apps/desktop/src/app/mod.rs:1209 apps/desktop/src/app/preopen.rs:71
 #: apps/desktop/ui/password-dialog.slint:138
 msgid "Opening…"
 msgstr "Ouverture…"
 
-#: apps/desktop/src/app/mod.rs:1217
+#: apps/desktop/src/app/mod.rs:1218
 msgid "Could not fill in the form: {}."
 msgstr "Impossible de remplir le formulaire : {}."
 
-#: apps/desktop/src/app/mod.rs:1256
+#: apps/desktop/src/app/mod.rs:1257
 msgid "Could not open “{}”"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1257
+#: apps/desktop/src/app/mod.rs:1258
 msgid "Could not open the file"
 msgstr "Impossible d’ouvrir le fichier"
 
-#: apps/desktop/src/app/mod.rs:1736
+#: apps/desktop/src/app/mod.rs:1741
 msgid "There is no page “{}”."
 msgstr "La page « {} » n’existe pas."
 
-#: apps/desktop/src/app/mod.rs:1896
+#: apps/desktop/src/app/mod.rs:1901
 msgid "{n} page · Unsaved changes"
 msgid_plural "{n} pages · Unsaved changes"
 msgstr[0] "{n} page · Modifications non enregistrées"
@@ -1061,7 +1061,7 @@ msgstr "Lien"
 msgid "Link to {}"
 msgstr "Lien vers {}"
 
-#: apps/desktop/src/app/page_text.rs:202 apps/desktop/ui/reading.slint:314
+#: apps/desktop/src/app/page_text.rs:202 apps/desktop/ui/reading.slint:437
 msgid "Heading level {}"
 msgstr "Titre de niveau {}"
 
@@ -1107,10 +1107,10 @@ msgstr "{}, langue {}"
 msgid "Recent files"
 msgstr "Fichiers récents"
 
-#: apps/desktop/src/app/panel.rs:54 apps/desktop/src/app/reading.rs:486
-#: apps/desktop/src/app/reading.rs:580 apps/desktop/ui/find-results.slint:88
+#: apps/desktop/src/app/panel.rs:54 apps/desktop/src/app/reading.rs:603
+#: apps/desktop/src/app/reading.rs:737 apps/desktop/ui/find-results.slint:88
 #: apps/desktop/ui/find-results.slint:120 apps/desktop/ui/organize.slint:17
-#: apps/desktop/ui/page-view.slint:363 apps/desktop/ui/reading.slint:493
+#: apps/desktop/ui/page-view.slint:363 apps/desktop/ui/reading.slint:591
 #: apps/desktop/ui/sidebar.slint:16 apps/desktop/ui/sidebar.slint:255
 #: apps/mobile/ui/page-view.slint:195 apps/mobile/ui/sheets.slint:44
 msgid "Page {}"
@@ -1767,7 +1767,7 @@ msgstr "Lecture terminée."
 msgid "Reading aloud stopped: the speech engine is not working."
 msgstr "Lecture à voix haute interrompue : le moteur de synthèse vocale ne fonctionne pas."
 
-#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:692
+#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:842
 #: apps/desktop/ui/page-view.slint:472 apps/mobile/src/app/mod.rs:701
 msgid "Page {} of {}"
 msgstr "Page {} sur {}"
@@ -1776,29 +1776,29 @@ msgstr "Page {} sur {}"
 msgid "Page {} ({} of {})"
 msgstr ""
 
-#: apps/desktop/src/app/reading.rs:468
+#: apps/desktop/src/app/reading.rs:585
 msgid "Bookmarked page {}."
 msgstr "Signet ajouté à la page {}."
 
-#: apps/desktop/src/app/reading.rs:470
+#: apps/desktop/src/app/reading.rs:587
 msgid "Removed the bookmark on page {}."
 msgstr "Signet de la page {} supprimé."
 
-#: apps/desktop/src/app/reading.rs:485
+#: apps/desktop/src/app/reading.rs:602
 msgid "{} (page {})"
 msgstr "{} (page {})"
 
-#: apps/desktop/src/app/reading.rs:507
+#: apps/desktop/src/app/reading.rs:624
 msgid "Add bookmarks to outline"
 msgstr "Ajouter les signets à la table des matières"
 
-#: apps/desktop/src/app/reading.rs:517
+#: apps/desktop/src/app/reading.rs:634
 msgid "Added {n} bookmark to the outline. Save to keep it in the file."
 msgid_plural "Added {n} bookmarks to the outline. Save to keep them in the file."
 msgstr[0] "{n} signet ajouté à la table des matières. Enregistrez pour le conserver dans le fichier."
 msgstr[1] "{n} signets ajoutés à la table des matières. Enregistrez pour les conserver dans le fichier."
 
-#: apps/desktop/src/app/reading.rs:524
+#: apps/desktop/src/app/reading.rs:641
 msgid "Could not change the outline"
 msgstr "Impossible de modifier la table des matières"
 
@@ -2656,18 +2656,18 @@ msgstr "Mentions des tiers"
 
 #. panel headings named after the tools, as on the toolbar
 #. a kind of difference between two documents: document properties
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/tool-row.slint:754
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/tool-row.slint:754
 #: apps/mobile/ui/prep-bar.slint:101 crates/compare/src/lib.rs:123
 msgid "Properties"
 msgstr "Propriétés"
 
 #. filter: show differences in document properties
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/compare.slint:246
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/compare.slint:246
 msgid "Document"
 msgstr "Document"
 
 #. noun, a kind of annotation
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/page-view.slint:635
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/page-view.slint:635
 #: apps/desktop/ui/palette.slint:52 apps/desktop/ui/right-panel.slint:277
 #: apps/desktop/ui/tool-row.slint:326 apps/desktop/ui/tool-row.slint:343
 #: apps/mobile/ui/header.slint:26 apps/mobile/ui/main.slint:268
@@ -2675,36 +2675,36 @@ msgstr "Document"
 msgid "Highlight"
 msgstr "Surlignage"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:53
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:53
 #: apps/desktop/ui/tool-row.slint:364 apps/mobile/ui/header.slint:35
 msgid "Draw"
 msgstr "Dessiner"
 
 #. verb, the tool for placing a handwritten signature
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:57
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
 #: apps/desktop/ui/tool-row.slint:486 apps/mobile/ui/header.slint:44
 #: crates/integration/src/catalog.rs:123
 msgid "Sign"
 msgstr "Signer"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:56
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
 #: apps/desktop/ui/tool-row.slint:474
 msgid "Fill forms"
 msgstr "Remplir le formulaire"
 
 #. the tool that marks what to remove for good
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:63
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:63
 #: apps/desktop/ui/tool-row.slint:559
 msgid "Redact"
 msgstr "Biffer"
 
 #. changing the text and images of the pages,
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/top-bar.slint:180
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/top-bar.slint:180
 #: apps/mobile/ui/header.slint:62
 msgid "Edit"
 msgstr "Modifier"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:58
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:58
 #: apps/desktop/ui/right-panel.slint:422 apps/desktop/ui/tool-row.slint:500
 #: apps/mobile/ui/prep-bar.slint:49 apps/mobile/ui/sheets.slint:718
 msgid "Prepare form"
@@ -2719,7 +2719,7 @@ msgstr "Apparence"
 msgid "Light"
 msgstr "Clair"
 
-#: apps/desktop/ui/appearance-picker.slint:95 apps/desktop/ui/reading.slint:156
+#: apps/desktop/ui/appearance-picker.slint:95 apps/desktop/ui/reading.slint:174
 #: apps/mobile/ui/sheets.slint:288
 msgid "Dark"
 msgstr "Sombre"
@@ -2838,7 +2838,7 @@ msgstr "Couleur"
 msgid "Close panel"
 msgstr "Fermer le panneau"
 
-#: apps/desktop/ui/components/panel.slint:219 apps/desktop/ui/reading.slint:77
+#: apps/desktop/ui/components/panel.slint:219 apps/desktop/ui/reading.slint:95
 msgid "Shortcut {}"
 msgstr "Raccourci {}"
 
@@ -2857,7 +2857,7 @@ msgstr "Taille de police"
 #. on the font size button when the selected texts have different sizes
 #: apps/desktop/ui/components/tool-button.slint:311
 #: apps/desktop/ui/components/tool-button.slint:328
-#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:257
+#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:315
 #: apps/desktop/ui/right-panel.slint:196 apps/desktop/ui/right-panel.slint:206
 #: apps/desktop/ui/right-panel.slint:331 apps/desktop/ui/right-panel.slint:363
 #: apps/desktop/ui/tool-row.slint:444 apps/desktop/ui/tool-row.slint:460
@@ -3458,7 +3458,7 @@ msgid "Arrange"
 msgstr "Disposition"
 
 #. heading of the actions for a selected image
-#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:325
+#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:449
 #: crates/app-core/src/object_edit/select.rs:77
 msgid "Image"
 msgstr "Image"
@@ -3940,8 +3940,8 @@ msgstr "Aplatir…"
 msgid "Compare…"
 msgstr "Comparer…"
 
-#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:166
-#: apps/desktop/ui/reading.slint:209 apps/desktop/ui/reading.slint:242
+#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:184
+#: apps/desktop/ui/reading.slint:229 apps/desktop/ui/reading.slint:300
 #: apps/desktop/ui/shortcuts.slint:69 apps/desktop/ui/tool-row.slint:253
 msgid "Reading view"
 msgstr "Mode lecture"
@@ -3951,13 +3951,13 @@ msgstr "Mode lecture"
 msgid "Read aloud"
 msgstr "Lecture à voix haute"
 
-#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:175
+#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:193
 #: apps/desktop/ui/shortcuts.slint:70 apps/desktop/ui/tool-row.slint:278
 msgid "Present"
 msgstr "Présenter"
 
-#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:193
-#: apps/desktop/ui/reading.slint:446 apps/desktop/ui/reading.slint:455
+#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:211
+#: apps/desktop/ui/reading.slint:544 apps/desktop/ui/reading.slint:553
 #: apps/desktop/ui/tool-row.slint:300
 msgid "Bookmarks"
 msgstr "Signets"
@@ -4606,119 +4606,119 @@ msgstr "Plus rapide"
 msgid "Close read aloud"
 msgstr "Fermer la lecture à voix haute"
 
-#: apps/desktop/ui/reading.slint:128
+#: apps/desktop/ui/reading.slint:146
 msgid "Reading options"
 msgstr "Options de lecture"
 
-#: apps/desktop/ui/reading.slint:141
+#: apps/desktop/ui/reading.slint:159
 msgid "Layout"
 msgstr "Disposition"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Continuous"
 msgstr "Continu"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Single page"
 msgstr "Page unique"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Two pages"
 msgstr "Deux pages"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Book"
 msgstr "Livre"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Horizontal"
 msgstr "Horizontal"
 
-#: apps/desktop/ui/reading.slint:154 apps/mobile/ui/sheets.slint:274
+#: apps/desktop/ui/reading.slint:172 apps/mobile/ui/sheets.slint:274
 msgid "Page colours"
 msgstr "Couleurs des pages"
 
 #. page colours
-#: apps/desktop/ui/reading.slint:156 apps/mobile/ui/sheets.slint:287
+#: apps/desktop/ui/reading.slint:174 apps/mobile/ui/sheets.slint:287
 msgid "Normal"
 msgstr "Normal"
 
-#: apps/desktop/ui/reading.slint:156 apps/mobile/ui/sheets.slint:289
+#: apps/desktop/ui/reading.slint:174 apps/mobile/ui/sheets.slint:289
 msgid "Sepia"
 msgstr "Sépia"
 
-#: apps/desktop/ui/reading.slint:156 apps/desktop/ui/settings.slint:163
+#: apps/desktop/ui/reading.slint:174 apps/desktop/ui/settings.slint:163
 #: apps/mobile/ui/sheets.slint:290
 msgid "High contrast"
 msgstr "Contraste élevé"
 
-#: apps/desktop/ui/reading.slint:184 apps/desktop/ui/reading.slint:470
+#: apps/desktop/ui/reading.slint:202 apps/desktop/ui/reading.slint:568
 #: apps/desktop/ui/tool-row.slint:288
 msgid "Remove bookmark"
 msgstr "Supprimer le signet"
 
-#: apps/desktop/ui/reading.slint:184 apps/desktop/ui/reading.slint:470
+#: apps/desktop/ui/reading.slint:202 apps/desktop/ui/reading.slint:568
 #: apps/desktop/ui/tool-row.slint:288
 msgid "Bookmark this page"
 msgstr "Ajouter un signet à cette page"
 
-#: apps/desktop/ui/reading.slint:242
+#: apps/desktop/ui/reading.slint:300
 msgid "Reading view · preparing…"
 msgstr "Mode lecture · préparation…"
 
-#: apps/desktop/ui/reading.slint:251
+#: apps/desktop/ui/reading.slint:309
 msgid "Smaller text"
 msgstr "Texte plus petit"
 
-#: apps/desktop/ui/reading.slint:267
+#: apps/desktop/ui/reading.slint:325
 msgid "Larger text"
 msgstr "Texte plus grand"
 
-#: apps/desktop/ui/reading.slint:278
+#: apps/desktop/ui/reading.slint:336
 msgid "Show pages"
 msgstr "Afficher les pages"
 
-#: apps/desktop/ui/reading.slint:304
+#: apps/desktop/ui/reading.slint:374
 msgid "This document has no text to show. Scanned pages need text recognition first."
 msgstr "Ce document ne contient aucun texte à afficher. Les pages numérisées nécessitent d’abord une reconnaissance de texte."
 
-#: apps/desktop/ui/reading.slint:325 crates/app-core/src/utterances.rs:28
+#: apps/desktop/ui/reading.slint:449 crates/app-core/src/utterances.rs:28
 msgid "Figure: {}"
 msgstr "Figure : {}"
 
-#: apps/desktop/ui/reading.slint:326
+#: apps/desktop/ui/reading.slint:450
 msgid "Shown on page {}. Enter shows the page"
 msgstr "Affichée à la page {}. Entrée affiche la page"
 
-#: apps/desktop/ui/reading.slint:335
+#: apps/desktop/ui/reading.slint:459
 msgid "Image (shown on page {})"
 msgstr "Image (affichée à la page {})"
 
-#: apps/desktop/ui/reading.slint:382
+#: apps/desktop/ui/reading.slint:480
 msgid "Presentation"
 msgstr "Présentation"
 
-#: apps/desktop/ui/reading.slint:463
+#: apps/desktop/ui/reading.slint:561
 msgid "Close bookmarks"
 msgstr "Fermer les signets"
 
-#: apps/desktop/ui/reading.slint:477
+#: apps/desktop/ui/reading.slint:575
 msgid "No bookmarks yet. Press Ctrl+D to bookmark the page you are reading."
 msgstr "Aucun signet pour l’instant. Appuyez sur Ctrl+D pour ajouter un signet à la page que vous lisez."
 
-#: apps/desktop/ui/reading.slint:515
+#: apps/desktop/ui/reading.slint:613
 msgid "Bookmark name"
 msgstr "Nom du signet"
 
-#: apps/desktop/ui/reading.slint:534
+#: apps/desktop/ui/reading.slint:632
 msgid "Rename bookmark"
 msgstr "Renommer le signet"
 
-#: apps/desktop/ui/reading.slint:543
+#: apps/desktop/ui/reading.slint:641
 msgid "Delete bookmark"
 msgstr "Supprimer le signet"
 
-#: apps/desktop/ui/reading.slint:554
+#: apps/desktop/ui/reading.slint:652
 msgid "Add to document outline"
 msgstr "Ajouter à la table des matières du document"
 

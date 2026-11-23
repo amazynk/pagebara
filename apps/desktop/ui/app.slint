@@ -22,7 +22,7 @@ import { RedactState, HitRow } from "redaction.slint";
 import { OcrState } from "ocr.slint";
 import { OptimizeState, SizeRow } from "optimize.slint";
 import { PdfaState, AccessState, IssueRow, ElementRow } from "conformance.slint";
-import { ReadingState, ReflowRow, BookmarkRow, ReflowView, PresentationView, BookmarksPanel } from "reading.slint";
+import { ReadingState, ReflowRow, ReflowPage, BookmarkRow, ReflowView, PresentationView, BookmarksPanel } from "reading.slint";
 import { LibraryState, LibraryDoc, LibraryHit, LibraryView } from "library.slint";
 import { PrintState, PrintDialog } from "print-dialog.slint";
 import { ReadAloudState, ReadAloudBar } from "read-aloud.slint";
@@ -36,7 +36,7 @@ import { SpellState, SpellWord, SpellMenuState, SpellMenuLayer } from "spell-men
 
 export { Theme, ThemeColors, FocusNav, Keys, AppState, ViewState, Chrome, Mode, PageSlot, TileSlot, Thumb, GridRow, FindRow, OutlineRow, RecentFile, SidebarTab, OverlayItem, TabInfo, CommentRow, ReplyRow, SignatureRow, FieldRow, InfoRow, DialogKind, PageTextItem }
 export { SigningState, SigCard, ChangeRow, TrustRow, StoreId, RedactState, HitRow, OcrState }
-export { ReadingState, ReflowRow, BookmarkRow, LibraryState, LibraryDoc, LibraryHit, PrintState, ReadAloudState, EditState }
+export { ReadingState, ReflowRow, ReflowPage, BookmarkRow, LibraryState, LibraryDoc, LibraryHit, PrintState, ReadAloudState, EditState }
 export { OptimizeState, PdfaState, AccessState, SizeRow, IssueRow, ElementRow }
 export { ProState, CompareState, CompareRow, CompareMark, PrepState, PrepRow, SpellState, SpellWord, SpellMenuState }
 export { PaletteState, PaletteItem }
@@ -115,7 +115,10 @@ export component AppWindow inherits Window {
     }
     public function focus-view() {
         if root.keyboard-owner != KeyboardOwner.document { return; }
-        if AppState.mode == Mode.view {
+        if AppState.mode == Mode.view && ReadingState.reflow {
+            // The reading view covers the pages: the keys go to it.
+            ReadingState.reflow-focus += 1;
+        } else if AppState.mode == Mode.view {
             view.focus-view();
         } else {
             keys.focus();

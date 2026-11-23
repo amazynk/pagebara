@@ -463,7 +463,7 @@ msgstr "텍스트가 원래 끝나던 위치보다 {}포인트 아래까지 이�
 #. filter: show differences in the text
 #. kinds of form field
 #. what redaction searches for: plain text
-#: apps/desktop/src/app/forms.rs:85 apps/desktop/ui/app.slint:269
+#: apps/desktop/src/app/forms.rs:85 apps/desktop/ui/app.slint:272
 #: apps/desktop/ui/compare.slint:220 apps/desktop/ui/stamps.slint:185
 #: apps/desktop/ui/stamps.slint:700 apps/mobile/ui/prep-bar.slint:150
 #: crates/app-core/src/object_edit/select.rs:76
@@ -692,7 +692,7 @@ msgstr "라이브러리에 폴더 추가"
 msgid "locked"
 msgstr "잠김"
 
-#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1902
+#: apps/desktop/src/app/library.rs:208 apps/desktop/src/app/mod.rs:1907
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
@@ -766,12 +766,12 @@ msgstr "업데이트 확인…"
 msgid "Quit {}"
 msgstr "{} 종료"
 
-#: apps/desktop/src/app/mod.rs:1176 apps/mobile/src/platform/host.rs:73
+#: apps/desktop/src/app/mod.rs:1177 apps/mobile/src/platform/host.rs:73
 #: apps/mobile/ui/home.slint:38
 msgid "Open a PDF"
 msgstr "PDF 열기"
 
-#: apps/desktop/src/app/mod.rs:1177 apps/desktop/src/app/organize.rs:402
+#: apps/desktop/src/app/mod.rs:1178 apps/desktop/src/app/organize.rs:402
 #: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
@@ -780,28 +780,28 @@ msgid "PDF documents"
 msgstr "PDF 문서"
 
 #. verb, on a button that opens the document
-#: apps/desktop/src/app/mod.rs:1208 apps/desktop/src/app/preopen.rs:71
+#: apps/desktop/src/app/mod.rs:1209 apps/desktop/src/app/preopen.rs:71
 #: apps/desktop/ui/password-dialog.slint:138
 msgid "Opening…"
 msgstr "여는 중…"
 
-#: apps/desktop/src/app/mod.rs:1217
+#: apps/desktop/src/app/mod.rs:1218
 msgid "Could not fill in the form: {}."
 msgstr "양식을 채울 수 없습니다: {}."
 
-#: apps/desktop/src/app/mod.rs:1256
+#: apps/desktop/src/app/mod.rs:1257
 msgid "Could not open “{}”"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1257
+#: apps/desktop/src/app/mod.rs:1258
 msgid "Could not open the file"
 msgstr "파일을 열 수 없습니다"
 
-#: apps/desktop/src/app/mod.rs:1736
+#: apps/desktop/src/app/mod.rs:1741
 msgid "There is no page “{}”."
 msgstr "“{}” 페이지가 없습니다."
 
-#: apps/desktop/src/app/mod.rs:1896
+#: apps/desktop/src/app/mod.rs:1901
 msgid "{n} page · Unsaved changes"
 msgid_plural "{n} pages · Unsaved changes"
 msgstr[0] "{n}페이지 · 저장되지 않은 변경 사항"
@@ -1044,7 +1044,7 @@ msgstr "링크"
 msgid "Link to {}"
 msgstr "{}(으)로 연결되는 링크"
 
-#: apps/desktop/src/app/page_text.rs:202 apps/desktop/ui/reading.slint:314
+#: apps/desktop/src/app/page_text.rs:202 apps/desktop/ui/reading.slint:437
 msgid "Heading level {}"
 msgstr "제목 수준 {}"
 
@@ -1090,10 +1090,10 @@ msgstr "{}, 언어 {}"
 msgid "Recent files"
 msgstr "최근 파일"
 
-#: apps/desktop/src/app/panel.rs:54 apps/desktop/src/app/reading.rs:486
-#: apps/desktop/src/app/reading.rs:580 apps/desktop/ui/find-results.slint:88
+#: apps/desktop/src/app/panel.rs:54 apps/desktop/src/app/reading.rs:603
+#: apps/desktop/src/app/reading.rs:737 apps/desktop/ui/find-results.slint:88
 #: apps/desktop/ui/find-results.slint:120 apps/desktop/ui/organize.slint:17
-#: apps/desktop/ui/page-view.slint:363 apps/desktop/ui/reading.slint:493
+#: apps/desktop/ui/page-view.slint:363 apps/desktop/ui/reading.slint:591
 #: apps/desktop/ui/sidebar.slint:16 apps/desktop/ui/sidebar.slint:255
 #: apps/mobile/ui/page-view.slint:195 apps/mobile/ui/sheets.slint:44
 msgid "Page {}"
@@ -1740,7 +1740,7 @@ msgstr "읽기를 마쳤습니다."
 msgid "Reading aloud stopped: the speech engine is not working."
 msgstr "소리 내어 읽기가 중지되었습니다. 음성 엔진이 작동하지 않습니다."
 
-#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:692
+#: apps/desktop/src/app/read_aloud.rs:477 apps/desktop/src/app/reading.rs:842
 #: apps/desktop/ui/page-view.slint:472 apps/mobile/src/app/mod.rs:701
 msgid "Page {} of {}"
 msgstr "{}/{}페이지"
@@ -1749,28 +1749,28 @@ msgstr "{}/{}페이지"
 msgid "Page {} ({} of {})"
 msgstr ""
 
-#: apps/desktop/src/app/reading.rs:468
+#: apps/desktop/src/app/reading.rs:585
 msgid "Bookmarked page {}."
 msgstr "{}페이지에 책갈피를 추가했습니다."
 
-#: apps/desktop/src/app/reading.rs:470
+#: apps/desktop/src/app/reading.rs:587
 msgid "Removed the bookmark on page {}."
 msgstr "{}페이지의 책갈피를 제거했습니다."
 
-#: apps/desktop/src/app/reading.rs:485
+#: apps/desktop/src/app/reading.rs:602
 msgid "{} (page {})"
 msgstr "{}({}페이지)"
 
-#: apps/desktop/src/app/reading.rs:507
+#: apps/desktop/src/app/reading.rs:624
 msgid "Add bookmarks to outline"
 msgstr "개요에 책갈피 추가"
 
-#: apps/desktop/src/app/reading.rs:517
+#: apps/desktop/src/app/reading.rs:634
 msgid "Added {n} bookmark to the outline. Save to keep it in the file."
 msgid_plural "Added {n} bookmarks to the outline. Save to keep them in the file."
 msgstr[0] "개요에 책갈피 {n}개를 추가했습니다. 파일에 유지하려면 저장하세요."
 
-#: apps/desktop/src/app/reading.rs:524
+#: apps/desktop/src/app/reading.rs:641
 msgid "Could not change the outline"
 msgstr "개요를 변경할 수 없습니다"
 
@@ -2605,18 +2605,18 @@ msgstr "서드 파티 고지"
 
 #. panel headings named after the tools, as on the toolbar
 #. a kind of difference between two documents: document properties
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/tool-row.slint:754
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/tool-row.slint:754
 #: apps/mobile/ui/prep-bar.slint:101 crates/compare/src/lib.rs:123
 msgid "Properties"
 msgstr "속성"
 
 #. filter: show differences in document properties
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/compare.slint:246
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/compare.slint:246
 msgid "Document"
 msgstr "문서"
 
 #. noun, a kind of annotation
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/page-view.slint:635
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/page-view.slint:635
 #: apps/desktop/ui/palette.slint:52 apps/desktop/ui/right-panel.slint:277
 #: apps/desktop/ui/tool-row.slint:326 apps/desktop/ui/tool-row.slint:343
 #: apps/mobile/ui/header.slint:26 apps/mobile/ui/main.slint:268
@@ -2624,36 +2624,36 @@ msgstr "문서"
 msgid "Highlight"
 msgstr "강조 표시"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:53
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:53
 #: apps/desktop/ui/tool-row.slint:364 apps/mobile/ui/header.slint:35
 msgid "Draw"
 msgstr "그리기"
 
 #. verb, the tool for placing a handwritten signature
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:57
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
 #: apps/desktop/ui/tool-row.slint:486 apps/mobile/ui/header.slint:44
 #: crates/integration/src/catalog.rs:123
 msgid "Sign"
 msgstr "서명"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:56
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
 #: apps/desktop/ui/tool-row.slint:474
 msgid "Fill forms"
 msgstr "양식 채우기"
 
 #. the tool that marks what to remove for good
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:63
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:63
 #: apps/desktop/ui/tool-row.slint:559
 msgid "Redact"
 msgstr "교정"
 
 #. changing the text and images of the pages,
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/top-bar.slint:180
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/top-bar.slint:180
 #: apps/mobile/ui/header.slint:62
 msgid "Edit"
 msgstr "편집"
 
-#: apps/desktop/ui/app.slint:269 apps/desktop/ui/palette.slint:58
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:58
 #: apps/desktop/ui/right-panel.slint:422 apps/desktop/ui/tool-row.slint:500
 #: apps/mobile/ui/prep-bar.slint:49 apps/mobile/ui/sheets.slint:718
 msgid "Prepare form"
@@ -2668,7 +2668,7 @@ msgstr "모양"
 msgid "Light"
 msgstr "밝게"
 
-#: apps/desktop/ui/appearance-picker.slint:95 apps/desktop/ui/reading.slint:156
+#: apps/desktop/ui/appearance-picker.slint:95 apps/desktop/ui/reading.slint:174
 #: apps/mobile/ui/sheets.slint:288
 msgid "Dark"
 msgstr "어둡게"
@@ -2787,7 +2787,7 @@ msgstr "색상"
 msgid "Close panel"
 msgstr "패널 닫기"
 
-#: apps/desktop/ui/components/panel.slint:219 apps/desktop/ui/reading.slint:77
+#: apps/desktop/ui/components/panel.slint:219 apps/desktop/ui/reading.slint:95
 msgid "Shortcut {}"
 msgstr "단축키 {}"
 
@@ -2806,7 +2806,7 @@ msgstr "글꼴 크기"
 #. on the font size button when the selected texts have different sizes
 #: apps/desktop/ui/components/tool-button.slint:311
 #: apps/desktop/ui/components/tool-button.slint:328
-#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:257
+#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:315
 #: apps/desktop/ui/right-panel.slint:196 apps/desktop/ui/right-panel.slint:206
 #: apps/desktop/ui/right-panel.slint:331 apps/desktop/ui/right-panel.slint:363
 #: apps/desktop/ui/tool-row.slint:444 apps/desktop/ui/tool-row.slint:460
@@ -3406,7 +3406,7 @@ msgid "Arrange"
 msgstr "순서"
 
 #. heading of the actions for a selected image
-#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:325
+#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:449
 #: crates/app-core/src/object_edit/select.rs:77
 msgid "Image"
 msgstr "이미지"
@@ -3888,8 +3888,8 @@ msgstr "평탄화…"
 msgid "Compare…"
 msgstr "비교…"
 
-#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:166
-#: apps/desktop/ui/reading.slint:209 apps/desktop/ui/reading.slint:242
+#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:184
+#: apps/desktop/ui/reading.slint:229 apps/desktop/ui/reading.slint:300
 #: apps/desktop/ui/shortcuts.slint:69 apps/desktop/ui/tool-row.slint:253
 msgid "Reading view"
 msgstr "읽기 보기"
@@ -3899,13 +3899,13 @@ msgstr "읽기 보기"
 msgid "Read aloud"
 msgstr "소리 내어 읽기"
 
-#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:175
+#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:193
 #: apps/desktop/ui/shortcuts.slint:70 apps/desktop/ui/tool-row.slint:278
 msgid "Present"
 msgstr "프레젠테이션"
 
-#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:193
-#: apps/desktop/ui/reading.slint:446 apps/desktop/ui/reading.slint:455
+#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:211
+#: apps/desktop/ui/reading.slint:544 apps/desktop/ui/reading.slint:553
 #: apps/desktop/ui/tool-row.slint:300
 msgid "Bookmarks"
 msgstr "책갈피"
@@ -4554,119 +4554,119 @@ msgstr "빠르게"
 msgid "Close read aloud"
 msgstr "소리 내어 읽기 닫기"
 
-#: apps/desktop/ui/reading.slint:128
+#: apps/desktop/ui/reading.slint:146
 msgid "Reading options"
 msgstr "읽기 옵션"
 
-#: apps/desktop/ui/reading.slint:141
+#: apps/desktop/ui/reading.slint:159
 msgid "Layout"
 msgstr "레이아웃"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Continuous"
 msgstr "연속"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Single page"
 msgstr "한 페이지"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Two pages"
 msgstr "두 페이지"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Book"
 msgstr "책"
 
-#: apps/desktop/ui/reading.slint:143
+#: apps/desktop/ui/reading.slint:161
 msgid "Horizontal"
 msgstr "가로"
 
-#: apps/desktop/ui/reading.slint:154 apps/mobile/ui/sheets.slint:274
+#: apps/desktop/ui/reading.slint:172 apps/mobile/ui/sheets.slint:274
 msgid "Page colours"
 msgstr "페이지 색상"
 
 #. page colours
-#: apps/desktop/ui/reading.slint:156 apps/mobile/ui/sheets.slint:287
+#: apps/desktop/ui/reading.slint:174 apps/mobile/ui/sheets.slint:287
 msgid "Normal"
 msgstr "보통"
 
-#: apps/desktop/ui/reading.slint:156 apps/mobile/ui/sheets.slint:289
+#: apps/desktop/ui/reading.slint:174 apps/mobile/ui/sheets.slint:289
 msgid "Sepia"
 msgstr "세피아"
 
-#: apps/desktop/ui/reading.slint:156 apps/desktop/ui/settings.slint:163
+#: apps/desktop/ui/reading.slint:174 apps/desktop/ui/settings.slint:163
 #: apps/mobile/ui/sheets.slint:290
 msgid "High contrast"
 msgstr "고대비"
 
-#: apps/desktop/ui/reading.slint:184 apps/desktop/ui/reading.slint:470
+#: apps/desktop/ui/reading.slint:202 apps/desktop/ui/reading.slint:568
 #: apps/desktop/ui/tool-row.slint:288
 msgid "Remove bookmark"
 msgstr "책갈피 제거"
 
-#: apps/desktop/ui/reading.slint:184 apps/desktop/ui/reading.slint:470
+#: apps/desktop/ui/reading.slint:202 apps/desktop/ui/reading.slint:568
 #: apps/desktop/ui/tool-row.slint:288
 msgid "Bookmark this page"
 msgstr "이 페이지에 책갈피 추가"
 
-#: apps/desktop/ui/reading.slint:242
+#: apps/desktop/ui/reading.slint:300
 msgid "Reading view · preparing…"
 msgstr "읽기 보기 · 준비하는 중…"
 
-#: apps/desktop/ui/reading.slint:251
+#: apps/desktop/ui/reading.slint:309
 msgid "Smaller text"
 msgstr "텍스트 작게"
 
-#: apps/desktop/ui/reading.slint:267
+#: apps/desktop/ui/reading.slint:325
 msgid "Larger text"
 msgstr "텍스트 크게"
 
-#: apps/desktop/ui/reading.slint:278
+#: apps/desktop/ui/reading.slint:336
 msgid "Show pages"
 msgstr "페이지 표시"
 
-#: apps/desktop/ui/reading.slint:304
+#: apps/desktop/ui/reading.slint:374
 msgid "This document has no text to show. Scanned pages need text recognition first."
 msgstr "이 문서에는 표시할 텍스트가 없습니다. 스캔한 페이지는 먼저 텍스트 인식이 필요합니다."
 
-#: apps/desktop/ui/reading.slint:325 crates/app-core/src/utterances.rs:28
+#: apps/desktop/ui/reading.slint:449 crates/app-core/src/utterances.rs:28
 msgid "Figure: {}"
 msgstr "그림: {}"
 
-#: apps/desktop/ui/reading.slint:326
+#: apps/desktop/ui/reading.slint:450
 msgid "Shown on page {}. Enter shows the page"
 msgstr "{}페이지에 표시됨. Enter 키를 누르면 페이지를 표시합니다"
 
-#: apps/desktop/ui/reading.slint:335
+#: apps/desktop/ui/reading.slint:459
 msgid "Image (shown on page {})"
 msgstr "이미지({}페이지에 표시됨)"
 
-#: apps/desktop/ui/reading.slint:382
+#: apps/desktop/ui/reading.slint:480
 msgid "Presentation"
 msgstr "프레젠테이션"
 
-#: apps/desktop/ui/reading.slint:463
+#: apps/desktop/ui/reading.slint:561
 msgid "Close bookmarks"
 msgstr "책갈피 닫기"
 
-#: apps/desktop/ui/reading.slint:477
+#: apps/desktop/ui/reading.slint:575
 msgid "No bookmarks yet. Press Ctrl+D to bookmark the page you are reading."
 msgstr "아직 책갈피가 없습니다. 읽고 있는 페이지에 책갈피를 추가하려면 Ctrl+D를 누르세요."
 
-#: apps/desktop/ui/reading.slint:515
+#: apps/desktop/ui/reading.slint:613
 msgid "Bookmark name"
 msgstr "책갈피 이름"
 
-#: apps/desktop/ui/reading.slint:534
+#: apps/desktop/ui/reading.slint:632
 msgid "Rename bookmark"
 msgstr "책갈피 이름 바꾸기"
 
-#: apps/desktop/ui/reading.slint:543
+#: apps/desktop/ui/reading.slint:641
 msgid "Delete bookmark"
 msgstr "책갈피 삭제"
 
-#: apps/desktop/ui/reading.slint:554
+#: apps/desktop/ui/reading.slint:652
 msgid "Add to document outline"
 msgstr "문서 개요에 추가"
 

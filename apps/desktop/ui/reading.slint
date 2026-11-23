@@ -3,13 +3,22 @@ import { AppState } from "state.slint";
 import { Button, IconButton, Pressable, Keys } from "components/button.slint";
 import { MenuCard, Divider } from "components/panel.slint";
 import { TextField } from "components/text-field.slint";
+import { ScrollView } from "std-widgets.slint";
 
 // One block of the reading view. kind: 0 paragraph, 1-3 heading level, 4 image
-// placeholder, 5 the start of a page.
+// placeholder.
 export struct ReflowRow {
     page: int,
     kind: int,
     text: string,
+}
+
+// The blocks of one page of the reading view (pages without text have none). `page` is
+// 1-based.
+export struct ReflowPage {
+    page: int,
+    label: string,
+    blocks: [ReflowRow],
 }
 
 export struct BookmarkRow {
@@ -30,8 +39,14 @@ export global ReadingState {
 
     in property <bool> reflow;
     in property <bool> reflow-busy;
-    in property <[ReflowRow]> reflow-rows;
+    in property <[ReflowPage]> reflow-pages;
     in property <float> reflow-size: 17;
+    // The entry of `reflow-pages` to scroll to, asked for again each time `reflow-serial`
+    // changes.
+    in property <int> reflow-target;
+    in property <int> reflow-serial;
+    // Bumped to give the reading view the keyboard focus.
+    in-out property <int> reflow-focus;
 
     in property <bool> presenting;
     in property <image> present-image;
@@ -47,6 +62,9 @@ export global ReadingState {
     callback toggle-reflow();
     callback reflow-zoom(steps: int);
     callback reflow-open(page: int);
+    // The start of entry `index` scrolled past the top of the reading view (`reached`), or
+    // back below it.
+    callback reflow-reached(index: int, reached: bool);
     callback present();
     callback present-step(forward: bool);
     callback present-resized(width: float, height: float);
@@ -202,7 +220,9 @@ export component ViewMenu inherits Rectangle {
     }
 }
 
-// The reading view: the text re-flowed into one comfortable column.
+// The reading view: the text re-flowed into one comfortable column. It follows the page
+// number (the tool row, the outline, links, Left and Right), and scrolling it changes the
+// current page.
 export component ReflowView inherits Rectangle {
     background: ReadingState.paper;
     accessible-role: main;
@@ -210,18 +230,56 @@ export component ReflowView inherits Rectangle {
     forward-focus: keys;
 
     property <length> column: min(root.width - 48px, ReadingState.reflow-size * 1px * 38);
+    // The page whose start is at most this far below the top of the view is the one being
+    // read; going to a page puts its start just above this line.
+    property <length> top-line: 16px;
+    // Scrolled to the end: the last page is the one being read, however short.
+    property <bool> at-end: sv.content-height > sv.visible-height
+        && sv.content-y <= sv.visible-height - sv.content-height + 1px;
+    // Set when the page asked for is made; a moment later, laid out, it is scrolled to.
+    property <bool> settling;
+    property <int> settled;
+
+    function scroll-by(dy: length) {
+        sv.content-y = min(0px, max(sv.visible-height - sv.content-height, sv.content-y - dy));
+    }
+    function scroll-to(y: length) {
+        sv.content-y = min(0px, max(sv.visible-height - sv.content-height, root.top-line - 4px - y));
+    }
+
+    property <int> focus-serial: ReadingState.reflow-focus;
+    changed focus-serial => {
+        keys.focus();
+    }
+
+    Timer {
+        interval: 10ms;
+        running: root.settling;
+        triggered => {
+            root.settling = false;
+            root.settled += 1;
+        }
+    }
 
     keys := FocusScope {
         key-pressed(e) => {
             if AppState.shortcut(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta) {
                 return accept;
             }
-            if e.text == Key.DownArrow || e.text == Key.PageDown || e.text == " " {
-                flick.content-y = max(flick.height - flick.content-height, flick.content-y - (e.text == Key.DownArrow ? 48px : flick.height - 48px));
+            if e.text == Key.DownArrow || e.text == Key.PageDown || (e.text == " " && !e.modifiers.shift) {
+                root.scroll-by(e.text == Key.DownArrow ? 48px : sv.visible-height - 48px);
                 return accept;
             }
-            if e.text == Key.UpArrow || e.text == Key.PageUp {
-                flick.content-y = min(0px, flick.content-y + (e.text == Key.UpArrow ? 48px : flick.height - 48px));
+            if e.text == Key.UpArrow || e.text == Key.PageUp || e.text == " " {
+                root.scroll-by(e.text == Key.UpArrow ? -48px : 48px - sv.visible-height);
+                return accept;
+            }
+            if e.text == Key.Home {
+                sv.content-y = 0px;
+                return accept;
+            }
+            if e.text == Key.End {
+                sv.content-y = min(0px, sv.visible-height - sv.content-height);
                 return accept;
             }
             reject
@@ -288,59 +346,59 @@ export component ReflowView inherits Rectangle {
                 }
             }
 
-            flick := Flickable {
+            sv := ScrollView {
                 vertical-stretch: 1;
+                content-width: self.visible-width;
                 content-height: col.preferred-height;
-                content-width: self.width;
+
+                // A click on the text gives the keys back to the reading view (after the
+                // text size buttons, say).
+                TouchArea {
+                    width: sv.content-width;
+                    height: sv.content-height;
+                    pointer-event(e) => {
+                        if e.kind == PointerEventKind.down {
+                            keys.focus();
+                        }
+                    }
+                }
 
                 col := VerticalLayout {
-                    x: (flick.width - root.column) / 2;
+                    x: (sv.visible-width - root.column) / 2;
                     width: root.column;
                     padding-top: 28px;
                     padding-bottom: 64px;
                     spacing: ReadingState.reflow-size * 0.7px;
 
-                    if ReadingState.reflow-rows.length == 0 && !ReadingState.reflow-busy: Text {
+                    if ReadingState.reflow-pages.length == 0 && !ReadingState.reflow-busy: Text {
                         text: @tr("This document has no text to show. Scanned pages need text recognition first.");
                         color: ReadingState.ink;
                         font-size: ReadingState.reflow-size * 1px;
                         wrap: word-wrap;
+                        width: root.column;
                     }
 
-                    for r in ReadingState.reflow-rows: VerticalLayout {
-                        if r.kind <= 3: Text {
-                            accessible-role: text;
-                            accessible-label: r.text;
-                            accessible-description: r.kind == 0 ? "" : @tr("Heading level {}", r.kind);
-                            text: r.text;
-                            color: ReadingState.ink;
-                            wrap: word-wrap;
-                            font-size: ReadingState.reflow-size * (r.kind == 1 ? 1.6 : r.kind == 2 ? 1.35 : r.kind == 3 ? 1.15 : 1) * 1px;
-                            font-weight: r.kind == 0 ? 400 : 650;
-                            // Body text spaced for reading; headings a little tighter.
-                            line-height-factor: r.kind == 0 ? 1.5 : 1.2;
+                    for p[i] in ReadingState.reflow-pages: VerticalLayout {
+                        spacing: ReadingState.reflow-size * 0.7px;
+
+                        property <bool> reached: self.y + sv.content-y <= root.top-line || root.at-end;
+                        changed reached => {
+                            ReadingState.reflow-reached(i, self.reached);
                         }
-                        if r.kind == 4: Pressable {
-                            height: max(ReadingState.reflow-size * 3.2px, alt.preferred-height + 12px);
-                            label: r.text != "" ? @tr("Figure: {}", r.text) : @tr("Image");
-                            description: @tr("Shown on page {}. Enter shows the page", r.page);
-                            clicked => {
-                                ReadingState.reflow-open(r.page - 1);
-                            }
-                            border-radius: Theme.radius-small;
-                            border-width: 1px;
-                            border-color: ReadingState.ink.with-alpha(0.25);
-                            alt := Text {
-                                width: parent.width - 24px;
-                                text: (r.text != "" ? r.text + " · " : "") + @tr("Image (shown on page {})", r.page);
-                                color: ReadingState.ink.with-alpha(0.75);
-                                font-size: ReadingState.reflow-size * 0.8px;
-                                wrap: word-wrap;
-                                horizontal-alignment: center;
-                                accessible-role: none;
+                        // Changes when this page is asked for, and once it is laid out.
+                        property <int> request: i == ReadingState.reflow-target ? ReadingState.reflow-serial + root.settled : -1;
+                        changed request => {
+                            if self.request >= 0 {
+                                root.scroll-to(self.y);
                             }
                         }
-                        if r.kind == 5: HorizontalLayout {
+                        init => {
+                            if i == ReadingState.reflow-target {
+                                root.settling = true;
+                            }
+                        }
+
+                        HorizontalLayout {
                             spacing: 8px;
                             Rectangle {
                                 height: 1px;
@@ -349,14 +407,14 @@ export component ReflowView inherits Rectangle {
                                 background: ReadingState.ink.with-alpha(0.15);
                             }
                             Text {
-                                text: r.text;
+                                text: p.label;
                                 color: ReadingState.ink.with-alpha(0.5);
                                 font-size: ReadingState.reflow-size * 0.7px;
                                 vertical-alignment: center;
                                 TouchArea {
                                     mouse-cursor: pointer;
                                     clicked => {
-                                        ReadingState.reflow-open(r.page - 1);
+                                        ReadingState.reflow-open(p.page - 1);
                                     }
                                 }
                             }
@@ -365,6 +423,46 @@ export component ReflowView inherits Rectangle {
                                 y: parent.height / 2;
                                 horizontal-stretch: 1;
                                 background: ReadingState.ink.with-alpha(0.15);
+                            }
+                        }
+
+                        for r in p.blocks: VerticalLayout {
+                            if r.kind <= 3: Text {
+                                // A fixed width, so that the wrapped height counts in the
+                                // scrolled height (else each paragraph counts as one line,
+                                // and the end of the text cannot be scrolled to).
+                                width: root.column;
+                                accessible-role: text;
+                                accessible-label: r.text;
+                                accessible-description: r.kind == 0 ? "" : @tr("Heading level {}", r.kind);
+                                text: r.text;
+                                color: ReadingState.ink;
+                                wrap: word-wrap;
+                                font-size: ReadingState.reflow-size * (r.kind == 1 ? 1.6 : r.kind == 2 ? 1.35 : r.kind == 3 ? 1.15 : 1) * 1px;
+                                font-weight: r.kind == 0 ? 400 : 650;
+                                // Body text spaced for reading; headings a little tighter.
+                                line-height-factor: r.kind == 0 ? 1.5 : 1.2;
+                            }
+                            if r.kind == 4: Pressable {
+                                width: root.column;
+                                height: max(ReadingState.reflow-size * 3.2px, alt.preferred-height + 12px);
+                                label: r.text != "" ? @tr("Figure: {}", r.text) : @tr("Image");
+                                description: @tr("Shown on page {}. Enter shows the page", r.page);
+                                clicked => {
+                                    ReadingState.reflow-open(r.page - 1);
+                                }
+                                border-radius: Theme.radius-small;
+                                border-width: 1px;
+                                border-color: ReadingState.ink.with-alpha(0.25);
+                                alt := Text {
+                                    width: root.column - 24px;
+                                    text: (r.text != "" ? r.text + " · " : "") + @tr("Image (shown on page {})", r.page);
+                                    color: ReadingState.ink.with-alpha(0.75);
+                                    font-size: ReadingState.reflow-size * 0.8px;
+                                    wrap: word-wrap;
+                                    horizontal-alignment: center;
+                                    accessible-role: none;
+                                }
                             }
                         }
                     }
