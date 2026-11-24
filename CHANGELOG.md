@@ -6,6 +6,8 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-24
+
 ### Added
 
 - **More from Amazynk.** Settings › About lists Zynk (sends files straight between your
@@ -146,7 +148,8 @@ The first public release.
   page colours and live text. It is built in CI and is not packaged for release yet.
 - **Packages.** AppImage, .deb, MSI and DMG.
 
-[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/amazynk/pagebara/releases/tag/v0.2.2
 [0.2.1]: https://github.com/amazynk/pagebara/releases/tag/v0.2.1
 [0.2.0]: https://github.com/amazynk/pagebara/releases/tag/v0.2.0
 [0.1.0]: https://github.com/amazynk/pagebara/releases/tag/v0.1.0
