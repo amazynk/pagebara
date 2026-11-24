@@ -668,7 +668,7 @@ msgstr ""
 msgid "locked"
 msgstr ""
 
-#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1912 apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1913 apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
 msgstr[0] ""
@@ -797,36 +797,36 @@ msgstr ""
 msgid "Help"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1182 apps/mobile/src/platform/host.rs:73 apps/mobile/ui/home.slint:38
+#: apps/desktop/src/app/mod.rs:1183 apps/mobile/src/platform/host.rs:73 apps/mobile/ui/home.slint:38
 msgid "Open a PDF"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1183 apps/desktop/src/app/organize.rs:402 apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60 apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411 apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474 apps/mobile/src/platform/host.rs:73
+#: apps/desktop/src/app/mod.rs:1184 apps/desktop/src/app/organize.rs:402 apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60 apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411 apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474 apps/mobile/src/platform/host.rs:73
 msgid "PDF documents"
 msgstr ""
 
 #. verb, on a button that opens the document
-#: apps/desktop/src/app/mod.rs:1214 apps/desktop/src/app/preopen.rs:71 apps/desktop/ui/password-dialog.slint:138
+#: apps/desktop/src/app/mod.rs:1215 apps/desktop/src/app/preopen.rs:71 apps/desktop/ui/password-dialog.slint:138
 msgid "Opening…"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1223
+#: apps/desktop/src/app/mod.rs:1224
 msgid "Could not fill in the form: {}."
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1262
+#: apps/desktop/src/app/mod.rs:1263
 msgid "Could not open “{}”"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1263
+#: apps/desktop/src/app/mod.rs:1264
 msgid "Could not open the file"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1746
+#: apps/desktop/src/app/mod.rs:1747
 msgid "There is no page “{}”."
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1906
+#: apps/desktop/src/app/mod.rs:1907
 msgid "{n} page · Unsaved changes"
 msgid_plural "{n} pages · Unsaved changes"
 msgstr[0] ""
