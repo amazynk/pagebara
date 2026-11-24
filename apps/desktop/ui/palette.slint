@@ -29,9 +29,6 @@ export struct PaletteItem {
 export global PaletteState {
     // The enabled items that match the words of `query`, the recent files first (Rust).
     pure callback filter(items: [PaletteItem], query: string) -> [PaletteItem];
-}
-
-export component AllTools inherits Rectangle {
     property <bool> has-doc: AppState.mode != Mode.welcome;
     property <bool> view: AppState.mode == Mode.view;
     // TRANSLATORS: headings of the groups of commands in the All tools list
@@ -40,7 +37,9 @@ export component AllTools inherits Rectangle {
     property <string> g-protect: @tr("Protect and sign");
     property <string> g-output: @tr("Output tools");
     property <string> g-view: @tr("View");
-    property <[PaletteItem]> items: [
+    // Every command of the app, in the list's order. The macOS menu bar is built from the
+    // same list (Rust), so a command is added here once.
+    out property <[PaletteItem]> items: [
         { id: "open", title: @tr("Open…"), group: g-file, shortcut: "Ctrl+O", icon: @image-url("icons/folder.svg"), enabled: true },
         { id: "library", title: @tr("Library"), group: g-file, shortcut: "Ctrl+L", icon: @image-url("icons/library.svg"), enabled: true },
         { id: "save", title: @tr("Save"), group: g-file, shortcut: "Ctrl+S", icon: @image-url("icons/save.svg"), enabled: has-doc && !AppState.busy },
@@ -84,30 +83,8 @@ export component AllTools inherits Rectangle {
         { id: "discord", title: @tr("Join the community on Discord"), group: AppState.app-name, icon: @image-url("icons/chat.svg"), enabled: AppState.discord-available },
         { id: "about", title: @tr("About {}", AppState.app-name), group: AppState.app-name, icon: @image-url("icons/info.svg"), enabled: true },
     ];
-    property <[PaletteItem]> shown: PaletteState.filter(root.items, input.text);
-    property <int> cursor;
-    property <length> row-h: Theme.row-height + 2px;
-    property <length> head-h: 28px;
-
-    function close() {
-        Chrome.palette-open = false;
-    }
-    function move(to: int) {
-        if shown.length == 0 {
-            return;
-        }
-        cursor = max(0, min(shown.length - 1, to));
-        // Keeps the chosen row, and the heading over it, in view.
-        let bottom = cursor * row-h + shown[cursor].heads * head-h + row-h;
-        let top = bottom - row-h - (shown[cursor].heading ? head-h : 0px);
-        if top < -list.content-y {
-            list.content-y = -top;
-        } else if bottom > -list.content-y + list.height {
-            list.content-y = list.height - bottom;
-        }
-    }
-    function run(id: string) {
-        close();
+    // Runs the command `id`.
+    public function run(id: string) {
         if id == "open" {
             AppState.open-file();
         } else if id == "library" {
@@ -203,6 +180,35 @@ export component AllTools inherits Rectangle {
         } else if id == "recent-3" {
             AppState.open-recent(3);
         }
+    }
+}
+
+export component AllTools inherits Rectangle {
+    property <[PaletteItem]> shown: PaletteState.filter(PaletteState.items, input.text);
+    property <int> cursor;
+    property <length> row-h: Theme.row-height + 2px;
+    property <length> head-h: 28px;
+
+    function close() {
+        Chrome.palette-open = false;
+    }
+    function move(to: int) {
+        if shown.length == 0 {
+            return;
+        }
+        cursor = max(0, min(shown.length - 1, to));
+        // Keeps the chosen row, and the heading over it, in view.
+        let bottom = cursor * row-h + shown[cursor].heads * head-h + row-h;
+        let top = bottom - row-h - (shown[cursor].heading ? head-h : 0px);
+        if top < -list.content-y {
+            list.content-y = -top;
+        } else if bottom > -list.content-y + list.height {
+            list.content-y = list.height - bottom;
+        }
+    }
+    function run(id: string) {
+        close();
+        PaletteState.run(id);
     }
 
     background: Theme.scrim.with-alpha(0.25);

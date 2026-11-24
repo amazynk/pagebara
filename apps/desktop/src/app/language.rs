@@ -20,6 +20,8 @@ pub fn wire(app: &Rc<App>, ui: &AppWindow) {
             apply(s, ui);
             app.save_settings(s);
             // Texts made in Rust (window title, panels, lists) are made again.
+            #[cfg(target_os = "macos")]
+            super::macos_menu::retitle();
             app.show_active(s, ui);
             super::show_recent(s, ui);
         })

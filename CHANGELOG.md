@@ -6,6 +6,23 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **More from Amazynk.** Settings › About lists Zynk (sends files straight between your
+  devices), Specular (a viewer for photos, RAW, video and audio) and, on Linux, Dozed
+  (freezes background apps there), each with its icon, what it runs on, and a link that
+  opens the app's page in your browser, where its downloads are. Pagebara downloads nothing
+  itself.
+- **A menu bar on macOS.** After the Pagebara menu the bar now has File, Tools, Protect and
+  sign, Output tools and View, with the commands of the All tools list under the same
+  names, then Window and Help. A command that cannot run now is greyed, as in the list.
+  Until now the bar had only the Pagebara menu.
+
+### Changed
+
+- **Settings › About is tidier.** The links to amazynk.com and Discord are in the header
+  under the version, in place of a card of their own.
+
 ### Fixed
 
 - A damaged file whose page tree leads to a stream instead of a page no longer counts the

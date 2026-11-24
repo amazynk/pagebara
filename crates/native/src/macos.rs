@@ -3,6 +3,7 @@
 #![allow(unsafe_code)]
 
 pub(crate) mod app_menu;
+pub(crate) mod menu_bar;
 
 use std::cell::RefCell;
 use std::ffi::CStr;

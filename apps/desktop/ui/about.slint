@@ -9,32 +9,71 @@ import { Divider } from "components/panel.slint";
 import { RowLayout } from "components/row.slint";
 import { PreferenceCard } from "settings-controls.slint";
 
-component ResourceLink inherits Pressable {
+// A link in the header: a small icon and a name in the accent colour. Its `description` says
+// what is behind it, for assistive technology.
+component HeaderLink inherits Pressable {
     in property <image> icon;
-    in property <string> title: root.label;
+    in property <string> text: root.label;
+    arrows: false;
+    height: Theme.control-height;
+    width: row.preferred-width;
+    border-radius: Theme.radius-small;
+    background: self.pressed ? Theme.pressed : self.has-hover ? Theme.hover : transparent;
+    row := RowLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 6px;
+        Image {
+            source: root.icon;
+            colorize: Theme.accent-fg;
+            width: 15px; height: 15px;
+            cross-axis-self-alignment: center;
+            accessible-role: none;
+        }
+        Text {
+            text: root.text;
+            color: Theme.accent-fg;
+            font-size: Theme.font-body;
+            font-weight: 500;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+}
+
+// Another Amazynk app: its own icon in its own colours, what it runs on, and what it is for.
+// The whole row opens the app's page in the browser.
+component AppRow inherits Pressable {
+    in property <image> icon;
+    in property <string> name;
+    // Names of systems, the same in every language.
+    in property <string> platforms;
     min-height: max(52px, line.preferred-height);
     border-radius: Theme.radius-small;
     background: self.pressed ? Theme.pressed : self.has-hover ? Theme.hover : transparent;
     line := RowLayout {
         spacing: 12px;
         padding: 3px;
-        Rectangle {
+        Image {
+            source: root.icon;
             width: 34px; height: 34px;
-            border-radius: Theme.radius;
-            background: Theme.accent-soft;
             cross-axis-self-alignment: center;
-            Image {
-                source: root.icon;
-                colorize: Theme.accent-fg;
-                width: 18px; height: 18px;
-                accessible-role: none;
-            }
+            accessible-role: none;
         }
         VerticalLayout {
             horizontal-stretch: 1;
             alignment: center;
             spacing: 3px;
-            Body { text: root.title; color: Theme.text; font-weight: 600; accessible-role: none; }
+            RowLayout {
+                spacing: 8px;
+                Body { text: root.name; color: Theme.text; font-weight: 600; accessible-role: none; }
+                Hint {
+                    text: root.platforms;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                    accessible-role: none;
+                }
+            }
             Hint { text: root.description; accessible-role: none; }
         }
         Image {
@@ -68,7 +107,7 @@ export component AboutPage inherits VerticalLayout {
             spacing: 12px;
             Image {
                 source: @image-url("../../../packaging/icons/app.svg");
-                width: 78px; height: 78px;
+                width: 64px; height: 64px;
                 cross-axis-self-alignment: center;
                 accessible-role: none;
             }
@@ -76,29 +115,67 @@ export component AboutPage inherits VerticalLayout {
                 horizontal-stretch: 1;
                 alignment: center;
                 spacing: 3px;
-                Heading { text: AppState.app-name; font-size: 28px * Theme.text-scale; }
+                Heading { text: AppState.app-name; font-size: 24px * Theme.text-scale; }
                 Hint { text: @tr("Version {}", AppState.version); accessible-role: text; }
                 Body {
                     text: @tr("A PDF viewer and editor for everyone. Your documents stay on your device.");
                     accessible-role: text;
                 }
+                // Starts where the text above does: the links' own padding is taken back.
+                RowLayout {
+                    alignment: start;
+                    spacing: 4px;
+                    padding-top: 3px;
+                    padding-left: Theme.rtl ? 0px : -8px;
+                    padding-right: Theme.rtl ? -8px : 0px;
+                    HeaderLink {
+                        label: "amazynk.com";
+                        description: @tr("Everything Amazynk makes, in one place.");
+                        icon: @image-url("icons/link.svg");
+                        clicked => { AppState.open-website(); }
+                    }
+                    if AppState.discord-available: HeaderLink {
+                        text: "Discord";
+                        label: @tr("Join the community on Discord");
+                        description: @tr("Ask questions, report bugs and share ideas with the Amazynk community.");
+                        icon: @image-url("icons/discord.svg");
+                        clicked => { AppState.open-discord(); }
+                    }
+                }
             }
         }
     }
-    PreferenceCard {
-        ResourceLink {
-            label: "amazynk.com";
-            description: @tr("Explore more software from Amazynk, including Specular and Dozed.");
-            icon: @image-url("icons/link.svg");
-            clicked => { AppState.open-website(); }
-        }
-        if AppState.discord-available: Divider {}
-        if AppState.discord-available: ResourceLink {
-            title: "Discord";
-            label: @tr("Join the community on Discord");
-            description: @tr("Ask questions, report bugs and share ideas with the Amazynk community.");
-            icon: @image-url("icons/discord.svg");
-            clicked => { AppState.open-discord(); }
+    VerticalLayout {
+        spacing: 6px;
+        Body { text: @tr("More from Amazynk"); color: Theme.text; font-weight: 600; }
+        PreferenceCard {
+            AppRow {
+                name: "Zynk";
+                platforms: "macOS · Windows · Linux · iPhone · Android";
+                // TRANSLATORS: {} is the name of another Amazynk app; the link opens the page it is downloaded from
+                label: @tr("Get {}", "Zynk");
+                description: @tr("Sends files straight between your devices, at any size, end-to-end encrypted.");
+                icon: @image-url("icons/apps/zynk.png");
+                clicked => { AppState.open-app("zynk"); }
+            }
+            Divider {}
+            AppRow {
+                name: "Specular";
+                platforms: "macOS · Windows · Linux";
+                label: @tr("Get {}", "Specular");
+                description: @tr("A fast viewer for photos, camera RAW, HDR, video and audio.");
+                icon: @image-url("icons/apps/specular.png");
+                clicked => { AppState.open-app("specular"); }
+            }
+            if AppState.dozed-offered: Divider {}
+            if AppState.dozed-offered: AppRow {
+                name: "Dozed";
+                platforms: "Linux";
+                label: @tr("Get {}", "Dozed");
+                description: @tr("Freezes the Linux desktop apps you are not looking at, so they stop waking the CPU.");
+                icon: @image-url("icons/apps/dozed.png");
+                clicked => { AppState.open-app("dozed"); }
+            }
         }
     }
     VerticalLayout {

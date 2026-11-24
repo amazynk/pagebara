@@ -320,6 +320,8 @@ export global AppState {
     in property <[OutlineRow]> outline;
     in property <[RecentFile]> recent;
     in property <bool> discord-available;
+    // Dozed is for Linux: About names it there only.
+    in property <bool> dozed-offered;
     in property <string> version;
 
     // Organize view.
@@ -521,6 +523,8 @@ export global AppState {
     callback set-motion(choice: int);
     callback open-website();
     callback open-discord();
+    // Opens the page of another Amazynk app ("zynk", "specular", "dozed") in the browser.
+    callback open-app(app: string);
     callback about();
     // check-updates, check-now, install-update, skip-update,
     // update-later.

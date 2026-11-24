@@ -426,6 +426,7 @@ impl App {
         app.wire(ui);
         let st = ui.global::<AppState>();
         st.set_discord_available(!links::DISCORD_INVITE_URL.is_empty());
+        st.set_dozed_offered(links::DOZED_OFFERED);
         st.set_keyboard_language(locale::input_language().into());
         st.set_app_name(pagebara_identity::NAME.into());
         st.set_version(env!("CARGO_PKG_VERSION").into());
@@ -618,6 +619,11 @@ impl App {
         on!(st.on_open_discord, |_app, _s, _ui| links::open(
             links::DISCORD_INVITE_URL
         ));
+        on!(st.on_open_app, |_app, _s, _ui, app| {
+            if let Some(url) = links::app_page(&app) {
+                links::open(url);
+            }
+        });
         on!(st.on_about, |app, s, ui| app.show_about(s, ui));
         on!(st.on_set_theme, |app, s, ui, choice| {
             s.settings.theme = access::choice_of(choice);

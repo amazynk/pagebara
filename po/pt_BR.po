@@ -682,7 +682,7 @@ msgstr "{} selecionado, {} de {}. As setas o movem, Ctrl+setas o redimensionam, 
 msgid "Select text with Ctrl+A or the pointer first, or switch to marking areas."
 msgstr "Selecione o texto com Ctrl+A ou com o ponteiro primeiro, ou passe a marcar áreas."
 
-#: apps/desktop/src/app/language.rs:35
+#: apps/desktop/src/app/language.rs:37
 #: apps/desktop/ui/appearance-picker.slint:95
 #: apps/desktop/ui/settings.slint:183 apps/mobile/src/app/language.rs:43
 msgid "Follow the system"
@@ -703,7 +703,7 @@ msgstr "Adicionar uma pasta à biblioteca"
 msgid "locked"
 msgstr "bloqueado"
 
-#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1907
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1912
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
@@ -794,32 +794,53 @@ msgstr "Não há imagem ali."
 msgid "Recognizing the text in the area…"
 msgstr "Reconhecendo o texto na área…"
 
-#: apps/desktop/src/app/macos_menu.rs:12 apps/desktop/ui/palette.slint:85
+#: apps/desktop/src/app/macos_menu.rs:14 apps/desktop/ui/palette.slint:84
 msgid "About {}"
 msgstr "Sobre o {}"
 
-#: apps/desktop/src/app/macos_menu.rs:13
+#: apps/desktop/src/app/macos_menu.rs:15
 msgid "Settings…"
 msgstr "Configurações…"
 
-#: apps/desktop/src/app/macos_menu.rs:14
+#: apps/desktop/src/app/macos_menu.rs:16
 msgid "Finder Quick Actions…"
 msgstr "Ações Rápidas do Finder…"
 
-#: apps/desktop/src/app/macos_menu.rs:15
+#: apps/desktop/src/app/macos_menu.rs:17
 msgid "Check for Updates…"
 msgstr "Buscar atualizações…"
 
-#: apps/desktop/src/app/macos_menu.rs:16
+#: apps/desktop/src/app/macos_menu.rs:18
 msgid "Quit {}"
 msgstr "Encerrar {}"
 
-#: apps/desktop/src/app/mod.rs:1177 apps/mobile/src/platform/host.rs:73
+#: apps/desktop/src/app/macos_menu.rs:86
+msgid "Minimize"
+msgstr "Minimizar"
+
+#: apps/desktop/src/app/macos_menu.rs:87 apps/desktop/ui/vim-bindings.slint:21
+#: apps/desktop/ui/vim-status.slint:19
+msgid "Zoom"
+msgstr "Zoom"
+
+#: apps/desktop/src/app/macos_menu.rs:88
+msgid "Bring All to Front"
+msgstr "Trazer todas para a frente"
+
+#: apps/desktop/src/app/macos_menu.rs:99
+msgid "Window"
+msgstr "Janela"
+
+#: apps/desktop/src/app/macos_menu.rs:100
+msgid "Help"
+msgstr "Ajuda"
+
+#: apps/desktop/src/app/mod.rs:1182 apps/mobile/src/platform/host.rs:73
 #: apps/mobile/ui/home.slint:38
 msgid "Open a PDF"
 msgstr "Abrir um PDF"
 
-#: apps/desktop/src/app/mod.rs:1178 apps/desktop/src/app/organize.rs:402
+#: apps/desktop/src/app/mod.rs:1183 apps/desktop/src/app/organize.rs:402
 #: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
@@ -828,28 +849,28 @@ msgid "PDF documents"
 msgstr "Documentos PDF"
 
 #. verb, on a button that opens the document
-#: apps/desktop/src/app/mod.rs:1209 apps/desktop/src/app/preopen.rs:71
+#: apps/desktop/src/app/mod.rs:1214 apps/desktop/src/app/preopen.rs:71
 #: apps/desktop/ui/password-dialog.slint:138
 msgid "Opening…"
 msgstr "Abrindo…"
 
-#: apps/desktop/src/app/mod.rs:1218
+#: apps/desktop/src/app/mod.rs:1223
 msgid "Could not fill in the form: {}."
 msgstr "Não foi possível preencher o formulário: {}."
 
-#: apps/desktop/src/app/mod.rs:1257
+#: apps/desktop/src/app/mod.rs:1262
 msgid "Could not open “{}”"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1258
+#: apps/desktop/src/app/mod.rs:1263
 msgid "Could not open the file"
 msgstr "Não foi possível abrir o arquivo"
 
-#: apps/desktop/src/app/mod.rs:1741
+#: apps/desktop/src/app/mod.rs:1746
 msgid "There is no page “{}”."
 msgstr "Não existe a página “{}”."
 
-#: apps/desktop/src/app/mod.rs:1901
+#: apps/desktop/src/app/mod.rs:1906
 msgid "{n} page · Unsaved changes"
 msgid_plural "{n} pages · Unsaved changes"
 msgstr[0] "{n} página · Alterações não salvas"
@@ -1122,7 +1143,7 @@ msgstr "Citação"
 
 #. a footnote or endnote in the document's structure, read by screen readers
 #. noun, a kind of annotation (a sticky note)
-#: apps/desktop/src/app/page_text.rs:210 apps/desktop/ui/palette.slint:55
+#: apps/desktop/src/app/page_text.rs:210 apps/desktop/ui/palette.slint:54
 #: apps/desktop/ui/right-panel.slint:353 apps/desktop/ui/tool-row.slint:418
 #: crates/app-core/src/annots.rs:32
 msgid "Note"
@@ -2659,36 +2680,58 @@ msgstr "{} falhou"
 msgid "this build of Pagebara has no network support"
 msgstr "esta versão do Pagebara não tem suporte a rede"
 
-#: apps/desktop/ui/about.slint:80
+#: apps/desktop/ui/about.slint:119
 msgid "Version {}"
 msgstr "Versão {}"
 
-#: apps/desktop/ui/about.slint:82
+#: apps/desktop/ui/about.slint:121
 msgid "A PDF viewer and editor for everyone. Your documents stay on your device."
 msgstr "Um visualizador e editor de PDF para todos. Seus documentos ficam no seu dispositivo."
 
-#: apps/desktop/ui/about.slint:91
-msgid "Explore more software from Amazynk, including Specular and Dozed."
-msgstr "Conheça outros programas da Amazynk, como o Specular e o Dozed."
+#: apps/desktop/ui/about.slint:133
+msgid "Everything Amazynk makes, in one place."
+msgstr "Tudo o que a Amazynk faz, em um só lugar."
 
-#: apps/desktop/ui/about.slint:98 apps/desktop/ui/palette.slint:84
+#: apps/desktop/ui/about.slint:139 apps/desktop/ui/palette.slint:83
 msgid "Join the community on Discord"
 msgstr "Participe da comunidade no Discord"
 
-#: apps/desktop/ui/about.slint:99
+#: apps/desktop/ui/about.slint:140
 msgid "Ask questions, report bugs and share ideas with the Amazynk community."
 msgstr "Faça perguntas, relate problemas e compartilhe ideias com a comunidade da Amazynk."
 
-#: apps/desktop/ui/about.slint:106 apps/mobile/ui/main.slint:454
+#: apps/desktop/ui/about.slint:150
+msgid "More from Amazynk"
+msgstr "Mais da Amazynk"
+
+#. {} is the name of another Amazynk app; the link opens the page it is downloaded from
+#: apps/desktop/ui/about.slint:156 apps/desktop/ui/about.slint:165
+#: apps/desktop/ui/about.slint:174
+msgid "Get {}"
+msgstr "Obter {}"
+
+#: apps/desktop/ui/about.slint:157
+msgid "Sends files straight between your devices, at any size, end-to-end encrypted."
+msgstr "Envia arquivos diretamente entre seus dispositivos, de qualquer tamanho, com criptografia de ponta a ponta."
+
+#: apps/desktop/ui/about.slint:166
+msgid "A fast viewer for photos, camera RAW, HDR, video and audio."
+msgstr "Um visualizador rápido de fotos, RAW de câmera, HDR, vídeo e áudio."
+
+#: apps/desktop/ui/about.slint:175
+msgid "Freezes the Linux desktop apps you are not looking at, so they stop waking the CPU."
+msgstr "Congela os aplicativos de desktop do Linux que você não está olhando, para que parem de acordar a CPU."
+
+#: apps/desktop/ui/about.slint:183 apps/mobile/ui/main.slint:454
 #: apps/mobile/ui/sheets.slint:359
 msgid "Licences"
 msgstr "Licenças"
 
-#: apps/desktop/ui/about.slint:108
+#: apps/desktop/ui/about.slint:185
 msgid "Licensed under the MIT License or the Apache License, Version 2.0, at your option."
 msgstr "Licenciado sob a Licença MIT ou a Licença Apache, Versão 2.0, à sua escolha."
 
-#: apps/desktop/ui/about.slint:112
+#: apps/desktop/ui/about.slint:189
 msgid "Third-party notices"
 msgstr "Avisos de terceiros"
 
@@ -2706,32 +2749,32 @@ msgstr "Documento"
 
 #. noun, a kind of annotation
 #: apps/desktop/ui/app.slint:272 apps/desktop/ui/page-view.slint:635
-#: apps/desktop/ui/palette.slint:52 apps/desktop/ui/right-panel.slint:277
+#: apps/desktop/ui/palette.slint:51 apps/desktop/ui/right-panel.slint:277
 #: apps/desktop/ui/tool-row.slint:326 apps/desktop/ui/tool-row.slint:343
 #: apps/mobile/ui/header.slint:26 apps/mobile/ui/main.slint:268
 #: crates/app-core/src/annots.rs:43
 msgid "Highlight"
 msgstr "Realce"
 
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:53
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:52
 #: apps/desktop/ui/tool-row.slint:364 apps/mobile/ui/header.slint:35
 msgid "Draw"
 msgstr "Desenhar"
 
 #. verb, the tool for placing a handwritten signature
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
 #: apps/desktop/ui/tool-row.slint:486 apps/mobile/ui/header.slint:44
 #: crates/integration/src/catalog.rs:123
 msgid "Sign"
 msgstr "Assinar"
 
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:55
 #: apps/desktop/ui/tool-row.slint:474
 msgid "Fill forms"
 msgstr "Preencher formulários"
 
 #. the tool that marks what to remove for good
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:63
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:62
 #: apps/desktop/ui/tool-row.slint:559
 msgid "Redact"
 msgstr "Redigir"
@@ -2742,7 +2785,7 @@ msgstr "Redigir"
 msgid "Edit"
 msgstr "Editar"
 
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:58
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
 #: apps/desktop/ui/right-panel.slint:422 apps/desktop/ui/tool-row.slint:500
 #: apps/mobile/ui/prep-bar.slint:49 apps/mobile/ui/sheets.slint:718
 msgid "Prepare form"
@@ -2998,7 +3041,7 @@ msgid "Back"
 msgstr "Voltar"
 
 #: apps/desktop/ui/conformance.slint:184 apps/desktop/ui/optimize.slint:245
-#: apps/desktop/ui/palette.slint:47 apps/desktop/ui/stamps.slint:372
+#: apps/desktop/ui/palette.slint:46 apps/desktop/ui/stamps.slint:372
 #: apps/desktop/ui/top-bar.slint:352
 msgid "Save as…"
 msgstr "Salvar como…"
@@ -3016,7 +3059,7 @@ msgstr "Texto alternativo para {}"
 msgid "Set"
 msgstr "Definir"
 
-#: apps/desktop/ui/conformance.slint:216 apps/desktop/ui/palette.slint:68
+#: apps/desktop/ui/conformance.slint:216 apps/desktop/ui/palette.slint:67
 msgid "Accessibility check"
 msgstr "Verificação de acessibilidade"
 
@@ -3068,7 +3111,7 @@ msgid "Don't save"
 msgstr "Não salvar"
 
 #. verb, on the button that saves the document
-#: apps/desktop/ui/dialogs.slint:84 apps/desktop/ui/palette.slint:46
+#: apps/desktop/ui/dialogs.slint:84 apps/desktop/ui/palette.slint:45
 #: apps/desktop/ui/top-bar.slint:505 apps/desktop/ui/vim-bindings.slint:76
 #: apps/mobile/ui/sheets.slint:320
 msgid "Save"
@@ -3133,7 +3176,7 @@ msgid "Changing pages"
 msgstr "Alteração de páginas"
 
 #: apps/desktop/ui/dialogs.slint:232 apps/desktop/ui/dialogs.slint:235
-#: apps/desktop/ui/palette.slint:50 apps/desktop/ui/right-panel.slint:261
+#: apps/desktop/ui/palette.slint:49 apps/desktop/ui/right-panel.slint:261
 #: apps/desktop/ui/top-bar.slint:378
 msgid "Document properties"
 msgstr "Propriedades do documento"
@@ -3569,7 +3612,7 @@ msgid "Add folder…"
 msgstr "Adicionar pasta…"
 
 #: apps/desktop/ui/library.slint:242 apps/desktop/ui/library.slint:356
-#: apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50
+#: apps/desktop/ui/palette.slint:44 apps/desktop/ui/shortcuts.slint:50
 #: apps/desktop/ui/welcome.slint:42
 msgid "Library"
 msgstr "Biblioteca"
@@ -3620,7 +3663,7 @@ msgstr "Nenhuma ocorrência"
 msgid "Status: {}"
 msgstr "Status: {}"
 
-#: apps/desktop/ui/ocr.slint:45 apps/desktop/ui/palette.slint:61
+#: apps/desktop/ui/ocr.slint:45 apps/desktop/ui/palette.slint:60
 msgid "Recognize text…"
 msgstr "Reconhecer texto…"
 
@@ -3870,7 +3913,7 @@ msgstr "Texto da página"
 msgid "Escape finishes editing"
 msgstr "Esc conclui a edição"
 
-#: apps/desktop/ui/page-view.slint:810 apps/desktop/ui/palette.slint:54
+#: apps/desktop/ui/page-view.slint:810 apps/desktop/ui/palette.slint:53
 #: apps/desktop/ui/right-panel.slint:352 apps/desktop/ui/tool-row.slint:403
 #: crates/app-core/src/annots.rs:33
 msgid "Text box"
@@ -3887,162 +3930,162 @@ msgstr "Opções"
 
 #. headings of the groups of commands in the All tools list
 #. a document property: the file's location
-#: apps/desktop/ui/palette.slint:38 crates/app-core/src/session/info.rs:73
+#: apps/desktop/ui/palette.slint:35 crates/app-core/src/session/info.rs:73
 msgid "File"
 msgstr "Arquivo"
 
-#: apps/desktop/ui/palette.slint:39 apps/desktop/ui/tool-row.slint:201
+#: apps/desktop/ui/palette.slint:36 apps/desktop/ui/tool-row.slint:201
 #: apps/mobile/ui/main.slint:417
 msgid "Tools"
 msgstr "Ferramentas"
 
-#: apps/desktop/ui/palette.slint:40
+#: apps/desktop/ui/palette.slint:37
 msgid "Protect and sign"
 msgstr "Proteger e assinar"
 
-#: apps/desktop/ui/palette.slint:41
+#: apps/desktop/ui/palette.slint:38
 msgid "Output tools"
 msgstr "Ferramentas de saída"
 
 #. the groups of tools, in the toolbar: looking at the document,
-#: apps/desktop/ui/palette.slint:42 apps/desktop/ui/top-bar.slint:174
+#: apps/desktop/ui/palette.slint:39 apps/desktop/ui/top-bar.slint:174
 msgid "View"
 msgstr "Visualizar"
 
-#: apps/desktop/ui/palette.slint:44 apps/desktop/ui/top-bar.slint:332
+#: apps/desktop/ui/palette.slint:43 apps/desktop/ui/top-bar.slint:332
 msgid "Open…"
 msgstr "Abrir…"
 
-#: apps/desktop/ui/palette.slint:48 apps/desktop/ui/top-bar.slint:361
+#: apps/desktop/ui/palette.slint:47 apps/desktop/ui/top-bar.slint:361
 msgid "Save a smaller copy…"
 msgstr "Salvar uma cópia menor…"
 
-#: apps/desktop/ui/palette.slint:49 apps/desktop/ui/top-bar.slint:369
+#: apps/desktop/ui/palette.slint:48 apps/desktop/ui/top-bar.slint:369
 msgid "Print…"
 msgstr "Imprimir…"
 
-#: apps/desktop/ui/palette.slint:51 apps/desktop/ui/top-bar.slint:387
+#: apps/desktop/ui/palette.slint:50 apps/desktop/ui/top-bar.slint:387
 #: apps/desktop/ui/vim-bindings.slint:77 apps/mobile/ui/sheets.slint:366
 msgid "Close document"
 msgstr "Fechar documento"
 
-#: apps/desktop/ui/palette.slint:59 apps/desktop/ui/tool-row.slint:522
+#: apps/desktop/ui/palette.slint:58 apps/desktop/ui/tool-row.slint:522
 msgid "Edit text and images"
 msgstr "Editar texto e imagens"
 
-#: apps/desktop/ui/palette.slint:60
+#: apps/desktop/ui/palette.slint:59
 msgid "Organize pages"
 msgstr "Organizar páginas"
 
-#: apps/desktop/ui/palette.slint:62
+#: apps/desktop/ui/palette.slint:61
 msgid "Protect…"
 msgstr "Proteger…"
 
-#: apps/desktop/ui/palette.slint:64 apps/desktop/ui/signing.slint:328
+#: apps/desktop/ui/palette.slint:63 apps/desktop/ui/signing.slint:328
 msgid "Signatures"
 msgstr "Assinaturas"
 
-#: apps/desktop/ui/palette.slint:65 apps/desktop/ui/signing.slint:356
+#: apps/desktop/ui/palette.slint:64 apps/desktop/ui/signing.slint:356
 #: apps/desktop/ui/tool-row.slint:511
 msgid "Sign with a certificate…"
 msgstr "Assinar com um certificado…"
 
-#: apps/desktop/ui/palette.slint:66
+#: apps/desktop/ui/palette.slint:65
 msgid "Optimize…"
 msgstr "Otimizar…"
 
-#: apps/desktop/ui/palette.slint:67
+#: apps/desktop/ui/palette.slint:66
 msgid "Save as PDF/A…"
 msgstr "Salvar como PDF/A…"
 
-#: apps/desktop/ui/palette.slint:69
+#: apps/desktop/ui/palette.slint:68
 msgid "Watermark…"
 msgstr "Marca d'água…"
 
-#: apps/desktop/ui/palette.slint:70
+#: apps/desktop/ui/palette.slint:69
 msgid "Header and footer…"
 msgstr "Cabeçalho e rodapé…"
 
-#: apps/desktop/ui/palette.slint:71
+#: apps/desktop/ui/palette.slint:70
 msgid "Bates numbering…"
 msgstr "Numeração Bates…"
 
-#: apps/desktop/ui/palette.slint:72
+#: apps/desktop/ui/palette.slint:71
 msgid "Flatten…"
 msgstr "Nivelar…"
 
-#: apps/desktop/ui/palette.slint:73
+#: apps/desktop/ui/palette.slint:72
 msgid "Compare…"
 msgstr "Comparar…"
 
-#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:184
+#: apps/desktop/ui/palette.slint:73 apps/desktop/ui/reading.slint:184
 #: apps/desktop/ui/reading.slint:229 apps/desktop/ui/reading.slint:300
 #: apps/desktop/ui/shortcuts.slint:69 apps/desktop/ui/tool-row.slint:253
 msgid "Reading view"
 msgstr "Modo de leitura"
 
-#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:217
+#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/read-aloud.slint:217
 #: apps/desktop/ui/shortcuts.slint:100 apps/desktop/ui/tool-row.slint:265
 msgid "Read aloud"
 msgstr "Ler em voz alta"
 
-#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:193
+#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/reading.slint:193
 #: apps/desktop/ui/shortcuts.slint:70 apps/desktop/ui/tool-row.slint:278
 msgid "Present"
 msgstr "Apresentar"
 
-#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:211
+#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:211
 #: apps/desktop/ui/reading.slint:544 apps/desktop/ui/reading.slint:553
 #: apps/desktop/ui/tool-row.slint:300
 msgid "Bookmarks"
 msgstr "Marcadores"
 
-#: apps/desktop/ui/palette.slint:78 apps/desktop/ui/top-bar.slint:254
+#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/top-bar.slint:254
 msgid "Show sidebar"
 msgstr "Mostrar barra lateral"
 
 #. the side panel with the options of the tool or the properties of the selection
-#: apps/desktop/ui/palette.slint:79 apps/desktop/ui/top-bar.slint:518
+#: apps/desktop/ui/palette.slint:78 apps/desktop/ui/top-bar.slint:518
 msgid "Inspector"
 msgstr "Inspetor"
 
-#: apps/desktop/ui/palette.slint:80 apps/desktop/ui/top-bar.slint:491
+#: apps/desktop/ui/palette.slint:79 apps/desktop/ui/top-bar.slint:491
 msgid "Switch to light mode"
 msgstr "Mudar para o modo claro"
 
-#: apps/desktop/ui/palette.slint:80 apps/desktop/ui/top-bar.slint:491
+#: apps/desktop/ui/palette.slint:79 apps/desktop/ui/top-bar.slint:491
 msgid "Switch to dark mode"
 msgstr "Mudar para o modo escuro"
 
-#: apps/desktop/ui/palette.slint:81
+#: apps/desktop/ui/palette.slint:80
 msgid "Turn vim keys off"
 msgstr "Desativar as teclas do vim"
 
-#: apps/desktop/ui/palette.slint:81
+#: apps/desktop/ui/palette.slint:80
 msgid "Turn vim keys on"
 msgstr "Ativar as teclas do vim"
 
-#: apps/desktop/ui/palette.slint:82 apps/desktop/ui/shortcuts.slint:22
+#: apps/desktop/ui/palette.slint:81 apps/desktop/ui/shortcuts.slint:22
 #: apps/desktop/ui/shortcuts.slint:111
 msgid "Keyboard shortcuts"
 msgstr "Atalhos de teclado"
 
-#: apps/desktop/ui/palette.slint:83 apps/desktop/ui/settings.slint:18
+#: apps/desktop/ui/palette.slint:82 apps/desktop/ui/settings.slint:18
 #: apps/desktop/ui/settings.slint:33 apps/desktop/ui/settings.slint:85
 #: apps/desktop/ui/shortcuts.slint:48
 msgid "Settings"
 msgstr "Configurações"
 
-#: apps/desktop/ui/palette.slint:231 apps/desktop/ui/palette.slint:281
+#: apps/desktop/ui/palette.slint:237 apps/desktop/ui/palette.slint:287
 #: apps/desktop/ui/shortcuts.slint:49 apps/desktop/ui/top-bar.slint:481
 msgid "All tools"
 msgstr "Todas as ferramentas"
 
-#: apps/desktop/ui/palette.slint:282 apps/desktop/ui/palette.slint:295
+#: apps/desktop/ui/palette.slint:288 apps/desktop/ui/palette.slint:301
 msgid "Search the tools and commands"
 msgstr "Pesquisar nas ferramentas e nos comandos"
 
-#: apps/desktop/ui/palette.slint:309
+#: apps/desktop/ui/palette.slint:315
 msgid "Nothing matches “{}”."
 msgstr "Nada corresponde a “{}”."
 
@@ -6234,10 +6277,6 @@ msgstr ""
 
 #: apps/desktop/ui/vim-bindings.slint:19
 msgid "Go to page 12"
-msgstr ""
-
-#: apps/desktop/ui/vim-bindings.slint:21 apps/desktop/ui/vim-status.slint:19
-msgid "Zoom"
 msgstr ""
 
 #: apps/desktop/ui/vim-bindings.slint:26 apps/desktop/ui/vim-help.slint:191

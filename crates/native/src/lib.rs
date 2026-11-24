@@ -19,6 +19,11 @@ mod dock;
 mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::app_menu::{AppMenuCommand, install_app_menu, perform_app_menu_item};
+#[cfg(target_os = "macos")]
+pub use macos::menu_bar::{
+    BarCallbacks, BarItem, BarMenu, BarRole, WindowCommand, install_menu_bar, menu_bar_titles,
+    retitle_menu_bar,
+};
 #[cfg(windows)]
 mod windows;
 

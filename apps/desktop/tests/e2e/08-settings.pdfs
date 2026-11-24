@@ -28,7 +28,13 @@ click "About" 150
 call a11y-check
 move "amazynk.com" 150
 move "Join the community on Discord" 150
+move "Get Zynk" 150
+move "Get Specular" 150
+# Dozed is offered on Linux, where it runs (and where these scripts do).
+move "Get Dozed" 150
 screenshot 08-settings-about.png
+# The licences are below the other apps: scroll the page to them.
+scroll 600 300
 click "Third-party notices" 150
 move #AboutPage::ocr-credit 150
 click "Third-party notices" 150

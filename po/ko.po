@@ -677,7 +677,7 @@ msgstr "{0} 선택됨, {1}/{2}. 화살표 키로 이동, Ctrl+화살표 키로 �
 msgid "Select text with Ctrl+A or the pointer first, or switch to marking areas."
 msgstr "먼저 Ctrl+A 또는 포인터로 텍스트를 선택하거나 영역 표시로 전환하세요."
 
-#: apps/desktop/src/app/language.rs:35
+#: apps/desktop/src/app/language.rs:37
 #: apps/desktop/ui/appearance-picker.slint:95
 #: apps/desktop/ui/settings.slint:183 apps/mobile/src/app/language.rs:43
 msgid "Follow the system"
@@ -697,7 +697,7 @@ msgstr "라이브러리에 폴더 추가"
 msgid "locked"
 msgstr "잠김"
 
-#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1907
+#: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1912
 #: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
 msgid "{n} page"
 msgid_plural "{n} pages"
@@ -782,32 +782,53 @@ msgstr "그 위치에 그림이 없습니다."
 msgid "Recognizing the text in the area…"
 msgstr "영역의 텍스트를 인식하는 중…"
 
-#: apps/desktop/src/app/macos_menu.rs:12 apps/desktop/ui/palette.slint:85
+#: apps/desktop/src/app/macos_menu.rs:14 apps/desktop/ui/palette.slint:84
 msgid "About {}"
 msgstr "{} 정보"
 
-#: apps/desktop/src/app/macos_menu.rs:13
+#: apps/desktop/src/app/macos_menu.rs:15
 msgid "Settings…"
 msgstr "설정…"
 
-#: apps/desktop/src/app/macos_menu.rs:14
+#: apps/desktop/src/app/macos_menu.rs:16
 msgid "Finder Quick Actions…"
 msgstr "Finder 빠른 동작…"
 
-#: apps/desktop/src/app/macos_menu.rs:15
+#: apps/desktop/src/app/macos_menu.rs:17
 msgid "Check for Updates…"
 msgstr "업데이트 확인…"
 
-#: apps/desktop/src/app/macos_menu.rs:16
+#: apps/desktop/src/app/macos_menu.rs:18
 msgid "Quit {}"
 msgstr "{} 종료"
 
-#: apps/desktop/src/app/mod.rs:1177 apps/mobile/src/platform/host.rs:73
+#: apps/desktop/src/app/macos_menu.rs:86
+msgid "Minimize"
+msgstr "최소화"
+
+#: apps/desktop/src/app/macos_menu.rs:87 apps/desktop/ui/vim-bindings.slint:21
+#: apps/desktop/ui/vim-status.slint:19
+msgid "Zoom"
+msgstr "확대/축소"
+
+#: apps/desktop/src/app/macos_menu.rs:88
+msgid "Bring All to Front"
+msgstr "모두 앞으로 가져오기"
+
+#: apps/desktop/src/app/macos_menu.rs:99
+msgid "Window"
+msgstr "윈도우"
+
+#: apps/desktop/src/app/macos_menu.rs:100
+msgid "Help"
+msgstr "도움말"
+
+#: apps/desktop/src/app/mod.rs:1182 apps/mobile/src/platform/host.rs:73
 #: apps/mobile/ui/home.slint:38
 msgid "Open a PDF"
 msgstr "PDF 열기"
 
-#: apps/desktop/src/app/mod.rs:1178 apps/desktop/src/app/organize.rs:402
+#: apps/desktop/src/app/mod.rs:1183 apps/desktop/src/app/organize.rs:402
 #: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
@@ -816,28 +837,28 @@ msgid "PDF documents"
 msgstr "PDF 문서"
 
 #. verb, on a button that opens the document
-#: apps/desktop/src/app/mod.rs:1209 apps/desktop/src/app/preopen.rs:71
+#: apps/desktop/src/app/mod.rs:1214 apps/desktop/src/app/preopen.rs:71
 #: apps/desktop/ui/password-dialog.slint:138
 msgid "Opening…"
 msgstr "여는 중…"
 
-#: apps/desktop/src/app/mod.rs:1218
+#: apps/desktop/src/app/mod.rs:1223
 msgid "Could not fill in the form: {}."
 msgstr "양식을 채울 수 없습니다: {}."
 
-#: apps/desktop/src/app/mod.rs:1257
+#: apps/desktop/src/app/mod.rs:1262
 msgid "Could not open “{}”"
 msgstr ""
 
-#: apps/desktop/src/app/mod.rs:1258
+#: apps/desktop/src/app/mod.rs:1263
 msgid "Could not open the file"
 msgstr "파일을 열 수 없습니다"
 
-#: apps/desktop/src/app/mod.rs:1741
+#: apps/desktop/src/app/mod.rs:1746
 msgid "There is no page “{}”."
 msgstr "“{}” 페이지가 없습니다."
 
-#: apps/desktop/src/app/mod.rs:1901
+#: apps/desktop/src/app/mod.rs:1906
 msgid "{n} page · Unsaved changes"
 msgid_plural "{n} pages · Unsaved changes"
 msgstr[0] "{n}페이지 · 저장되지 않은 변경 사항"
@@ -1103,7 +1124,7 @@ msgstr "인용"
 
 #. a footnote or endnote in the document's structure, read by screen readers
 #. noun, a kind of annotation (a sticky note)
-#: apps/desktop/src/app/page_text.rs:210 apps/desktop/ui/palette.slint:55
+#: apps/desktop/src/app/page_text.rs:210 apps/desktop/ui/palette.slint:54
 #: apps/desktop/ui/right-panel.slint:353 apps/desktop/ui/tool-row.slint:418
 #: crates/app-core/src/annots.rs:32
 msgid "Note"
@@ -2606,36 +2627,58 @@ msgstr "{} 실패"
 msgid "this build of Pagebara has no network support"
 msgstr "이 Pagebara 빌드는 네트워크를 지원하지 않음"
 
-#: apps/desktop/ui/about.slint:80
+#: apps/desktop/ui/about.slint:119
 msgid "Version {}"
 msgstr "버전 {}"
 
-#: apps/desktop/ui/about.slint:82
+#: apps/desktop/ui/about.slint:121
 msgid "A PDF viewer and editor for everyone. Your documents stay on your device."
 msgstr "모두를 위한 PDF 뷰어 및 편집기입니다. 문서는 사용자의 기기에만 보관됩니다."
 
-#: apps/desktop/ui/about.slint:91
-msgid "Explore more software from Amazynk, including Specular and Dozed."
-msgstr "Specular와 Dozed 등 Amazynk의 다른 소프트웨어를 살펴보세요."
+#: apps/desktop/ui/about.slint:133
+msgid "Everything Amazynk makes, in one place."
+msgstr "Amazynk가 만드는 모든 것을 한곳에서."
 
-#: apps/desktop/ui/about.slint:98 apps/desktop/ui/palette.slint:84
+#: apps/desktop/ui/about.slint:139 apps/desktop/ui/palette.slint:83
 msgid "Join the community on Discord"
 msgstr "Discord 커뮤니티 참여"
 
-#: apps/desktop/ui/about.slint:99
+#: apps/desktop/ui/about.slint:140
 msgid "Ask questions, report bugs and share ideas with the Amazynk community."
 msgstr "Amazynk 커뮤니티에서 질문하고 버그를 신고하거나 아이디어를 나누세요."
 
-#: apps/desktop/ui/about.slint:106 apps/mobile/ui/main.slint:454
+#: apps/desktop/ui/about.slint:150
+msgid "More from Amazynk"
+msgstr "Amazynk의 다른 앱"
+
+#. {} is the name of another Amazynk app; the link opens the page it is downloaded from
+#: apps/desktop/ui/about.slint:156 apps/desktop/ui/about.slint:165
+#: apps/desktop/ui/about.slint:174
+msgid "Get {}"
+msgstr "{} 받기"
+
+#: apps/desktop/ui/about.slint:157
+msgid "Sends files straight between your devices, at any size, end-to-end encrypted."
+msgstr "기기 간에 파일을 직접 보냅니다. 크기 제한 없이, 종단 간 암호화로."
+
+#: apps/desktop/ui/about.slint:166
+msgid "A fast viewer for photos, camera RAW, HDR, video and audio."
+msgstr "사진, 카메라 RAW, HDR, 비디오, 오디오를 위한 빠른 뷰어."
+
+#: apps/desktop/ui/about.slint:175
+msgid "Freezes the Linux desktop apps you are not looking at, so they stop waking the CPU."
+msgstr "보고 있지 않은 Linux 데스크톱 앱을 정지시켜 CPU를 깨우지 않게 합니다."
+
+#: apps/desktop/ui/about.slint:183 apps/mobile/ui/main.slint:454
 #: apps/mobile/ui/sheets.slint:359
 msgid "Licences"
 msgstr "라이선스"
 
-#: apps/desktop/ui/about.slint:108
+#: apps/desktop/ui/about.slint:185
 msgid "Licensed under the MIT License or the Apache License, Version 2.0, at your option."
 msgstr "MIT 라이선스 또는 Apache 라이선스 2.0 중 원하는 것에 따라 사용이 허가됩니다."
 
-#: apps/desktop/ui/about.slint:112
+#: apps/desktop/ui/about.slint:189
 msgid "Third-party notices"
 msgstr "서드 파티 고지"
 
@@ -2653,32 +2696,32 @@ msgstr "문서"
 
 #. noun, a kind of annotation
 #: apps/desktop/ui/app.slint:272 apps/desktop/ui/page-view.slint:635
-#: apps/desktop/ui/palette.slint:52 apps/desktop/ui/right-panel.slint:277
+#: apps/desktop/ui/palette.slint:51 apps/desktop/ui/right-panel.slint:277
 #: apps/desktop/ui/tool-row.slint:326 apps/desktop/ui/tool-row.slint:343
 #: apps/mobile/ui/header.slint:26 apps/mobile/ui/main.slint:268
 #: crates/app-core/src/annots.rs:43
 msgid "Highlight"
 msgstr "강조 표시"
 
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:53
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:52
 #: apps/desktop/ui/tool-row.slint:364 apps/mobile/ui/header.slint:35
 msgid "Draw"
 msgstr "그리기"
 
 #. verb, the tool for placing a handwritten signature
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
 #: apps/desktop/ui/tool-row.slint:486 apps/mobile/ui/header.slint:44
 #: crates/integration/src/catalog.rs:123
 msgid "Sign"
 msgstr "서명"
 
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:56
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:55
 #: apps/desktop/ui/tool-row.slint:474
 msgid "Fill forms"
 msgstr "양식 채우기"
 
 #. the tool that marks what to remove for good
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:63
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:62
 #: apps/desktop/ui/tool-row.slint:559
 msgid "Redact"
 msgstr "교정"
@@ -2689,7 +2732,7 @@ msgstr "교정"
 msgid "Edit"
 msgstr "편집"
 
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:58
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/palette.slint:57
 #: apps/desktop/ui/right-panel.slint:422 apps/desktop/ui/tool-row.slint:500
 #: apps/mobile/ui/prep-bar.slint:49 apps/mobile/ui/sheets.slint:718
 msgid "Prepare form"
@@ -2945,7 +2988,7 @@ msgid "Back"
 msgstr "뒤로"
 
 #: apps/desktop/ui/conformance.slint:184 apps/desktop/ui/optimize.slint:245
-#: apps/desktop/ui/palette.slint:47 apps/desktop/ui/stamps.slint:372
+#: apps/desktop/ui/palette.slint:46 apps/desktop/ui/stamps.slint:372
 #: apps/desktop/ui/top-bar.slint:352
 msgid "Save as…"
 msgstr "다른 이름으로 저장…"
@@ -2963,7 +3006,7 @@ msgstr "{}의 대체 텍스트"
 msgid "Set"
 msgstr "설정"
 
-#: apps/desktop/ui/conformance.slint:216 apps/desktop/ui/palette.slint:68
+#: apps/desktop/ui/conformance.slint:216 apps/desktop/ui/palette.slint:67
 msgid "Accessibility check"
 msgstr "접근성 검사"
 
@@ -3014,7 +3057,7 @@ msgid "Don't save"
 msgstr "저장 안 함"
 
 #. verb, on the button that saves the document
-#: apps/desktop/ui/dialogs.slint:84 apps/desktop/ui/palette.slint:46
+#: apps/desktop/ui/dialogs.slint:84 apps/desktop/ui/palette.slint:45
 #: apps/desktop/ui/top-bar.slint:505 apps/desktop/ui/vim-bindings.slint:76
 #: apps/mobile/ui/sheets.slint:320
 msgid "Save"
@@ -3079,7 +3122,7 @@ msgid "Changing pages"
 msgstr "페이지 변경"
 
 #: apps/desktop/ui/dialogs.slint:232 apps/desktop/ui/dialogs.slint:235
-#: apps/desktop/ui/palette.slint:50 apps/desktop/ui/right-panel.slint:261
+#: apps/desktop/ui/palette.slint:49 apps/desktop/ui/right-panel.slint:261
 #: apps/desktop/ui/top-bar.slint:378
 msgid "Document properties"
 msgstr "문서 속성"
@@ -3515,7 +3558,7 @@ msgid "Add folder…"
 msgstr "폴더 추가…"
 
 #: apps/desktop/ui/library.slint:242 apps/desktop/ui/library.slint:356
-#: apps/desktop/ui/palette.slint:45 apps/desktop/ui/shortcuts.slint:50
+#: apps/desktop/ui/palette.slint:44 apps/desktop/ui/shortcuts.slint:50
 #: apps/desktop/ui/welcome.slint:42
 msgid "Library"
 msgstr "라이브러리"
@@ -3566,7 +3609,7 @@ msgstr "일치 항목 없음"
 msgid "Status: {}"
 msgstr "상태: {}"
 
-#: apps/desktop/ui/ocr.slint:45 apps/desktop/ui/palette.slint:61
+#: apps/desktop/ui/ocr.slint:45 apps/desktop/ui/palette.slint:60
 msgid "Recognize text…"
 msgstr "텍스트 인식…"
 
@@ -3816,7 +3859,7 @@ msgstr "페이지 텍스트"
 msgid "Escape finishes editing"
 msgstr "Esc 키를 누르면 편집이 끝납니다"
 
-#: apps/desktop/ui/page-view.slint:810 apps/desktop/ui/palette.slint:54
+#: apps/desktop/ui/page-view.slint:810 apps/desktop/ui/palette.slint:53
 #: apps/desktop/ui/right-panel.slint:352 apps/desktop/ui/tool-row.slint:403
 #: crates/app-core/src/annots.rs:33
 msgid "Text box"
@@ -3833,162 +3876,162 @@ msgstr "옵션"
 
 #. headings of the groups of commands in the All tools list
 #. a document property: the file's location
-#: apps/desktop/ui/palette.slint:38 crates/app-core/src/session/info.rs:73
+#: apps/desktop/ui/palette.slint:35 crates/app-core/src/session/info.rs:73
 msgid "File"
 msgstr "파일"
 
-#: apps/desktop/ui/palette.slint:39 apps/desktop/ui/tool-row.slint:201
+#: apps/desktop/ui/palette.slint:36 apps/desktop/ui/tool-row.slint:201
 #: apps/mobile/ui/main.slint:417
 msgid "Tools"
 msgstr "도구"
 
-#: apps/desktop/ui/palette.slint:40
+#: apps/desktop/ui/palette.slint:37
 msgid "Protect and sign"
 msgstr "보호 및 서명"
 
-#: apps/desktop/ui/palette.slint:41
+#: apps/desktop/ui/palette.slint:38
 msgid "Output tools"
 msgstr "출력 도구"
 
 #. the groups of tools, in the toolbar: looking at the document,
-#: apps/desktop/ui/palette.slint:42 apps/desktop/ui/top-bar.slint:174
+#: apps/desktop/ui/palette.slint:39 apps/desktop/ui/top-bar.slint:174
 msgid "View"
 msgstr "보기"
 
-#: apps/desktop/ui/palette.slint:44 apps/desktop/ui/top-bar.slint:332
+#: apps/desktop/ui/palette.slint:43 apps/desktop/ui/top-bar.slint:332
 msgid "Open…"
 msgstr "열기…"
 
-#: apps/desktop/ui/palette.slint:48 apps/desktop/ui/top-bar.slint:361
+#: apps/desktop/ui/palette.slint:47 apps/desktop/ui/top-bar.slint:361
 msgid "Save a smaller copy…"
 msgstr "더 작은 사본 저장…"
 
-#: apps/desktop/ui/palette.slint:49 apps/desktop/ui/top-bar.slint:369
+#: apps/desktop/ui/palette.slint:48 apps/desktop/ui/top-bar.slint:369
 msgid "Print…"
 msgstr "인쇄…"
 
-#: apps/desktop/ui/palette.slint:51 apps/desktop/ui/top-bar.slint:387
+#: apps/desktop/ui/palette.slint:50 apps/desktop/ui/top-bar.slint:387
 #: apps/desktop/ui/vim-bindings.slint:77 apps/mobile/ui/sheets.slint:366
 msgid "Close document"
 msgstr "문서 닫기"
 
-#: apps/desktop/ui/palette.slint:59 apps/desktop/ui/tool-row.slint:522
+#: apps/desktop/ui/palette.slint:58 apps/desktop/ui/tool-row.slint:522
 msgid "Edit text and images"
 msgstr "텍스트 및 이미지 편집"
 
-#: apps/desktop/ui/palette.slint:60
+#: apps/desktop/ui/palette.slint:59
 msgid "Organize pages"
 msgstr "페이지 구성"
 
-#: apps/desktop/ui/palette.slint:62
+#: apps/desktop/ui/palette.slint:61
 msgid "Protect…"
 msgstr "보호…"
 
-#: apps/desktop/ui/palette.slint:64 apps/desktop/ui/signing.slint:328
+#: apps/desktop/ui/palette.slint:63 apps/desktop/ui/signing.slint:328
 msgid "Signatures"
 msgstr "서명"
 
-#: apps/desktop/ui/palette.slint:65 apps/desktop/ui/signing.slint:356
+#: apps/desktop/ui/palette.slint:64 apps/desktop/ui/signing.slint:356
 #: apps/desktop/ui/tool-row.slint:511
 msgid "Sign with a certificate…"
 msgstr "인증서로 서명…"
 
-#: apps/desktop/ui/palette.slint:66
+#: apps/desktop/ui/palette.slint:65
 msgid "Optimize…"
 msgstr "최적화…"
 
-#: apps/desktop/ui/palette.slint:67
+#: apps/desktop/ui/palette.slint:66
 msgid "Save as PDF/A…"
 msgstr "PDF/A로 저장…"
 
-#: apps/desktop/ui/palette.slint:69
+#: apps/desktop/ui/palette.slint:68
 msgid "Watermark…"
 msgstr "워터마크…"
 
-#: apps/desktop/ui/palette.slint:70
+#: apps/desktop/ui/palette.slint:69
 msgid "Header and footer…"
 msgstr "머리글 및 바닥글…"
 
-#: apps/desktop/ui/palette.slint:71
+#: apps/desktop/ui/palette.slint:70
 msgid "Bates numbering…"
 msgstr "베이츠 번호 매기기…"
 
-#: apps/desktop/ui/palette.slint:72
+#: apps/desktop/ui/palette.slint:71
 msgid "Flatten…"
 msgstr "평탄화…"
 
-#: apps/desktop/ui/palette.slint:73
+#: apps/desktop/ui/palette.slint:72
 msgid "Compare…"
 msgstr "비교…"
 
-#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/reading.slint:184
+#: apps/desktop/ui/palette.slint:73 apps/desktop/ui/reading.slint:184
 #: apps/desktop/ui/reading.slint:229 apps/desktop/ui/reading.slint:300
 #: apps/desktop/ui/shortcuts.slint:69 apps/desktop/ui/tool-row.slint:253
 msgid "Reading view"
 msgstr "읽기 보기"
 
-#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/read-aloud.slint:217
+#: apps/desktop/ui/palette.slint:74 apps/desktop/ui/read-aloud.slint:217
 #: apps/desktop/ui/shortcuts.slint:100 apps/desktop/ui/tool-row.slint:265
 msgid "Read aloud"
 msgstr "소리 내어 읽기"
 
-#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:193
+#: apps/desktop/ui/palette.slint:75 apps/desktop/ui/reading.slint:193
 #: apps/desktop/ui/shortcuts.slint:70 apps/desktop/ui/tool-row.slint:278
 msgid "Present"
 msgstr "프레젠테이션"
 
-#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/reading.slint:211
+#: apps/desktop/ui/palette.slint:76 apps/desktop/ui/reading.slint:211
 #: apps/desktop/ui/reading.slint:544 apps/desktop/ui/reading.slint:553
 #: apps/desktop/ui/tool-row.slint:300
 msgid "Bookmarks"
 msgstr "책갈피"
 
-#: apps/desktop/ui/palette.slint:78 apps/desktop/ui/top-bar.slint:254
+#: apps/desktop/ui/palette.slint:77 apps/desktop/ui/top-bar.slint:254
 msgid "Show sidebar"
 msgstr "사이드바 표시"
 
 #. the side panel with the options of the tool or the properties of the selection
-#: apps/desktop/ui/palette.slint:79 apps/desktop/ui/top-bar.slint:518
+#: apps/desktop/ui/palette.slint:78 apps/desktop/ui/top-bar.slint:518
 msgid "Inspector"
 msgstr "인스펙터"
 
-#: apps/desktop/ui/palette.slint:80 apps/desktop/ui/top-bar.slint:491
+#: apps/desktop/ui/palette.slint:79 apps/desktop/ui/top-bar.slint:491
 msgid "Switch to light mode"
 msgstr "라이트 모드로 전환"
 
-#: apps/desktop/ui/palette.slint:80 apps/desktop/ui/top-bar.slint:491
+#: apps/desktop/ui/palette.slint:79 apps/desktop/ui/top-bar.slint:491
 msgid "Switch to dark mode"
 msgstr "다크 모드로 전환"
 
-#: apps/desktop/ui/palette.slint:81
+#: apps/desktop/ui/palette.slint:80
 msgid "Turn vim keys off"
 msgstr "vim 키 끄기"
 
-#: apps/desktop/ui/palette.slint:81
+#: apps/desktop/ui/palette.slint:80
 msgid "Turn vim keys on"
 msgstr "vim 키 켜기"
 
-#: apps/desktop/ui/palette.slint:82 apps/desktop/ui/shortcuts.slint:22
+#: apps/desktop/ui/palette.slint:81 apps/desktop/ui/shortcuts.slint:22
 #: apps/desktop/ui/shortcuts.slint:111
 msgid "Keyboard shortcuts"
 msgstr "키보드 단축키"
 
-#: apps/desktop/ui/palette.slint:83 apps/desktop/ui/settings.slint:18
+#: apps/desktop/ui/palette.slint:82 apps/desktop/ui/settings.slint:18
 #: apps/desktop/ui/settings.slint:33 apps/desktop/ui/settings.slint:85
 #: apps/desktop/ui/shortcuts.slint:48
 msgid "Settings"
 msgstr "설정"
 
-#: apps/desktop/ui/palette.slint:231 apps/desktop/ui/palette.slint:281
+#: apps/desktop/ui/palette.slint:237 apps/desktop/ui/palette.slint:287
 #: apps/desktop/ui/shortcuts.slint:49 apps/desktop/ui/top-bar.slint:481
 msgid "All tools"
 msgstr "모든 도구"
 
-#: apps/desktop/ui/palette.slint:282 apps/desktop/ui/palette.slint:295
+#: apps/desktop/ui/palette.slint:288 apps/desktop/ui/palette.slint:301
 msgid "Search the tools and commands"
 msgstr "도구 및 명령 검색"
 
-#: apps/desktop/ui/palette.slint:309
+#: apps/desktop/ui/palette.slint:315
 msgid "Nothing matches “{}”."
 msgstr "“{}”과(와) 일치하는 항목이 없습니다."
 
@@ -6175,10 +6218,6 @@ msgstr ""
 
 #: apps/desktop/ui/vim-bindings.slint:19
 msgid "Go to page 12"
-msgstr ""
-
-#: apps/desktop/ui/vim-bindings.slint:21 apps/desktop/ui/vim-status.slint:19
-msgid "Zoom"
 msgstr ""
 
 #: apps/desktop/ui/vim-bindings.slint:26 apps/desktop/ui/vim-help.slint:191
