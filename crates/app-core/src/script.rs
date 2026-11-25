@@ -246,11 +246,30 @@ fn unquote(w: &str) -> &str {
     w.strip_prefix('\u{1}').unwrap_or(w)
 }
 
-/// Expands `$NAME` and `${NAME}` from `env`.
+/// Whether `text` ends inside double quotes, given whether it starts inside them (by the
+/// rules of [`words`]: a `\` in quotes takes the next character with it).
+fn ends_quoted(text: &str, mut quoted: bool) -> bool {
+    let mut chars = text.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if quoted => {
+                chars.next();
+            }
+            '"' => quoted = !quoted,
+            _ => {}
+        }
+    }
+    quoted
+}
+
+/// Expands `$NAME` and `${NAME}` from `env`. A value is literal text: inside double quotes
+/// its `\` and `"` are escaped, so a Windows path keeps its backslashes.
 pub fn expand(s: &str, env: &dyn Fn(&str) -> Option<String>) -> String {
     let mut out = String::new();
     let mut rest = s;
+    let mut quoted = false;
     while let Some(i) = rest.find('$') {
+        quoted = ends_quoted(&rest[..i], quoted);
         out.push_str(&rest[..i]);
         let after = &rest[i + 1..];
         let (name, tail) = if let Some(b) = after.strip_prefix('{') {
@@ -267,7 +286,12 @@ pub fn expand(s: &str, env: &dyn Fn(&str) -> Option<String>) -> String {
         if name.is_empty() {
             out.push('$');
         } else {
-            out.push_str(&env(name).unwrap_or_default());
+            for c in env(name).unwrap_or_default().chars() {
+                if quoted && matches!(c, '\\' | '"') {
+                    out.push('\\');
+                }
+                out.push(c);
+            }
         }
         rest = tail;
     }
@@ -567,6 +591,23 @@ mod tests {
             }
         ));
         assert!(parse("rclick misspelling x", &|_| None).is_err());
+    }
+
+    #[test]
+    fn a_variable_is_literal_text() {
+        let env = |n: &str| match n {
+            "WIN" => Some(r"D:\a\new dir".to_string()),
+            "QUOTE" => Some(r#"say "hi""#.to_string()),
+            _ => None,
+        };
+        // Inside quotes a Windows path keeps its backslashes (`\n` is not a line break).
+        let s = parse("open \"$WIN/lease.pdf\"\nopen \"${QUOTE}.pdf\"", &env).unwrap();
+        assert_eq!(s[0].action, Action::Open(r"D:\a\new dir/lease.pdf".into()));
+        assert_eq!(s[1].action, Action::Open(r#"say "hi".pdf"#.into()));
+        // Outside quotes nothing is an escape, so nothing is added.
+        assert_eq!(expand(r"$WIN", &env), r"D:\a\new dir");
+        // The quotes before a variable are counted, escaped ones too.
+        assert_eq!(expand(r#""a \" b" $WIN"#, &env), r#""a \" b" D:\a\new dir"#);
     }
 
     #[test]
