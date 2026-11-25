@@ -36,7 +36,8 @@ sign "$exe"
 sign "$dll"
 wix build -arch x64 \
     -d Name="$APP_NAME" -d AppId="$APP_ID" -d Publisher="$APP_PUBLISHER" \
-    -d Summary="$APP_SUMMARY" -d Homepage="$APP_HOMEPAGE" -d Version="$APP_VERSION" \
+    -d Summary="$APP_SUMMARY" -d Homepage="$APP_HOMEPAGE" -d Repository="$APP_REPOSITORY" \
+    -d Version="$APP_VERSION" \
     -d UpgradeCode="$upgrade" -d Exe="$(win "$exe")" -d ExeName="$(basename "$exe")" \
     -d ShellDll="$(win "$dll")" -d ShellDllName="$(basename "$dll")" \
     -d Icon="$(win "$ROOT/packaging/icons/app.ico")" -d Root="$(win "$ROOT")" \

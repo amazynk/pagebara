@@ -25,6 +25,25 @@ pub(super) fn take_answer() -> Option<PathBuf> {
 
 type Then = Box<dyn FnOnce(&Rc<App>, &mut State, &AppWindow, PathBuf)>;
 
+/// A file dialog to fill in. On Windows it belongs to the app's window: it stays in front
+/// of it, and the window takes no input until the dialog is closed. Without an owner it
+/// would be a window of its own, which can end up behind the app.
+pub(super) fn dialog(app: &App) -> rfd::AsyncFileDialog {
+    #[cfg(windows)]
+    if let Some(ui) = app.ui.upgrade() {
+        use slint::ComponentHandle;
+        use slint::winit_030::WinitWindowAccessor;
+        if let Some(d) = ui
+            .window()
+            .with_winit_window(|w| rfd::AsyncFileDialog::new().set_parent(w))
+        {
+            return d;
+        }
+    }
+    let _ = app;
+    rfd::AsyncFileDialog::new()
+}
+
 fn run(app: &Rc<App>, dialog: rfd::AsyncFileDialog, save: bool, then: Then) {
     if let Some(p) = take_answer() {
         app.act(move |app, s, ui| then(app, s, ui, p));
@@ -55,7 +74,7 @@ pub fn save_pdf(
     name: &str,
     then: impl FnOnce(&Rc<App>, &mut State, &AppWindow, PathBuf) + 'static,
 ) {
-    let mut d = rfd::AsyncFileDialog::new()
+    let mut d = dialog(app)
         .set_title(title)
         .add_filter(tr!("PDF documents"), &["pdf"])
         .set_file_name(name);
@@ -74,7 +93,7 @@ pub fn save_file(
     name: &str,
     then: impl FnOnce(&Rc<App>, &mut State, &AppWindow, PathBuf) + 'static,
 ) {
-    let d = rfd::AsyncFileDialog::new()
+    let d = dialog(app)
         .set_title(title)
         .add_filter(pagebara_i18n::translate(filter.0, &[]), filter.1)
         .set_file_name(name);
@@ -88,7 +107,7 @@ pub fn open(
     filter: (&str, &[&str]),
     then: impl FnOnce(&Rc<App>, &mut State, &AppWindow, PathBuf) + 'static,
 ) {
-    let d = rfd::AsyncFileDialog::new()
+    let d = dialog(app)
         .set_title(title)
         .add_filter(pagebara_i18n::translate(filter.0, &[]), filter.1);
     run(app, d, false, Box::new(then));

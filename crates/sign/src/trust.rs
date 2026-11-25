@@ -2,9 +2,12 @@
 //!
 //! On Linux and the BSDs the system roots are read from the usual PEM bundles. macOS ships
 //! a bundle at `/etc/ssl/cert.pem`, which is read; the Keychain (including certificates the
-//! user trusted there) and the Windows certificate store need platform APIs, which this
-//! engine does not call: the app reads them (e.g. with the `security-framework` or
-//! `schannel` crates) and hands the DER to [`TrustStore::add`].
+//! user trusted there) needs platform APIs, which this engine does not call: the app reads
+//! them (e.g. with the `security-framework` crate) and hands the DER to
+//! [`TrustStore::add`]. On Windows the roots are the certificate store's "ROOT" store, read
+//! through the key store module: the computer's roots, the user's own and those set by the
+//! organisation. Windows fetches a public root the first time something needs it, so a
+//! root no program has met yet is not in the store, and its chains stay untrusted.
 //!
 //! System roots are made for TLS and include many CAs that never issue signing
 //! certificates; document signing lists (Adobe AATL, the EU trusted lists) are kept as
@@ -54,6 +57,13 @@ impl TrustStore {
 
     /// Adds the system's roots; returns how many were added.
     pub fn load_system(&mut self) -> usize {
+        let store = crate::keystore::system_roots();
+        if !store.is_empty() {
+            return store
+                .into_iter()
+                .filter(|c| self.add(c.clone(), TrustSource::System))
+                .count();
+        }
         for path in BUNDLES {
             if let Ok(pem) = std::fs::read(path)
                 && let Ok(n) = self.add_pem(&pem, TrustSource::System)
@@ -142,5 +152,18 @@ impl TrustStore {
         cert: &'a Certificate,
     ) -> impl Iterator<Item = (&'a Certificate, TrustSource)> {
         self.anchors().filter(move |(a, _)| cert.names_issuer(a))
+    }
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+
+    /// Every Windows has roots in its store; a signed PDF must not need a hand-added one.
+    #[test]
+    fn the_windows_store_gives_system_roots() {
+        let t = TrustStore::system();
+        assert!(!t.is_empty());
+        assert!(t.anchors().all(|(_, s)| s == TrustSource::System));
     }
 }

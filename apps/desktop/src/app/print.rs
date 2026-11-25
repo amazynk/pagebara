@@ -292,7 +292,7 @@ fn pick_save(app: &Rc<App>, s: &mut State, _ui: &AppWindow) {
         .unwrap_or_else(|| "print.pdf".into());
     let app = app.clone();
     let task = slint::spawn_local(async move {
-        let picked = rfd::AsyncFileDialog::new()
+        let picked = super::pick::dialog(&app)
             .set_title(tr!("Save as PDF for printing"))
             .set_file_name(name)
             .add_filter(tr!("PDF documents"), &["pdf"])

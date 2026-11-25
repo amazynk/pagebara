@@ -244,7 +244,7 @@ pub fn add_folder(app: &Rc<App>, s: &mut State, ui: &AppWindow, folder: &Path) {
 fn pick_folder(app: &Rc<App>) {
     let app = app.clone();
     let task = slint::spawn_local(async move {
-        let picked = rfd::AsyncFileDialog::new()
+        let picked = super::pick::dialog(&app)
             .set_title(tr!("Add a folder to the library"))
             .pick_folder()
             .await;

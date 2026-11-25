@@ -356,7 +356,7 @@ impl App {
     fn import_signature(self: &Rc<Self>, _s: &mut State) {
         let app = self.clone();
         let task = slint::spawn_local(async move {
-            let Some(f) = rfd::AsyncFileDialog::new()
+            let Some(f) = super::pick::dialog(&app)
                 .set_title(tr!("Import a signature image"))
                 .add_filter(tr!("Images"), &["png", "jpg", "jpeg", "PNG", "JPG", "JPEG"])
                 .pick_file()

@@ -24,6 +24,15 @@ pub fn system_identities() -> Result<Vec<Identity>> {
     Ok(Vec::new())
 }
 
+/// The root certificates the system's certificate store trusts (Windows). Empty where the
+/// roots are files instead, which [`crate::TrustStore::load_system`] reads itself.
+pub(crate) fn system_roots() -> Vec<Certificate> {
+    #[cfg(windows)]
+    return win::roots();
+    #[cfg(not(windows))]
+    Vec::new()
+}
+
 /// The issuers of `leaf` found in `pool`, nearest first.
 #[cfg_attr(not(any(windows, target_os = "macos")), allow(dead_code))]
 fn issuers(leaf: &Certificate, pool: &[Certificate]) -> Vec<Certificate> {

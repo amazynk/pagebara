@@ -393,7 +393,7 @@ impl App {
         };
         let app = self.clone();
         let task = slint::spawn_local(async move {
-            let mut dlg = rfd::AsyncFileDialog::new().set_title(if merge {
+            let mut dlg = super::pick::dialog(&app).set_title(if merge {
                 tr!("Add documents at the end")
             } else {
                 tr!("Insert pages from")
@@ -506,7 +506,7 @@ impl App {
             .and_then(|p| p.parent().map(Path::to_owned));
         let app = self.clone();
         let task = slint::spawn_local(async move {
-            let mut dlg = rfd::AsyncFileDialog::new()
+            let mut dlg = super::pick::dialog(&app)
                 .set_title(tr!("Extract pages to"))
                 .add_filter(tr!("PDF documents"), &["pdf"])
                 .set_file_name(&name);
@@ -565,7 +565,7 @@ impl App {
             .and_then(|p| p.parent().map(Path::to_owned));
         let app = self.clone();
         let task = slint::spawn_local(async move {
-            let mut dlg = rfd::AsyncFileDialog::new().set_title(tr!("Save the parts in"));
+            let mut dlg = super::pick::dialog(&app).set_title(tr!("Save the parts in"));
             if let Some(d) = dir {
                 dlg = dlg.set_directory(d);
             }

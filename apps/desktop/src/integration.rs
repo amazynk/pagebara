@@ -210,17 +210,22 @@ pub fn elevated(cmd: &str, id: &str) -> Result<(), String> {
         return Err(tr!("needs administrator rights"));
     }
     let exe = exe().to_string_lossy().replace('\'', "''");
-    let status = std::process::Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-Command",
-            &format!(
-                "Start-Process -FilePath '{exe}' -ArgumentList '--integration','{cmd}','{id}' -Verb RunAs -Wait -WindowStyle Hidden"
-            ),
-        ])
-        .status()
-        .map_err(|e| e.to_string())?;
+    let mut c = std::process::Command::new("powershell");
+    c.args([
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        &format!(
+            "Start-Process -FilePath '{exe}' -ArgumentList '--integration','{cmd}','{id}' -Verb RunAs -Wait -WindowStyle Hidden"
+        ),
+    ]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // CREATE_NO_WINDOW: the app has no console, so PowerShell would open one of its own.
+        c.creation_flags(0x0800_0000);
+    }
+    let status = c.status().map_err(|e| e.to_string())?;
     if status.success() {
         Ok(())
     } else {

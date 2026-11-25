@@ -6,6 +6,46 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Print from Explorer on Windows.** Right-clicking a PDF and choosing Print opens it in
+  Pagebara with the print dialog, when Pagebara is the app that opens PDFs.
+
+### Changed
+
+- **The Windows installer no longer touches the PDF app of other users.** It used to make
+  Pagebara the app for PDFs for every user who had not chosen one, and uninstalling could
+  then leave those users with no app for PDFs at all. It now only adds Pagebara to Open
+  with and to Settings › Apps › Default apps, where you choose. After updating from an
+  earlier version Windows may ask once which app opens PDFs.
+- **Uninstalling on Windows takes the system integration with it.** Thumbnails, the
+  preview pane, the context menu and Send to that you turned on in Settings are removed
+  first, instead of being left pointing at files that are gone. The Windows Search filter
+  is for all users: remove it in Settings › System integration before uninstalling.
+- A Pagebara pinned to the Windows taskbar is now the same button as its open window, with
+  the jump list on it.
+
+### Fixed
+
+- **No console window on Windows.** Starting Pagebara from the Start menu, from Explorer
+  or by opening a PDF showed a black console window beside the app, and closing that
+  window closed Pagebara. It is gone. On the command line Pagebara still prints to the
+  terminal it was started from; the Command Prompt does not wait for it, so a batch file
+  that needs the result uses `start /wait pagebara …`.
+- **Signatures on Windows are checked against the certificates Windows trusts.** Pagebara
+  found no root certificates on Windows, so every signature read "signer not trusted"
+  until its certificate was added by hand. It now uses the Windows certificate store, your
+  organisation's certificates included.
+- File dialogs on Windows stay in front of the Pagebara window they belong to, instead of
+  being able to end up behind it.
+- Saving on Windows no longer fails at once when another program has the file open for a
+  moment (a virus scanner, the search index, a sync app): Pagebara tries for two seconds
+  first.
+- On a processor too old for Pagebara (before Intel Haswell or AMD Zen), it now says so
+  instead of ending without a word; this is for every system.
+- When Pagebara cannot start on Windows, or has to close because of an internal error, a
+  message says why. Until now it closed silently.
+
 ## [0.2.2] - 2026-11-24
 
 ### Added

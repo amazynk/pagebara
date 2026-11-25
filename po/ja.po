@@ -829,7 +829,7 @@ msgid "Open a PDF"
 msgstr "PDF を開く"
 
 #: apps/desktop/src/app/mod.rs:1184 apps/desktop/src/app/organize.rs:402
-#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
+#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:79
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
 #: apps/mobile/src/platform/host.rs:73
@@ -2497,15 +2497,15 @@ msgstr "修復"
 msgid "needs administrator rights"
 msgstr "管理者権限が必要です"
 
-#: apps/desktop/src/integration.rs:227
+#: apps/desktop/src/integration.rs:232
 msgid "administrator rights were not given"
 msgstr "管理者権限が与えられませんでした"
 
-#: apps/desktop/src/integration.rs:356
+#: apps/desktop/src/integration.rs:361
 msgid "macOS always has a default app: choose another one in Finder's Get Info."
 msgstr "macOS には常にデフォルトのアプリがあります。Finder の「情報を見る」で別のアプリを選択してください。"
 
-#: apps/desktop/src/integration.rs:363 crates/integration/src/macos.rs:214
+#: apps/desktop/src/integration.rs:368 crates/integration/src/macos.rs:214
 msgid "Start the app from its .app bundle to make it the default."
 msgstr "デフォルトにするには、.app バンドルからアプリを起動してください。"
 
@@ -2610,16 +2610,20 @@ msgstr "中国語"
 msgid "unknown"
 msgstr "不明"
 
-#: apps/desktop/src/main.rs:253
+#: apps/desktop/src/main.rs:134
+msgid "{} could not start."
+msgstr ""
+
+#: apps/desktop/src/main.rs:294
 msgid "Wrote {}"
 msgstr "{} を書き出しました"
 
-#: apps/desktop/src/main.rs:254
+#: apps/desktop/src/main.rs:295
 msgid "Wrote {n} file"
 msgid_plural "Wrote {n} files"
 msgstr[0] "{n} 個のファイルを書き出しました"
 
-#: apps/desktop/src/main.rs:264
+#: apps/desktop/src/main.rs:305
 msgid "{} failed"
 msgstr "{} は失敗しました"
 

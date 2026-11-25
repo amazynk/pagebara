@@ -853,7 +853,7 @@ msgid "Open a PDF"
 msgstr "Відкрити PDF"
 
 #: apps/desktop/src/app/mod.rs:1184 apps/desktop/src/app/organize.rs:402
-#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
+#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:79
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
 #: apps/mobile/src/platform/host.rs:73
@@ -2601,15 +2601,15 @@ msgstr "Відновити"
 msgid "needs administrator rights"
 msgstr "потрібні права адміністратора"
 
-#: apps/desktop/src/integration.rs:227
+#: apps/desktop/src/integration.rs:232
 msgid "administrator rights were not given"
 msgstr "права адміністратора не надано"
 
-#: apps/desktop/src/integration.rs:356
+#: apps/desktop/src/integration.rs:361
 msgid "macOS always has a default app: choose another one in Finder's Get Info."
 msgstr "У macOS завжди є типова програма: виберіть іншу у вікні «Інформація» у Finder."
 
-#: apps/desktop/src/integration.rs:363 crates/integration/src/macos.rs:214
+#: apps/desktop/src/integration.rs:368 crates/integration/src/macos.rs:214
 msgid "Start the app from its .app bundle to make it the default."
 msgstr "Запустіть програму з її пакета .app, щоб зробити її типовою."
 
@@ -2714,18 +2714,22 @@ msgstr "Китайська"
 msgid "unknown"
 msgstr "невідома"
 
-#: apps/desktop/src/main.rs:253
+#: apps/desktop/src/main.rs:134
+msgid "{} could not start."
+msgstr ""
+
+#: apps/desktop/src/main.rs:294
 msgid "Wrote {}"
 msgstr "Записано {}"
 
-#: apps/desktop/src/main.rs:254
+#: apps/desktop/src/main.rs:295
 msgid "Wrote {n} file"
 msgid_plural "Wrote {n} files"
 msgstr[0] "Записано {n} файл"
 msgstr[1] "Записано {n} файли"
 msgstr[2] "Записано {n} файлів"
 
-#: apps/desktop/src/main.rs:264
+#: apps/desktop/src/main.rs:305
 msgid "{} failed"
 msgstr "{}: помилка"
 

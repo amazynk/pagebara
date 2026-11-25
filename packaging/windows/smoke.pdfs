@@ -1,0 +1,6 @@
+# The installed app opens a document and draws it (run by smoke-test.ps1).
+open "$SAMPLES/lease.pdf"
+assert pages == 4
+await thumbs.drawn >= 4 30000
+wait 500
+screenshot smoke.png

@@ -829,7 +829,7 @@ msgid "Open a PDF"
 msgstr "打开 PDF"
 
 #: apps/desktop/src/app/mod.rs:1184 apps/desktop/src/app/organize.rs:402
-#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
+#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:79
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
 #: apps/mobile/src/platform/host.rs:73
@@ -2497,15 +2497,15 @@ msgstr "修复"
 msgid "needs administrator rights"
 msgstr "需要管理员权限"
 
-#: apps/desktop/src/integration.rs:227
+#: apps/desktop/src/integration.rs:232
 msgid "administrator rights were not given"
 msgstr "未获得管理员权限"
 
-#: apps/desktop/src/integration.rs:356
+#: apps/desktop/src/integration.rs:361
 msgid "macOS always has a default app: choose another one in Finder's Get Info."
 msgstr "macOS 始终有默认应用：请在访达的“显示简介”中选择其他应用。"
 
-#: apps/desktop/src/integration.rs:363 crates/integration/src/macos.rs:214
+#: apps/desktop/src/integration.rs:368 crates/integration/src/macos.rs:214
 msgid "Start the app from its .app bundle to make it the default."
 msgstr "请从 .app 包启动应用，才能将其设为默认应用。"
 
@@ -2610,16 +2610,20 @@ msgstr "中文"
 msgid "unknown"
 msgstr "未知"
 
-#: apps/desktop/src/main.rs:253
+#: apps/desktop/src/main.rs:134
+msgid "{} could not start."
+msgstr ""
+
+#: apps/desktop/src/main.rs:294
 msgid "Wrote {}"
 msgstr "已写入 {}"
 
-#: apps/desktop/src/main.rs:254
+#: apps/desktop/src/main.rs:295
 msgid "Wrote {n} file"
 msgid_plural "Wrote {n} files"
 msgstr[0] "已写入 {n} 个文件"
 
-#: apps/desktop/src/main.rs:264
+#: apps/desktop/src/main.rs:305
 msgid "{} failed"
 msgstr "{} 失败"
 

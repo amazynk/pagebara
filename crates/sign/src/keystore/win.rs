@@ -1,6 +1,7 @@
 //! The Windows certificate store through CryptoAPI and CNG (NCrypt): certificates of the
 //! "MY" store with a private key, issuers from "CA" and "ROOT", and signing with
-//! `NCryptSignHash`, so keys that cannot be exported (TPM, smart cards) work.
+//! `NCryptSignHash`, so keys that cannot be exported (TPM, smart cards) work. Also the
+//! "ROOT" store on its own, as the system's trust anchors.
 //!
 //! The only unsafe code of the crate: FFI calls into crypt32 and ncrypt. Every pointer
 //! passed is either a certificate context this module holds a reference on, or a local.
@@ -86,6 +87,15 @@ fn store(name: PCWSTR) -> Vec<Context> {
         let _ = CertCloseStore(Some(store), 0);
     }
     out
+}
+
+/// The root certificates this user's Windows trusts: the "ROOT" store, which also shows
+/// the computer's roots and those set by the organisation.
+pub fn roots() -> Vec<Certificate> {
+    store(w!("ROOT"))
+        .iter()
+        .filter_map(|c| Certificate::from_der(c.der()).ok())
+        .collect()
 }
 
 pub fn identities() -> Result<Vec<Identity>> {

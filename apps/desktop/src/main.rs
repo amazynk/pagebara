@@ -1,9 +1,15 @@
 //! pagebara, the desktop app: a Slint window around `pagebara-app-core`.
 
+// Windows: a GUI program, so starting it from Explorer or the Start menu opens no console
+// window; `main` attaches to the terminal's console for the command-line modes. Test builds
+// stay console programs, so the test harness's output reaches the terminal.
+#![cfg_attr(all(windows, not(test)), windows_subsystem = "windows")]
+
 mod app;
 mod args;
 mod bench;
 mod clipboard;
+mod cpu;
 mod dnd;
 mod export;
 mod fonts;
@@ -43,6 +49,11 @@ mod ui {
 pub use ui::*;
 
 fn main() {
+    // Windows: print to the terminal the app was started from (a GUI program has no console
+    // of its own); before anything, so the processor check's message reaches it too.
+    let console = pagebara_native::attach_parent_console();
+    // First: everything below (and every crate) is compiled for x86-64-v3.
+    cpu::require();
     startup::begin();
     init_log();
     startup::mark("logging ready");
@@ -98,14 +109,44 @@ fn main() {
     if args.action.is_some() {
         std::process::exit(run_action(&args));
     }
+    // From here on there is a window, which must not depend on the terminal: Ctrl+C typed
+    // there would end the app. Scripted and logged runs keep it, for their output.
+    let scripted = args.script.is_some() || args.screenshot.is_some() || args.bench;
+    if console && !scripted && std::env::var_os("RUST_LOG").is_none() {
+        pagebara_native::detach_console();
+    }
+    // Only for the window: the command-line modes above report on the terminal, and must
+    // never stop on a message box (an installer or a script may be waiting for them).
+    note_panics();
     let (files, server) = match os::launch(&args) {
         os::Launch::Forwarded => return,
         os::Launch::Run { files, server } => (files, server),
     };
     startup::mark("instance checked");
-    if let Err(e) = run(args, files, server) {
-        log::error!("{e}");
-        std::process::exit(1);
+    let ended = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(args, files, server)));
+    match ended {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => {
+            log::error!("{e}");
+            // No window came (no usable renderer, no display): say so where nobody reads logs.
+            error_box(&format!(
+                "{}\n\n{e}",
+                pagebara_i18n::tr!("{} could not start.", pagebara_identity::NAME)
+            ));
+            std::process::exit(1);
+        }
+        // A panic that got this far ends the app. Without a terminal nobody would learn
+        // why, so a message box says what the report on the terminal says. English: the
+        // panic may have come from the translations, or left them unusable.
+        Err(panic) => {
+            let what = lock(&LAST_PANIC).take().unwrap_or_default();
+            error_box(&format!(
+                "{} {} has to close because of an internal error.\n\n{what}",
+                pagebara_identity::NAME,
+                env!("CARGO_PKG_VERSION")
+            ));
+            std::panic::resume_unwind(panic);
+        }
     }
     std::process::exit(script::EXIT.load(std::sync::atomic::Ordering::Acquire));
 }
@@ -267,6 +308,49 @@ fn run_action(args: &args::Args) -> i32 {
             1
         }
     }
+}
+
+/// Windows: `text` in an error message box, when there is no terminal to print it to
+/// (started from Explorer or the Start menu, or let go of the terminal for the window).
+fn error_box(text: &str) {
+    if !pagebara_native::has_terminal() {
+        pagebara_native::error_box(
+            &pagebara_native::wide(pagebara_identity::NAME),
+            &pagebara_native::wide(text),
+        );
+    }
+}
+
+/// The message and place of the last panic on the main thread, for the message box `main`
+/// shows when that panic ends the app.
+static LAST_PANIC: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
+fn lock<T>(m: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Keeps what a panic on the main thread said, besides the usual report. Only kept, not
+/// shown: a panic is not always the end (a page drawn on this thread catches its
+/// decoder's panic and carries on), and `main` knows when it is.
+fn note_panics() {
+    let main = std::thread::current().id();
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if std::thread::current().id() == main {
+            let what = info
+                .payload()
+                .downcast_ref::<&str>()
+                .copied()
+                .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str))
+                .unwrap_or("unknown error");
+            let at = info
+                .location()
+                .map(|l| format!("\n\n{}:{}", l.file(), l.line()))
+                .unwrap_or_default();
+            *lock(&LAST_PANIC) = Some(format!("{what}{at}"));
+        }
+        default(info);
+    }));
 }
 
 fn init_log() {

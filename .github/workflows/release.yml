@@ -82,6 +82,25 @@ jobs:
           WINDOWS_CERT_PFX: ${{ secrets.WINDOWS_CERT_PFX }}
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: packaging/windows/build-msi.sh target/release/pagebara.exe dist
+      # The package is installed on the runner, the installed app is run (its window too,
+      # driven by a script) and the package is removed again. A package that does not
+      # install, or an app that does not start, stops the release here.
+      - name: Install, run and uninstall
+        timeout-minutes: 20
+        shell: pwsh
+        run: packaging/windows/smoke-test.ps1 (Get-ChildItem dist/*.msi).FullName "$env:RUNNER_TEMP/smoke"
+      # Not on a tag unless it failed: `publish` attaches every artifact to the release.
+      - name: Upload the smoke test's logs and screenshot
+        if: ${{ failure() || (success() && !startsWith(github.ref, 'refs/tags/')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-smoke
+          path: |
+            ${{ runner.temp }}/smoke/*.log
+            ${{ runner.temp }}/smoke/*.txt
+            ${{ runner.temp }}/smoke/*.png
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: windows

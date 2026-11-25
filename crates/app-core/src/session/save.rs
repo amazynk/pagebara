@@ -138,12 +138,47 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
         let mut f = std::fs::File::create(&tmp)?;
         f.write_all(bytes)?;
         f.sync_all()?;
-        std::fs::rename(&tmp, path)
+        drop(f);
+        rename_over(&tmp, path)
     })();
     if result.is_err() {
         let _ = std::fs::remove_file(&tmp);
     }
     result
+}
+
+/// Renames `from` over `to`. On Windows a file that another program has open cannot be
+/// replaced, and programs open a PDF for a moment all the time (a virus scanner, the
+/// search indexer, Explorer's preview pane, a sync client), so there the rename is tried
+/// again for up to two seconds before its error is reported.
+fn rename_over(from: &Path, to: &Path) -> std::io::Result<()> {
+    let start = std::time::Instant::now();
+    let mut pause = std::time::Duration::from_millis(20);
+    loop {
+        match std::fs::rename(from, to) {
+            Err(e)
+                if cfg!(windows)
+                    && held_by_another_program(&e)
+                    && !read_only(to)
+                    && start.elapsed() < std::time::Duration::from_secs(2) =>
+            {
+                std::thread::sleep(pause);
+                pause = (pause * 2).min(std::time::Duration::from_millis(250));
+            }
+            r => return r,
+        }
+    }
+}
+
+/// Whether the file is marked read-only: replacing it is refused however long one waits.
+fn read_only(path: &Path) -> bool {
+    path.metadata().is_ok_and(|m| m.permissions().readonly())
+}
+
+/// Windows' "access denied", "sharing violation" and "lock violation": what replacing a
+/// file answers while another program has it open.
+fn held_by_another_program(e: &std::io::Error) -> bool {
+    matches!(e.raw_os_error(), Some(5 | 32 | 33))
 }
 
 /// Draws placed signatures into their pages, so they can no longer be moved or removed.
@@ -166,4 +201,35 @@ pub fn flatten_signatures(doc: &mut Document) -> usize {
         }
     }
     n
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_saved_file_replaces_the_old_one_and_leaves_no_temporary() {
+        let dir = std::env::temp_dir().join(format!("pagebara-save-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("a.pdf");
+        std::fs::write(&path, b"old").unwrap();
+        write_atomic(&path, b"new").unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), b"new");
+        let names: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect();
+        assert_eq!(names, ["a.pdf"]);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn only_a_file_held_by_another_program_is_tried_again() {
+        let os = std::io::Error::from_raw_os_error;
+        assert!(held_by_another_program(&os(32)));
+        assert!(held_by_another_program(&os(5)));
+        // "File not found" will not get better by waiting.
+        assert!(!held_by_another_program(&os(2)));
+        assert!(!held_by_another_program(&std::io::Error::other("x")));
+    }
 }

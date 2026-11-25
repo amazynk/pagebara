@@ -1179,7 +1179,7 @@ impl App {
         }
         let app = self.clone();
         let task = slint::spawn_local(async move {
-            let picked = rfd::AsyncFileDialog::new()
+            let picked = pick::dialog(&app)
                 .set_title(tr!("Open a PDF"))
                 .add_filter(tr!("PDF documents"), &["pdf", "PDF"])
                 .pick_files()

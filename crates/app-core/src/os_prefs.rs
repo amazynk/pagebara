@@ -68,13 +68,18 @@ pub fn read() -> OsPrefs {
 
 /// The output of a command that finished in time and successfully.
 fn run(program: &str, args: &[&str]) -> Option<String> {
-    let mut child = Command::new(program)
-        .args(args)
+    let mut c = Command::new(program);
+    c.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .ok()?;
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // CREATE_NO_WINDOW: the app has no console, so `reg` would open one of its own.
+        c.creation_flags(0x0800_0000);
+    }
+    let mut child = c.spawn().ok()?;
     let start = Instant::now();
     loop {
         match child.try_wait() {

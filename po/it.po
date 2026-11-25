@@ -841,7 +841,7 @@ msgid "Open a PDF"
 msgstr "Apri un PDF"
 
 #: apps/desktop/src/app/mod.rs:1184 apps/desktop/src/app/organize.rs:402
-#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:60
+#: apps/desktop/src/app/organize.rs:511 apps/desktop/src/app/pick.rs:79
 #: apps/desktop/src/app/print.rs:298 apps/desktop/src/app/stamps.rs:411
 #: apps/desktop/src/app/stamps.rs:423 apps/desktop/src/app/stamps.rs:474
 #: apps/mobile/src/platform/host.rs:73
@@ -2549,15 +2549,15 @@ msgstr "Ripara"
 msgid "needs administrator rights"
 msgstr "richiede i diritti di amministratore"
 
-#: apps/desktop/src/integration.rs:227
+#: apps/desktop/src/integration.rs:232
 msgid "administrator rights were not given"
 msgstr "i diritti di amministratore non sono stati concessi"
 
-#: apps/desktop/src/integration.rs:356
+#: apps/desktop/src/integration.rs:361
 msgid "macOS always has a default app: choose another one in Finder's Get Info."
 msgstr "macOS ha sempre un'app predefinita: scegline un'altra in Ottieni informazioni nel Finder."
 
-#: apps/desktop/src/integration.rs:363 crates/integration/src/macos.rs:214
+#: apps/desktop/src/integration.rs:368 crates/integration/src/macos.rs:214
 msgid "Start the app from its .app bundle to make it the default."
 msgstr "Avvia l'app dal suo bundle .app per renderla predefinita."
 
@@ -2662,17 +2662,21 @@ msgstr "Cinese"
 msgid "unknown"
 msgstr "sconosciuta"
 
-#: apps/desktop/src/main.rs:253
+#: apps/desktop/src/main.rs:134
+msgid "{} could not start."
+msgstr ""
+
+#: apps/desktop/src/main.rs:294
 msgid "Wrote {}"
 msgstr "Scritto {}"
 
-#: apps/desktop/src/main.rs:254
+#: apps/desktop/src/main.rs:295
 msgid "Wrote {n} file"
 msgid_plural "Wrote {n} files"
 msgstr[0] "Scritto {n} file"
 msgstr[1] "Scritti {n} file"
 
-#: apps/desktop/src/main.rs:264
+#: apps/desktop/src/main.rs:305
 msgid "{} failed"
 msgstr "{} non riuscito"
 

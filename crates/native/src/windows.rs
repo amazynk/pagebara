@@ -1,11 +1,13 @@
 //! Shell glue: recent documents, the taskbar jump list and progress, the AppUserModelID
-//! and association-change notices.
+//! and association-change notices. Also the console of the terminal the app was started
+//! from, and the message box that stands in for it.
 #![allow(unsafe_code)]
 
 use std::cell::RefCell;
 use std::mem::ManuallyDrop;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::Win32::Foundation::{E_FAIL, HWND, PROPERTYKEY};
 use windows::Win32::Storage::EnhancedStorage::PKEY_Title;
@@ -16,6 +18,10 @@ use windows::Win32::System::Com::{
     CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
     CoUninitialize,
 };
+use windows::Win32::System::Console::{
+    ATTACH_PARENT_PROCESS, AttachConsole, FreeConsole, GetStdHandle, STD_ERROR_HANDLE, STD_HANDLE,
+    STD_OUTPUT_HANDLE,
+};
 use windows::Win32::System::Variant::VT_LPWSTR;
 use windows::Win32::UI::Shell::Common::{IObjectArray, IObjectCollection};
 use windows::Win32::UI::Shell::PropertiesSystem::IPropertyStore;
@@ -25,7 +31,8 @@ use windows::Win32::UI::Shell::{
     SHChangeNotify, SetCurrentProcessExplicitAppUserModelID, ShellLink, TBPF_NOPROGRESS,
     TBPF_NORMAL, TaskbarList,
 };
-use windows::core::{HSTRING, Interface, PWSTR};
+use windows::Win32::UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, MB_SETFOREGROUND, MessageBoxW};
+use windows::core::{HSTRING, Interface, PCWSTR, PWSTR};
 
 static APP_ID: OnceLock<HSTRING> = OnceLock::new();
 
@@ -53,6 +60,69 @@ impl Drop for Com {
 fn create<T: Interface>(clsid: &windows::core::GUID) -> windows::core::Result<T> {
     // SAFETY: creates an in-process COM object; COM is initialised on this thread.
     unsafe { CoCreateInstance(clsid, None, CLSCTX_INPROC_SERVER) }
+}
+
+/// Whether the standard handle `which` leads somewhere (a console, file or pipe).
+fn has_handle(which: STD_HANDLE) -> bool {
+    // SAFETY: GetStdHandle only reads this process's standard handle table.
+    let h = unsafe { GetStdHandle(which) };
+    h.is_ok_and(|h| !h.is_invalid() && !h.0.is_null())
+}
+
+/// Whether [`attach_parent_console`] attached, and whether error output was redirected
+/// (to a file or pipe) before it did.
+static ATTACHED: AtomicBool = AtomicBool::new(false);
+static ERRORS_REDIRECTED: AtomicBool = AtomicBool::new(false);
+/// Whether [`detach_console`] let go of the console again.
+static DETACHED: AtomicBool = AtomicBool::new(false);
+
+pub fn attach_parent_console() -> bool {
+    let errors = has_handle(STD_ERROR_HANDLE);
+    if has_handle(STD_OUTPUT_HANDLE) && errors {
+        return false;
+    }
+    // SAFETY: AttachConsole takes a process id (here the documented "parent process"
+    // value) and touches no memory of ours; it fails when the parent has no console. It
+    // fills in the standard handles that led nowhere and keeps a redirected one; std reads
+    // them on every write, so later output goes to that console.
+    let attached = unsafe { AttachConsole(ATTACH_PARENT_PROCESS) }.is_ok();
+    ATTACHED.store(attached, Ordering::Relaxed);
+    ERRORS_REDIRECTED.store(errors, Ordering::Relaxed);
+    attached
+}
+
+pub fn detach_console() {
+    if !ATTACHED.load(Ordering::Relaxed) {
+        return;
+    }
+    // SAFETY: FreeConsole takes no arguments and only detaches this process from its
+    // console; the standard handles left behind are invalid, which std treats as a sink.
+    let _ = unsafe { FreeConsole() };
+    DETACHED.store(true, Ordering::Relaxed);
+}
+
+pub fn has_terminal() -> bool {
+    // After the console is let go its handles are still set but lead nowhere.
+    if DETACHED.load(Ordering::Relaxed) {
+        return ERRORS_REDIRECTED.load(Ordering::Relaxed);
+    }
+    has_handle(STD_ERROR_HANDLE)
+}
+
+pub fn error_box(title: &[u16], text: &[u16]) {
+    if title.last() != Some(&0) || text.last() != Some(&0) {
+        return;
+    }
+    // SAFETY: both pointers come from slices that end in NUL (checked above) and outlive
+    // the call; MessageBoxW only reads them. No owner window: the box stands alone.
+    unsafe {
+        MessageBoxW(
+            None,
+            PCWSTR(text.as_ptr()),
+            PCWSTR(title.as_ptr()),
+            MB_OK | MB_ICONERROR | MB_SETFOREGROUND,
+        )
+    };
 }
 
 pub fn note_recent(path: &Path) {

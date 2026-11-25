@@ -4,12 +4,19 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="$(var.Name)" Manufacturer="$(var.Publisher)" Version="$(var.Version)"
            UpgradeCode="$(var.UpgradeCode)" Scope="perMachine" Compressed="yes">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of $(var.Name) is already installed." />
+    <!-- A rebuilt package of the same version replaces the installed one too, instead of
+         being installed beside it as a second product. -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of $(var.Name) is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- The app's entry in Settings > Apps: its icon and where to read about it, get help
+         and find new versions. -->
     <Icon Id="AppIcon" SourceFile="$(var.Icon)" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <Property Id="ARPURLINFOABOUT" Value="$(var.Homepage)" />
+    <Property Id="ARPHELPLINK" Value="$(var.Repository)/issues" />
+    <Property Id="ARPURLUPDATEINFO" Value="$(var.Repository)/releases" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="$(var.Name)">
@@ -17,14 +24,22 @@
           <File Id="ExeFile" Source="$(var.Exe)" KeyPath="yes" />
           <!-- "Open with" for .pdf; Windows lets the user pick the default handler (the
                app's Settings button opens Default apps at this registration). A second
-               launch hands the file to the running window. -->
-          <ProgId Id="$(var.AppId).pdf" Description="PDF document" Icon="ExeFile" IconIndex="0">
-            <Extension Id="pdf" ContentType="application/pdf" Advertise="no">
-              <Verb Id="open" Command="Open" TargetFile="ExeFile" Argument="&quot;%1&quot;" />
-            </Extension>
-          </ProgId>
-          <RegistryValue Root="HKLM" Key="Software\Classes\$(var.AppId).pdf" Name="FriendlyTypeName"
-                         Value="PDF document" Type="string" />
+               launch hands the file to the running window.
+               The ProgID is plain registry values, not <ProgId><Extension>: that writes
+               HKCR\.pdf's default value (making this app the PDF handler of every user who
+               has not chosen one) and its Content Type, and uninstalling then deletes both,
+               leaving .pdf with no handler and no MIME type. -->
+          <RegistryKey Root="HKLM" Key="Software\Classes\$(var.AppId).pdf">
+            <RegistryValue Value="PDF document" Type="string" />
+            <RegistryValue Name="FriendlyTypeName" Value="PDF document" Type="string" />
+            <RegistryValue Key="DefaultIcon" Value="&quot;[#ExeFile]&quot;,0" Type="string" />
+            <RegistryValue Key="shell\open\command" Value="&quot;[#ExeFile]&quot; &quot;%1&quot;" Type="string" />
+            <!-- Explorer's Print on a PDF: the app opens it with its print dialog. -->
+            <RegistryValue Key="shell\print\command" Value="&quot;[#ExeFile]&quot; --print &quot;%1&quot;" Type="string" />
+            <!-- The app's taskbar ID (it sets the same one): PDFs opened through this
+                 registration show in its jump list. -->
+            <RegistryValue Name="AppUserModelID" Value="$(var.AppId)" Type="string" />
+          </RegistryKey>
           <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="$(var.Name)"
                          Value="Software\$(var.Name)\Capabilities" Type="string" />
           <RegistryKey Root="HKLM" Key="Software\$(var.Name)\Capabilities">
@@ -83,11 +98,30 @@
     <StandardDirectory Id="ProgramMenuFolder">
       <Component Id="StartMenu">
         <Shortcut Id="StartMenuShortcut" Name="$(var.Name)" Description="$(var.Summary)"
-                  Target="[INSTALLFOLDER]$(var.ExeName)" WorkingDirectory="INSTALLFOLDER" />
+                  Target="[INSTALLFOLDER]$(var.ExeName)" WorkingDirectory="INSTALLFOLDER">
+          <!-- The app's taskbar ID (it sets the same one), so a pinned shortcut and the
+               running window are one taskbar button with one jump list. -->
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="$(var.AppId)" />
+        </Shortcut>
         <RegistryValue Root="HKLM" Key="Software\$(var.Name)" Name="StartMenuShortcut"
                        Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>
+
+    <!-- What the user turned on in Settings > System integration (thumbnails, the preview
+         pane, the context menu, Send to) lives in their own registry hive and points at
+         files in this folder, so uninstalling asks the app to take it out first. Run as the
+         user who uninstalls, without waiting on its result; an update keeps everything.
+         The Windows Search filter is machine-wide: it goes too when the uninstall was
+         started with administrator rights, and otherwise from the app before uninstalling
+         (Settings > System integration > Remove all system integration). -->
+    <CustomAction Id="RemoveIntegration" Directory="INSTALLFOLDER" Execute="deferred"
+                  Impersonate="yes" Return="ignore"
+                  ExeCommand="&quot;[INSTALLFOLDER]$(var.ExeName)&quot; --integration remove-all" />
+    <InstallExecuteSequence>
+      <Custom Action="RemoveIntegration" Before="RemoveFiles"
+              Condition="(REMOVE=&quot;ALL&quot;) AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
 
     <Feature Id="Main">
       <ComponentRef Id="Exe" />

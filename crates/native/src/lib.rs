@@ -6,7 +6,8 @@
 //!   the default app for a content type (`NSWorkspace`, macOS 12+, confirmed by the user).
 //! - Windows (`windows.rs`): `SHAddToRecentDocs`, the taskbar jump list
 //!   (`ICustomDestinationList`), taskbar progress (`ITaskbarList3`), the process's
-//!   AppUserModelID and `SHChangeNotify` after association changes.
+//!   AppUserModelID, `SHChangeNotify` after association changes, the console of the
+//!   terminal the app was started from and the message box used when there is none.
 //!
 //! Only those two modules allow `unsafe`; the menu model and the URL filtering are here.
 
@@ -55,6 +56,50 @@ pub fn set_app_user_model_id(id: &str) {
     #[cfg(windows)]
     windows::set_app_user_model_id(id);
     let _ = id;
+}
+
+/// Windows: the app is a GUI program, so it has no console of its own; this attaches to
+/// the console of the terminal it was started from, so the command-line modes (`--help`,
+/// `--text`, errors) print there. Output redirected to a file or pipe stays as it is.
+/// Returns whether it attached: `false` when started from Explorer, and everywhere else.
+pub fn attach_parent_console() -> bool {
+    #[cfg(windows)]
+    return windows::attach_parent_console();
+    #[cfg(not(windows))]
+    false
+}
+
+/// Windows: lets go of the console [`attach_parent_console`] attached to. The window then
+/// no longer depends on the terminal (Ctrl+C typed there does not end the app), and later
+/// output to it is dropped.
+pub fn detach_console() {
+    #[cfg(windows)]
+    windows::detach_console();
+}
+
+/// Whether error output leads somewhere: a terminal, a file or a pipe. Only on Windows can
+/// it be `false` (started from Explorer or the Start menu), and then [`error_box`] is the
+/// one way to tell the user something.
+pub fn has_terminal() -> bool {
+    #[cfg(windows)]
+    return windows::has_terminal();
+    #[cfg(not(windows))]
+    true
+}
+
+/// Windows: shows `text` in an error message box titled `title` and waits for the user to
+/// close it. Both are NUL-terminated UTF-16 ([`wide`] makes them; the processor check
+/// makes its own at compile time, because it runs before any other code may). A no-op
+/// elsewhere.
+pub fn error_box(title: &[u16], text: &[u16]) {
+    #[cfg(windows)]
+    windows::error_box(title, text);
+    let _ = (title, text);
+}
+
+/// `s` as NUL-terminated UTF-16, for [`error_box`]. A NUL inside `s` ends the text there.
+pub fn wide(s: &str) -> Vec<u16> {
+    s.encode_utf16().chain([0]).collect()
 }
 
 /// The taskbar jump list (Windows: a "New window" task and a "Recent" category) or the
@@ -262,5 +307,13 @@ mod tests {
         );
         assert!(rx.recv().unwrap().is_err());
         assert!(set_jump_list(&[], "New window").is_ok());
+        assert!(!attach_parent_console());
+        assert!(has_terminal());
+    }
+
+    #[test]
+    fn wide_text_ends_in_nul() {
+        assert_eq!(wide("ab"), [0x61, 0x62, 0]);
+        assert_eq!(wide(""), [0]);
     }
 }
