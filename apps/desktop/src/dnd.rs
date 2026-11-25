@@ -27,14 +27,19 @@ pub fn install(app: &Rc<App>, ui: &AppWindow) {
     let pending: Rc<RefCell<Vec<PathBuf>>> = Rc::default();
     let timer = Rc::new(Timer::default());
     let buttons = ui.as_weak();
-    #[cfg(target_os = "macos")]
     let first_draw = Cell::new(true);
     ui.window()
         .on_winit_window_event(move |w, event| match event {
-            #[cfg(target_os = "macos")]
             winit::event::WindowEvent::RedrawRequested if first_draw.replace(false) => {
+                #[cfg(target_os = "macos")]
                 if let Some(ui) = buttons.upgrade() {
                     crate::app::macos_menu::install(&ui);
+                }
+                // With a renderer that reports no frames, this event is the sign of the
+                // first one: the window draws while handling it, so the frame is there
+                // when the event loop comes round again.
+                if crate::app::frames_unreported() {
+                    Timer::single_shot(Duration::ZERO, crate::app::first_frame);
                 }
                 EventResult::Propagate
             }

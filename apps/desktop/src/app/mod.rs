@@ -1063,6 +1063,9 @@ impl App {
         });
         if let Err(e) = result {
             log::warn!("frame timing unavailable with this renderer: {e:?}");
+            // Nothing tells when a frame is drawn, so the window's first redraw stands in
+            // for the first frame (see `dnd::install`).
+            FRAMES_UNREPORTED.store(true, std::sync::atomic::Ordering::Release);
         }
     }
 
@@ -1095,10 +1098,7 @@ impl App {
     }
 
     fn after_render(&self, now: Instant) {
-        FIRST_FRAME.call_once(|| {
-            crate::startup::mark("first frame");
-            preopen::warm_fonts();
-        });
+        first_frame();
         let Some(ui) = self.ui.upgrade() else { return };
         let Ok(mut s) = self.state.try_borrow_mut() else {
             return;
@@ -1942,7 +1942,24 @@ fn outline_rows(s: &Session) -> Vec<OutlineRow> {
 
 static FIRST_FRAME: std::sync::Once = std::sync::Once::new();
 
+/// Set when the renderer has no rendering notifier (Slint's software renderer, which a
+/// computer without a usable graphics driver gets): no frame is reported.
+static FRAMES_UNREPORTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// Whether the window has drawn a frame (before that, snapshots fail).
 pub fn first_frame_drawn() -> bool {
     FIRST_FRAME.is_completed()
+}
+
+/// Whether the renderer reports no frames, so the window's redraw events have to.
+pub fn frames_unreported() -> bool {
+    FRAMES_UNREPORTED.load(std::sync::atomic::Ordering::Acquire)
+}
+
+/// What the first drawn frame starts. Once; later calls do nothing.
+pub fn first_frame() {
+    FIRST_FRAME.call_once(|| {
+        crate::startup::mark("first frame");
+        preopen::warm_fonts();
+    });
 }

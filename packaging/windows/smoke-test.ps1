@@ -2,20 +2,24 @@
 # and checks what is left. The release workflow runs this on the package it just built, so
 # a package that does not install or an app that does not start never reaches a release.
 #
-#   pwsh packaging/windows/smoke-test.ps1 MSI [OUT_DIR]
+#   pwsh packaging/windows/smoke-test.ps1 MSI [OUT_DIR] [PREVIOUS_MSI]
 #
 # Needs administrator rights (the package installs for all users) and changes the machine
 # it runs on: use a CI runner or a virtual machine. OUT_DIR (default: a temporary folder)
-# gets the installer logs, the app's output and a screenshot of its window.
+# gets the installer logs, the app's output and a screenshot of its window. With
+# PREVIOUS_MSI, an earlier release's package, it then installs that one and MSI over it,
+# and checks that the update left one installed app.
 param(
     [Parameter(Mandatory)][string]$Msi,
-    [string]$Out = (Join-Path ([IO.Path]::GetTempPath()) "pagebara-smoke-$PID")
+    [string]$Out = (Join-Path ([IO.Path]::GetTempPath()) "pagebara-smoke-$PID"),
+    [string]$Previous = ''
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Msi = (Resolve-Path $Msi).Path
+if ($Previous) { $Previous = (Resolve-Path $Previous).Path }
 New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
 
@@ -46,6 +50,12 @@ function Check([string]$what, [bool]$ok) {
 function RegValue([string]$key, [string]$value) {
     if (-not (Test-Path -LiteralPath $key)) { return $null }
     (Get-Item -LiteralPath $key).GetValue($value, $null)
+}
+
+# The app's entries in Settings > Apps (the installed packages that carry its name).
+function Installed {
+    Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
+        Where-Object { $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -eq $name }
 }
 
 function Msiexec([string[]]$arguments, [string]$log) {
@@ -148,6 +158,22 @@ Check 'the Default apps entry is gone' `
 Check 'the Start menu shortcut is gone' (-not (Test-Path -LiteralPath $shortcut))
 Check 'the handler of .pdf for all users is still as it was' `
     ((RegValue "$classes\.pdf" '') -eq $pdfBefore)
+
+if ($Previous) {
+    Write-Host "== Update over $Previous"
+    Msiexec @('/i', "`"$Previous`"") (Join-Path $Out 'previous-install.log')
+    $earlier = (Installed | ForEach-Object { $_.DisplayVersion }) -join ', '
+    Write-Host "      installed first: $earlier"
+    Msiexec @('/i', "`"$Msi`"") (Join-Path $Out 'update.log')
+    $now = @(Installed)
+    Write-Host "      installed now: $(($now | ForEach-Object { $_.DisplayVersion }) -join ', ')"
+    Check 'the update replaced the earlier package: one entry in Settings > Apps' ($now.Count -eq 1)
+    $code = RunApp $exe @('--version') 'update-version' 60
+    Check 'the updated app runs' ($code -eq 0)
+    Msiexec @('/x', "`"$Msi`"") (Join-Path $Out 'update-uninstall.log')
+    Check 'no entry is left in Settings > Apps' (@(Installed).Count -eq 0)
+    Check 'the program folder is gone' (-not (Test-Path -LiteralPath $dir))
+}
 
 Write-Host "== Output in $Out"
 if ($failed -gt 0) {
