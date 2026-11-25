@@ -412,3 +412,25 @@ fn equal_pages_without_type_stay_apart() {
     assert_eq!(pages(&out.bytes), 2);
     check("equal pages", &bytes, &Preset::Lossless.options());
 }
+
+/// A fuzzer find: the root of a damaged page tree carried `/Type /ObjStm`, so the writer
+/// took it for an object stream and left it out. The pages were then found by scanning,
+/// which finds other ones: here it misses the page that has no `/Type`.
+#[test]
+fn a_page_tree_root_typed_as_an_object_stream_is_kept() {
+    let objs = [
+        "<</Type/Catalog/Pages 2 0 R>>".to_owned(),
+        "<</Type/ObjStm/Kids[3 0 R 4 0 R]/Count 2/MediaBox[0 0 100 100]/Length 0>>stream\n\nendstream".into(),
+        "<</Type/Page/Parent 2 0 R/Contents 5 0 R>>".into(),
+        "<</Parent 2 0 R/Contents 5 0 R>>".into(),
+        stream("1 0 0 rg 10 10 50 50 re f"),
+    ];
+    let bytes = classic(&objs);
+    let pages = |b: &[u8]| pagebara_pages::PageTree::load(&open(b).unwrap()).len();
+    assert_eq!(pages(&bytes), 2);
+    for preset in [Preset::Lossless, Preset::Small] {
+        let out = optimize(&open(&bytes).unwrap(), &preset.options(), None).unwrap();
+        assert_eq!(pages(&out.bytes), 2, "{preset:?}");
+    }
+    check("object stream root", &bytes, &Preset::Lossless.options());
+}

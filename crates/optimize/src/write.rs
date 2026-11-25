@@ -25,15 +25,6 @@ pub struct WriteOptions {
 
 const OBJSTM_MAX: usize = 200;
 
-/// Cross-reference and object streams and linearization dictionaries: replaced on writing.
-fn is_old_structure(o: &Object) -> bool {
-    match o {
-        Object::Stream(s) => matches!(s.dict.name(b"Type"), Some(b"XRef" | b"ObjStm")),
-        Object::Dict(d) => d.contains(b"Linearized"),
-        _ => false,
-    }
-}
-
 /// `o` with references renumbered through `map`; references to objects that are gone
 /// become null.
 fn renumber(o: &Object, map: &HashMap<u32, u32>) -> Object {
@@ -129,11 +120,11 @@ fn trailer(doc: &Document, map: &HashMap<u32, u32>) -> Dict {
 
 /// Live objects in ascending order, without the old file structure.
 fn live(doc: &Document) -> Vec<(u32, Arc<Object>)> {
+    let old = doc.old_structure();
     doc.object_numbers()
         .into_iter()
-        .filter(|&n| n > 0)
+        .filter(|&n| n > 0 && !old.contains(&n))
         .filter_map(|n| Some((n, doc.get(doc.reference(n)?)?)))
-        .filter(|(_, o)| !is_old_structure(o))
         .collect()
 }
 

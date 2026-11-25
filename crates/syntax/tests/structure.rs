@@ -193,6 +193,38 @@ fn full_save_roundtrip() {
     }
 }
 
+/// A damaged file's page tree root that carries `/Type /ObjStm` is still the page tree
+/// root: a full save keeps it, and with it the pages.
+#[test]
+fn full_save_keeps_a_referred_object_typed_as_an_object_stream() {
+    let objs = [
+        "<</Type/Catalog/Pages 2 0 R>>",
+        "<</Type/ObjStm/Kids[3 0 R]/Count 1/Length 0>>stream\n\nendstream",
+        "<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R>>",
+        "<</Length 9>>stream\n0 0 m S\n\nendstream",
+        // Refers to nothing and nothing refers to it: this one is left out.
+        "<</Type/XRef/Length 0>>stream\n\nendstream",
+    ];
+    let doc = Document::open(classic(&objs, 1)).unwrap();
+    assert!(!doc.was_repaired());
+    assert_eq!(doc.old_structure().into_iter().collect::<Vec<_>>(), [5]);
+    for out in [
+        doc.save_full().unwrap(),
+        doc.save_full_with(&SaveOptions::compact()).unwrap(),
+    ] {
+        let re = Document::open(out).unwrap();
+        assert!(!re.was_repaired());
+        let cat = re.catalog().unwrap();
+        let pages = re.get_in(cat.as_dict().unwrap(), b"Pages");
+        let kids = pages.as_stream().unwrap().dict.get(b"Kids").cloned();
+        assert_eq!(
+            kids,
+            Some(Object::Array(vec![Object::Ref(ObjRef::new(3, 0))]))
+        );
+        assert!(re.get(ObjRef::new(5, 0)).is_none());
+    }
+}
+
 #[test]
 fn compact_save_roundtrip() {
     let long = "0 0 m 100 100 l S\n".repeat(50);

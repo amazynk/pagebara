@@ -6,6 +6,14 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Saving or optimizing a damaged PDF could change which pages it has.** In a damaged
+  file the list of pages can be labelled as one of the file's internal containers, which
+  a full save and Optimize write anew. They left that list out, and the saved file then
+  showed the pages a repair scan found instead: sometimes more, sometimes fewer. An
+  object the file still refers to is now kept, whatever its label says.
+
 ## [0.2.3] - 2026-11-25
 
 ### Added

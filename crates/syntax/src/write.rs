@@ -1,5 +1,6 @@
 //! Serialisation and saving: incremental updates (§7.5.6) and full rewrites.
 
+use std::collections::HashSet;
 use std::io::Write as _;
 use std::sync::Arc;
 
@@ -8,7 +9,7 @@ use rayon::prelude::*;
 use crate::document::Document;
 use crate::lexer::is_regular;
 use crate::object::{Dict, ObjRef, Object, PdfString, Stream, StreamData};
-use crate::xref::Kind;
+use crate::xref::{Kind, NumMap};
 use crate::{Error, Result};
 
 /// Appends `o` in PDF syntax.
@@ -240,14 +241,13 @@ impl Document {
 
         let enc_num = self.save_security().and_then(|s| s.1);
         self.load_all();
+        let objects = self.objects();
+        let old = self.old_among(&objects);
         let mut packed = Vec::new();
         let mut direct = Vec::new();
-        for num in self.object_numbers() {
-            let (Some(r), true) = (self.reference(num), num > 0) else {
-                continue;
-            };
-            let Some(o) = self.get(r) else { continue };
-            if self.stale_encrypt_num() == Some(num) || is_old_structure(&o) {
+        for (r, o) in objects {
+            let num = r.num;
+            if num == 0 || self.stale_encrypt_num() == Some(num) || old.contains(&num) {
                 continue;
             }
             if opts.object_streams && r.generation == 0 && enc_num != Some(num) && packable(&o) {
@@ -330,8 +330,86 @@ impl Document {
     }
 }
 
-/// Cross-reference and object streams, which a full save replaces, and the linearization
-/// dictionary, which no longer describes the file.
+impl Document {
+    /// The numbers of the objects a full save leaves out: cross-reference and object
+    /// streams, which it replaces, and the linearization dictionary, which no longer
+    /// describes the file. An object that looks like one of these but that the trailer or
+    /// another object refers to is not one: in a damaged file the root of the page tree
+    /// can carry `/Type /ObjStm`, and leaving it out leaves the file without its pages.
+    pub fn old_structure(&self) -> HashSet<u32> {
+        self.old_among(&self.objects())
+    }
+
+    /// Every object the file has, in ascending order of number.
+    fn objects(&self) -> Vec<(ObjRef, Arc<Object>)> {
+        self.object_numbers()
+            .into_iter()
+            .filter_map(|n| {
+                let r = self.reference(n)?;
+                Some((r, self.get(r)?))
+            })
+            .collect()
+    }
+
+    /// [`Document::old_structure`], given [`Document::objects`].
+    fn old_among(&self, objects: &[(ObjRef, Arc<Object>)]) -> HashSet<u32> {
+        let mut old: HashSet<u32> = objects
+            .iter()
+            .filter(|(_, o)| is_old_structure(o))
+            .map(|(r, _)| r.num)
+            .collect();
+        if old.is_empty() {
+            return old;
+        }
+        // Asked for every reference in the file, so with the quick hash for numbers.
+        let looks_old: NumMap<()> = old.iter().map(|&n| (n, ())).collect();
+        let mut referred = objects
+            .par_iter()
+            .filter(|(r, _)| !looks_old.contains_key(&r.num))
+            .fold(Vec::new, |mut found, (_, o)| {
+                references_among(o, &looks_old, &mut found);
+                found
+            })
+            .reduce(Vec::new, |mut a, mut b| {
+                a.append(&mut b);
+                a
+            });
+        for (_, v) in self.trailer().iter() {
+            references_among(v, &looks_old, &mut referred);
+        }
+        // One that stays may refer to another.
+        while let Some(n) = referred.pop() {
+            if old.remove(&n)
+                && let Some(o) = self.reference(n).and_then(|r| self.get(r))
+            {
+                references_among(&o, &looks_old, &mut referred);
+            }
+        }
+        old
+    }
+}
+
+/// Adds the numbers `o` refers to that `among` marks.
+fn references_among(o: &Object, among: &NumMap<()>, found: &mut Vec<u32>) {
+    match o {
+        Object::Ref(r) => {
+            if among.contains_key(&r.num) {
+                found.push(r.num);
+            }
+        }
+        Object::Array(a) => a.iter().for_each(|e| references_among(e, among, found)),
+        Object::Dict(d) => d
+            .iter()
+            .for_each(|(_, v)| references_among(v, among, found)),
+        Object::Stream(s) => s
+            .dict
+            .iter()
+            .for_each(|(_, v)| references_among(v, among, found)),
+        _ => {}
+    }
+}
+
+/// What a cross-reference or object stream, or a linearization dictionary, looks like.
 fn is_old_structure(o: &Object) -> bool {
     match o {
         Object::Stream(s) => s
