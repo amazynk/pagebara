@@ -1,27 +1,35 @@
 //! Timestamps and revocation data fetched over HTTP from responders started here:
 //! OpenSSL's timestamp authority (`openssl ts -reply`) and OCSP responder (`openssl ocsp`),
 //! and CRLs made by `openssl ca -gencrl`. Every CA and key is made at run time in a
-//! temporary folder. Skipped when `openssl` is not installed.
+//! temporary folder. Skipped when OpenSSL is not installed (macOS's own `openssl` is
+//! LibreSSL, which does not count).
 
 mod common;
 
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock, mpsc};
+use std::time::{Duration, Instant};
 
 use common::http;
 use common::*;
 use pagebara_sign::*;
 use pagebara_syntax::Document;
 
+/// The one OpenSSL every command here runs, so a test never mixes two versions.
 fn openssl() -> Option<PathBuf> {
-    let p = tool("openssl");
+    static FOUND: OnceLock<Option<PathBuf>> = OnceLock::new();
+    let p = FOUND.get_or_init(common::openssl).clone();
     if p.is_none() {
         eprintln!("openssl not found; skipping");
     }
     p
+}
+
+fn command() -> Command {
+    Command::new(openssl().expect("the test checked for openssl"))
 }
 
 /// A fresh folder for one test.
@@ -33,11 +41,7 @@ fn folder(name: &str) -> PathBuf {
 }
 
 fn run(dir: &Path, args: &[&str]) {
-    let out = Command::new("openssl")
-        .args(args)
-        .current_dir(dir)
-        .output()
-        .unwrap();
+    let out = command().args(args).current_dir(dir).output().unwrap();
     assert!(
         out.status.success(),
         "openssl {args:?}: {}",
@@ -166,7 +170,7 @@ fn openssl_tsa(dir: &Path) -> (String, Certificate) {
         // One request at a time: they share the serial file.
         let _g = lock.lock().unwrap();
         std::fs::write(dir.join("req.tsq"), body).ok()?;
-        let ok = Command::new("openssl")
+        let ok = command()
             .args([
                 "ts",
                 "-reply",
@@ -276,6 +280,71 @@ impl Drop for OpensslCa {
     }
 }
 
+/// How long the OCSP responder gets to start listening.
+const RESPONDER_START: Duration = Duration::from_secs(30);
+
+/// Starts `openssl ocsp` on `port` and waits until it listens. OpenSSL 3 and later print
+/// "ACCEPT host:port" on standard output; 1.1.1 says only "waiting for OCSP client
+/// connections..." on standard error, so both are read. (Probing with a connection that
+/// sends nothing makes some OpenSSL versions spin.) A responder that says neither fails
+/// the test with what it did say, instead of leaving it waiting.
+fn responder(dir: &Path, port: u16) -> Child {
+    let mut child = command()
+        .args([
+            "ocsp",
+            "-index",
+            "index.txt",
+            "-port",
+            &port.to_string(),
+            "-rsigner",
+            "ca.pem",
+            "-rkey",
+            "ca.key",
+            "-CA",
+            "ca.pem",
+            "-ndays",
+            "1",
+        ])
+        .current_dir(dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // The readers run until the responder ends, so its pipes never fill.
+    let (tx, rx) = mpsc::channel();
+    let streams: [(&str, Box<dyn Read + Send>); 2] = [
+        ("ocsp-out", Box::new(child.stdout.take().unwrap())),
+        ("ocsp-err", Box::new(child.stderr.take().unwrap())),
+    ];
+    for (name, stream) in streams {
+        let tx = tx.clone();
+        pagebara_thread::spawn(name, move || {
+            for line in BufReader::new(stream).lines().map_while(|l| l.ok()) {
+                let _ = tx.send(line);
+            }
+        });
+    }
+    drop(tx);
+    let deadline = Instant::now() + RESPONDER_START;
+    let mut said = Vec::new();
+    loop {
+        let left = deadline.saturating_duration_since(Instant::now());
+        let Ok(line) = rx.recv_timeout(left) else {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("the OCSP responder did not start; it said: {said:#?}");
+        };
+        let listening = line.starts_with("ACCEPT")
+            || line
+                .to_ascii_lowercase()
+                .contains("waiting for ocsp client connections");
+        said.push(line);
+        if listening {
+            return child;
+        }
+    }
+}
+
 fn free_port() -> u16 {
     TcpListener::bind("127.0.0.1:0")
         .unwrap()
@@ -371,42 +440,7 @@ impl OpensslCa {
                 "ca.crl",
             ],
         );
-        let child = ocsp.then(|| {
-            let mut child = Command::new("openssl")
-                .args([
-                    "ocsp",
-                    "-index",
-                    "index.txt",
-                    "-port",
-                    &port.to_string(),
-                    "-rsigner",
-                    "ca.pem",
-                    "-rkey",
-                    "ca.key",
-                    "-CA",
-                    "ca.pem",
-                    "-ndays",
-                    "1",
-                ])
-                .current_dir(&dir)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::null())
-                .spawn()
-                .unwrap();
-            // It prints "ACCEPT 0.0.0.0:PORT" once listening. (Probing with a connection
-            // that sends nothing makes some OpenSSL versions spin.)
-            let mut line = String::new();
-            let mut out = BufReader::new(child.stdout.take().unwrap());
-            out.read_line(&mut line).unwrap();
-            assert!(
-                line.starts_with("ACCEPT"),
-                "the OCSP responder did not start: {line}"
-            );
-            pagebara_thread::spawn("ocsp-out", move || {
-                std::io::copy(&mut out, &mut std::io::sink())
-            });
-            child
-        });
+        let child = ocsp.then(|| responder(&dir, port));
         OpensslCa {
             dir,
             ca,
@@ -429,13 +463,17 @@ struct HttpFetcher;
 impl RevocationFetcher for HttpFetcher {
     fn ocsp(&self, cert: &Certificate, issuer: &Certificate) -> Option<Vec<u8>> {
         let req = ocsp_request(cert, issuer);
-        cert.ocsp_urls()
-            .iter()
-            .find_map(|u| http::post(u, "application/ocsp-request", &req).ok())
+        cert.ocsp_urls().iter().find_map(|u| {
+            http::post(u, "application/ocsp-request", &req)
+                .inspect_err(|e| eprintln!("{e}"))
+                .ok()
+        })
     }
 
     fn crl(&self, cert: &Certificate) -> Option<Vec<u8>> {
-        cert.crl_urls().iter().find_map(|u| http::get(u).ok())
+        cert.crl_urls()
+            .iter()
+            .find_map(|u| http::get(u).inspect_err(|e| eprintln!("{e}")).ok())
     }
 }
 

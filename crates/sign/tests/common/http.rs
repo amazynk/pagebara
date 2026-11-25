@@ -1,8 +1,13 @@
 //! A tiny HTTP/1.1 server and client over `std::net`, for responders started by tests.
 
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::Arc;
+use std::time::Duration;
+
+/// How long the client waits to connect, and for each read and write: a responder that
+/// stops answering fails its test instead of leaving it waiting.
+const PATIENCE: Duration = Duration::from_secs(30);
 
 /// Answers `(method, path, body)` with `(content type, body)`, or `None` for a 404.
 pub type Handler = dyn Fn(&str, &str, &[u8]) -> Option<(String, Vec<u8>)> + Send + Sync;
@@ -29,21 +34,7 @@ fn answer(stream: TcpStream, handler: &Handler) -> std::io::Result<()> {
     let mut parts = line.split_whitespace();
     let method = parts.next().unwrap_or_default().to_string();
     let path = parts.next().unwrap_or_default().to_string();
-    let mut len = 0;
-    loop {
-        let mut h = String::new();
-        r.read_line(&mut h)?;
-        let h = h.trim_end();
-        if h.is_empty() {
-            break;
-        }
-        if let Some((k, v)) = h.split_once(':')
-            && k.eq_ignore_ascii_case("content-length")
-        {
-            len = v.trim().parse().unwrap_or(0);
-        }
-    }
-    let mut body = vec![0; len];
+    let mut body = vec![0; content_length(&mut r)?.unwrap_or(0)];
     r.read_exact(&mut body)?;
     let mut w = stream;
     match handler(&method, &path, &body) {
@@ -63,6 +54,24 @@ fn answer(stream: TcpStream, handler: &Handler) -> std::io::Result<()> {
     w.flush()
 }
 
+/// Reads the header lines up to the empty one; returns the `Content-Length`, if stated.
+fn content_length(r: &mut impl BufRead) -> std::io::Result<Option<usize>> {
+    let mut len = None;
+    loop {
+        let mut h = String::new();
+        r.read_line(&mut h)?;
+        let h = h.trim_end();
+        if h.is_empty() {
+            return Ok(len);
+        }
+        if let Some((k, v)) = h.split_once(':')
+            && k.eq_ignore_ascii_case("content-length")
+        {
+            len = v.trim().parse().ok();
+        }
+    }
+}
+
 /// `http://host:port/path` → (`host:port`, `/path`).
 fn split(url: &str) -> Result<(&str, &str), String> {
     let rest = url
@@ -76,25 +85,44 @@ fn split(url: &str) -> Result<(&str, &str), String> {
 
 fn request(url: &str, method: &str, ct: Option<&str>, body: &[u8]) -> Result<Vec<u8>, String> {
     let (host, path) = split(url)?;
-    let mut s = TcpStream::connect(host).map_err(|e| e.to_string())?;
+    let err = |e: std::io::Error| format!("{method} {url}: {e}");
+    let addr = host
+        .to_socket_addrs()
+        .map_err(err)?
+        .next()
+        .ok_or_else(|| format!("no address for {host}"))?;
+    let mut s = TcpStream::connect_timeout(&addr, PATIENCE).map_err(err)?;
+    s.set_read_timeout(Some(PATIENCE)).map_err(err)?;
+    s.set_write_timeout(Some(PATIENCE)).map_err(err)?;
     let mut head = format!("{method} {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n");
     if let Some(ct) = ct {
         head.push_str(&format!("Content-Type: {ct}\r\n"));
     }
     head.push_str(&format!("Content-Length: {}\r\n\r\n", body.len()));
-    s.write_all(head.as_bytes()).map_err(|e| e.to_string())?;
-    s.write_all(body).map_err(|e| e.to_string())?;
-    let mut resp = Vec::new();
-    s.read_to_end(&mut resp).map_err(|e| e.to_string())?;
-    let end = resp
-        .windows(4)
-        .position(|w| w == b"\r\n\r\n")
-        .ok_or("no HTTP header")?;
-    let head = String::from_utf8_lossy(&resp[..end]).to_string();
-    if !head.starts_with("HTTP/1.1 200") && !head.starts_with("HTTP/1.0 200") {
-        return Err(head.lines().next().unwrap_or_default().to_string());
+    s.write_all(head.as_bytes()).map_err(err)?;
+    s.write_all(body).map_err(err)?;
+    let mut r = BufReader::new(s);
+    let mut status = String::new();
+    r.read_line(&mut status).map_err(err)?;
+    if status.is_empty() {
+        return Err("no HTTP header".into());
     }
-    Ok(resp[end + 4..].to_vec())
+    // The stated length, when there is one: a server may keep the connection open.
+    let len = content_length(&mut r).map_err(err)?;
+    if !status.starts_with("HTTP/1.1 200") && !status.starts_with("HTTP/1.0 200") {
+        return Err(status.trim_end().to_string());
+    }
+    let mut resp = Vec::new();
+    match len {
+        Some(n) => {
+            resp.resize(n, 0);
+            r.read_exact(&mut resp).map_err(err)?;
+        }
+        None => {
+            r.read_to_end(&mut resp).map_err(err)?;
+        }
+    }
+    Ok(resp)
 }
 
 pub fn post(url: &str, content_type: &str, body: &[u8]) -> Result<Vec<u8>, String> {
