@@ -3,8 +3,8 @@
      APP_NAME in src/lib.rs (build-apk.sh writes it to values/strings.xml). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.amazynk.pagebara"
-    android:versionCode="4"
-    android:versionName="0.2.2">
+    android:versionCode="5"
+    android:versionName="0.2.3">
 
     <!-- 26: adaptive icons, and Slint's Java helper loads from memory. -->
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />

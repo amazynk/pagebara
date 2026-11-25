@@ -6,6 +6,8 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-25
+
 ### Added
 
 - **Print from Explorer on Windows.** Right-clicking a PDF and choosing Print opens it in
@@ -193,7 +195,8 @@ The first public release.
   page colours and live text. It is built in CI and is not packaged for release yet.
 - **Packages.** AppImage, .deb, MSI and DMG.
 
-[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/amazynk/pagebara/releases/tag/v0.2.3
 [0.2.2]: https://github.com/amazynk/pagebara/releases/tag/v0.2.2
 [0.2.1]: https://github.com/amazynk/pagebara/releases/tag/v0.2.1
 [0.2.0]: https://github.com/amazynk/pagebara/releases/tag/v0.2.0

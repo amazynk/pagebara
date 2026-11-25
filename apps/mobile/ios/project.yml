@@ -10,8 +10,8 @@ settings:
   base:
     # The build script runs cargo, which reads and writes outside the project.
     ENABLE_USER_SCRIPT_SANDBOXING: NO
-    MARKETING_VERSION: "0.2.2"
-    CURRENT_PROJECT_VERSION: "4"
+    MARKETING_VERSION: "0.2.3"
+    CURRENT_PROJECT_VERSION: "5"
 targets:
   pagebara:
     type: application
