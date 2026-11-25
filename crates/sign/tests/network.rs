@@ -29,7 +29,7 @@ fn openssl() -> Option<PathBuf> {
 }
 
 fn command() -> Command {
-    Command::new(openssl().expect("the test checked for openssl"))
+    openssl_command(&openssl().expect("the test checked for openssl"))
 }
 
 /// A fresh folder for one test.

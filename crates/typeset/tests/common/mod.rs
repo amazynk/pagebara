@@ -242,6 +242,13 @@ fn tool(name: &str) -> bool {
         || Command::new(name).arg("-v").output().is_ok()
 }
 
+fn pdftotext_is_xpdf() -> bool {
+    Command::new("pdftotext").arg("-v").output().is_ok_and(|o| {
+        let said = [o.stdout, o.stderr].concat();
+        String::from_utf8_lossy(&said).contains("xpdfreader")
+    })
+}
+
 /// qpdf --check and mutool pass, and the external extractors find `texts`. Skipped for
 /// tools that are not installed.
 pub fn external_checks(file: &[u8], texts: &[&str]) {
@@ -292,8 +299,15 @@ pub fn external_checks(file: &[u8], texts: &[&str]) {
     } else {
         eprintln!("skipped: mutool not installed");
     }
-    if tool("pdftotext") {
+    // A font with a predefined CJK CMap and no ToUnicode map: Xpdf's pdftotext, the one Git
+    // for Windows brings, reads it only with a language package that copy does not have.
+    let needs_package = file.windows(13).any(|w| w == b"/UniGB-UCS2-H");
+    if needs_package && pdftotext_is_xpdf() {
+        eprintln!("skipped: this pdftotext has no CJK language package");
+    } else if tool("pdftotext") {
+        // Asked for by name: on Windows the default is the system's code page.
         let o = Command::new("pdftotext")
+            .args(["-enc", "UTF-8"])
             .arg(&path)
             .arg("-")
             .output()

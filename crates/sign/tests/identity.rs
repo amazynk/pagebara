@@ -4,7 +4,6 @@
 mod common;
 
 use std::path::Path;
-use std::process::Command;
 
 use common::*;
 use pagebara_sign::*;
@@ -43,7 +42,7 @@ fn pkcs12_round_trip() {
             // OpenSSL reads what we write.
             let path = scratch(&format!("ours-{name}.p12"));
             std::fs::write(&path, &p12).unwrap();
-            let out = Command::new(openssl)
+            let out = openssl_command(&openssl)
                 .args(["pkcs12", "-noout", "-passin"])
                 .arg(format!("pass:{PASSWORD}"))
                 .arg("-in")
@@ -114,7 +113,7 @@ fn openssl(args: &[&str], dir: &Path) -> bool {
     let Some(o) = common::openssl() else {
         return false;
     };
-    let out = Command::new(o)
+    let out = openssl_command(&o)
         .args(args)
         .current_dir(dir)
         .output()

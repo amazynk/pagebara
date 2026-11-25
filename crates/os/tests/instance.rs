@@ -15,10 +15,13 @@ fn temp(name: &str) -> PathBuf {
     d
 }
 
+/// A request for `path`, which starts at the root. A request is only taken with absolute
+/// paths, and on Windows that needs a drive.
 fn request(path: &str, page: Option<usize>) -> OpenRequest {
+    let drive = if cfg!(windows) { "C:" } else { "" };
     OpenRequest {
         files: vec![OpenFile {
-            path: PathBuf::from(path),
+            path: PathBuf::from(format!("{drive}{path}")),
             page,
             search: None,
         }],

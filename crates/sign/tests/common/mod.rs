@@ -5,7 +5,7 @@
 
 pub mod http;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
 
@@ -171,6 +171,14 @@ pub fn openssl() -> Option<PathBuf> {
                 .output()
                 .is_ok_and(|o| o.stdout.starts_with(b"OpenSSL "))
         })
+}
+
+/// A command running [`openssl`]. On Windows it reads its arguments as UTF-8 (by default
+/// they arrive in the system's code page, which has no way to write the tests' password).
+pub fn openssl_command(openssl: &Path) -> Command {
+    let mut c = Command::new(openssl);
+    c.env("OPENSSL_WIN32_UTF8", "1");
+    c
 }
 
 pub fn scratch(name: &str) -> PathBuf {
