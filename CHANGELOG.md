@@ -10,6 +10,11 @@ All notable changes to Pagebara are listed here. The format follows
 
 - **Print from Explorer on Windows.** Right-clicking a PDF and choosing Print opens it in
   Pagebara with the print dialog, when Pagebara is the app that opens PDFs.
+- **No fill for drawings.** In Edit, the fill colours of a drawing end with a No fill
+  swatch, in the panel and under the toolbar's colour button: one click takes away a
+  coloured background and leaves the drawing's outline as it is. Before, the way was to
+  drag Opacity to 0, which hid the outline too. Choosing a colour brings the fill back,
+  also for a drawing that was faded out to nothing.
 
 ### Changed
 

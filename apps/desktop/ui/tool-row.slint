@@ -689,8 +689,13 @@ export component ToolRow inherits Rectangle {
                 shown: root.sel && root.edit-sel && (EditState.is-text || EditState.has-fill);
                 label: EditState.is-text ? @tr("Text colour") : @tr("Fill colour");
                 selected: EditState.fill;
+                clearable: EditState.fill-clearable;
+                cleared: EditState.fill-none;
                 picked(i) => {
                     EditState.action("fill", i);
+                }
+                clear => {
+                    EditState.action("fill-none", "");
                 }
             }
             obj-size := SizeButton {

@@ -280,99 +280,100 @@ msgstr "Kaydedilemedi"
 msgid "Save changes to “{}”?"
 msgstr "“{}” belgesindeki değişiklikler kaydedilsin mi?"
 
-#: apps/desktop/src/app/edit/actions.rs:104
+#: apps/desktop/src/app/edit/actions.rs:130
 msgid "Could not read the image: {}."
 msgstr "Görüntü okunamadı: {}."
 
-#: apps/desktop/src/app/edit/actions.rs:105
+#: apps/desktop/src/app/edit/actions.rs:131
 msgid "That is not a PNG or JPEG image this app can read."
 msgstr "Bu, uygulamanın okuyabildiği bir PNG veya JPEG görüntüsü değil."
 
-#: apps/desktop/src/app/edit/actions.rs:128
+#: apps/desktop/src/app/edit/actions.rs:154
 msgid "Click on the page where the text goes, or press Enter to put it in the middle."
 msgstr "Metnin yerleşeceği yere tıklayın veya ortaya yerleştirmek için Enter tuşuna basın."
 
-#: apps/desktop/src/app/edit/actions.rs:150
+#: apps/desktop/src/app/edit/actions.rs:176
 msgid "Add an image"
 msgstr "Görüntü ekle"
 
-#: apps/desktop/src/app/edit/actions.rs:152
-#: apps/desktop/src/app/edit/actions.rs:327 apps/desktop/src/app/sign.rs:361
+#: apps/desktop/src/app/edit/actions.rs:178
+#: apps/desktop/src/app/edit/actions.rs:402 apps/desktop/src/app/sign.rs:361
 #: apps/mobile/src/platform/host.rs:79 crates/optimize/src/stats.rs:38
 msgid "Images"
 msgstr "Görüntüler"
 
-#: apps/desktop/src/app/edit/actions.rs:181
+#: apps/desktop/src/app/edit/actions.rs:207
 msgid "Select something on the page first."
 msgstr "Önce sayfada bir şey seçin."
 
-#: apps/desktop/src/app/edit/actions.rs:232
+#: apps/desktop/src/app/edit/actions.rs:276
 msgid "Change text colour"
 msgstr "Metin rengini değiştir"
 
-#: apps/desktop/src/app/edit/actions.rs:234 crates/app-core/src/edit.rs:143
+#: apps/desktop/src/app/edit/actions.rs:278
+#: apps/desktop/src/app/edit/actions.rs:297 crates/app-core/src/edit.rs:143
 msgid "Change fill colour"
 msgstr "Dolgu rengini değiştir"
 
-#: apps/desktop/src/app/edit/actions.rs:276
+#: apps/desktop/src/app/edit/actions.rs:351
 msgid "Select one block of text to change its style."
 msgstr "Stilini değiştirmek için bir metin bloğu seçin."
 
-#: apps/desktop/src/app/edit/actions.rs:297 crates/app-core/src/edit.rs:158
+#: apps/desktop/src/app/edit/actions.rs:372 crates/app-core/src/edit.rs:158
 #: crates/app-core/src/edit.rs:163
 msgid "Change text style"
 msgstr "Metin stilini değiştir"
 
-#: apps/desktop/src/app/edit/actions.rs:303
+#: apps/desktop/src/app/edit/actions.rs:378
 msgid "Select one image to crop it."
 msgstr "Kırpmak için bir görüntü seçin."
 
-#: apps/desktop/src/app/edit/actions.rs:313
+#: apps/desktop/src/app/edit/actions.rs:388
 msgid "Cropping: drag the handles, then press Enter to apply or Escape to cancel."
 msgstr "Kırpma: tutamaçları sürükleyin, ardından uygulamak için Enter tuşuna, iptal etmek için Esc tuşuna basın."
 
-#: apps/desktop/src/app/edit/actions.rs:321
+#: apps/desktop/src/app/edit/actions.rs:396
 msgid "Select one image to replace it."
 msgstr "Değiştirmek için bir görüntü seçin."
 
-#: apps/desktop/src/app/edit/actions.rs:325
+#: apps/desktop/src/app/edit/actions.rs:400
 msgid "Replace the image"
 msgstr "Görüntüyü değiştir"
 
-#: apps/desktop/src/app/edit/actions.rs:335
+#: apps/desktop/src/app/edit/actions.rs:410
 msgid "Select one image to save it."
 msgstr "Kaydetmek için bir görüntü seçin."
 
-#: apps/desktop/src/app/edit/actions.rs:343
-#: apps/desktop/src/app/edit/actions.rs:361
+#: apps/desktop/src/app/edit/actions.rs:418
+#: apps/desktop/src/app/edit/actions.rs:436
 msgid "Could not save the image"
 msgstr "Görüntü kaydedilemedi"
 
-#: apps/desktop/src/app/edit/actions.rs:353
+#: apps/desktop/src/app/edit/actions.rs:428
 msgid "Save the image"
 msgstr "Görüntüyü kaydet"
 
-#: apps/desktop/src/app/edit/actions.rs:354
+#: apps/desktop/src/app/edit/actions.rs:429
 msgid "PNG images"
 msgstr "PNG görüntüleri"
 
-#: apps/desktop/src/app/edit/actions.rs:357
+#: apps/desktop/src/app/edit/actions.rs:432
 msgid "Saved the image as {}."
 msgstr "Görüntü kaydedildi: {}."
 
-#: apps/desktop/src/app/edit/actions.rs:384
+#: apps/desktop/src/app/edit/actions.rs:459
 msgid "Could not add the image"
 msgstr "Görüntü eklenemedi"
 
-#: apps/desktop/src/app/edit/actions.rs:409 crates/app-core/src/edit.rs:157
+#: apps/desktop/src/app/edit/actions.rs:484 crates/app-core/src/edit.rs:157
 msgid "Add image"
 msgstr "Görüntü ekle"
 
-#: apps/desktop/src/app/edit/actions.rs:425
+#: apps/desktop/src/app/edit/actions.rs:500
 msgid "Could not replace the image"
 msgstr "Görüntü değiştirilemedi"
 
-#: apps/desktop/src/app/edit/actions.rs:440 apps/mobile/ui/edit-bar.slint:234
+#: apps/desktop/src/app/edit/actions.rs:515 apps/mobile/ui/edit-bar.slint:234
 #: crates/app-core/src/edit.rs:156
 msgid "Replace image"
 msgstr "Görüntüyü değiştir"
@@ -704,7 +705,7 @@ msgid "locked"
 msgstr "kilitli"
 
 #: apps/desktop/src/app/library.rs:322 apps/desktop/src/app/mod.rs:1913
-#: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:864
+#: apps/desktop/src/app/ocr.rs:371 apps/desktop/ui/tool-row.slint:869
 msgid "{n} page"
 msgid_plural "{n} pages"
 msgstr[0] "{n} sayfa"
@@ -1478,12 +1479,12 @@ msgid "Open a web address"
 msgstr "Web adresi aç"
 
 #: apps/desktop/src/app/prepare/panel.rs:284 apps/desktop/ui/prepare.slint:56
-#: apps/desktop/ui/tool-row.slint:937 apps/desktop/ui/vim-bindings.slint:17
+#: apps/desktop/ui/tool-row.slint:942 apps/desktop/ui/vim-bindings.slint:17
 msgid "Next page"
 msgstr "Sonraki sayfa"
 
 #: apps/desktop/src/app/prepare/panel.rs:285 apps/desktop/ui/prepare.slint:56
-#: apps/desktop/ui/tool-row.slint:917 apps/desktop/ui/vim-bindings.slint:17
+#: apps/desktop/ui/tool-row.slint:922 apps/desktop/ui/vim-bindings.slint:17
 msgid "Previous page"
 msgstr "Önceki sayfa"
 
@@ -2741,7 +2742,7 @@ msgstr "Üçüncü taraf bildirimleri"
 
 #. panel headings named after the tools, as on the toolbar
 #. a kind of difference between two documents: document properties
-#: apps/desktop/ui/app.slint:272 apps/desktop/ui/tool-row.slint:754
+#: apps/desktop/ui/app.slint:272 apps/desktop/ui/tool-row.slint:759
 #: apps/mobile/ui/prep-bar.slint:101 crates/compare/src/lib.rs:123
 msgid "Properties"
 msgstr "Özellikler"
@@ -2919,6 +2920,14 @@ msgstr "Siyah"
 msgid "Colour"
 msgstr "Renk"
 
+#: apps/desktop/ui/components/controls.slint:36
+#: apps/desktop/ui/components/controls.slint:105
+#: apps/desktop/ui/components/controls.slint:142
+#: apps/desktop/ui/components/tool-button.slint:154
+#: apps/desktop/ui/redaction.slint:55
+msgid "No fill"
+msgstr "Dolgu yok"
+
 #: apps/desktop/ui/components/panel.slint:55
 msgid "Close panel"
 msgstr "Paneli kapat"
@@ -2931,8 +2940,8 @@ msgstr "Kısayol {}"
 msgid "Not valid"
 msgstr "Geçersiz"
 
-#: apps/desktop/ui/components/tool-button.slint:292
-#: apps/desktop/ui/edit.slint:242 apps/desktop/ui/edit.slint:363
+#: apps/desktop/ui/components/tool-button.slint:307
+#: apps/desktop/ui/edit.slint:245 apps/desktop/ui/edit.slint:366
 #: apps/desktop/ui/prepare.slint:320 apps/desktop/ui/right-panel.slint:205
 #: apps/desktop/ui/right-panel.slint:362 apps/desktop/ui/stamps.slint:564
 #: apps/desktop/ui/tool-row.slint:459 apps/desktop/ui/tool-row.slint:678
@@ -2940,9 +2949,9 @@ msgid "Font size"
 msgstr "Yazı tipi boyutu"
 
 #. on the font size button when the selected texts have different sizes
-#: apps/desktop/ui/components/tool-button.slint:311
-#: apps/desktop/ui/components/tool-button.slint:328
-#: apps/desktop/ui/edit.slint:174 apps/desktop/ui/reading.slint:315
+#: apps/desktop/ui/components/tool-button.slint:326
+#: apps/desktop/ui/components/tool-button.slint:343
+#: apps/desktop/ui/edit.slint:177 apps/desktop/ui/reading.slint:315
 #: apps/desktop/ui/right-panel.slint:196 apps/desktop/ui/right-panel.slint:206
 #: apps/desktop/ui/right-panel.slint:331 apps/desktop/ui/right-panel.slint:363
 #: apps/desktop/ui/tool-row.slint:444 apps/desktop/ui/tool-row.slint:460
@@ -2951,8 +2960,8 @@ msgid "{} pt"
 msgstr "{} pt"
 
 #. placeholder when the selected texts have different sizes
-#: apps/desktop/ui/components/tool-button.slint:311
-#: apps/desktop/ui/edit.slint:136
+#: apps/desktop/ui/components/tool-button.slint:326
+#: apps/desktop/ui/edit.slint:139
 msgid "Mixed"
 msgstr "Karışık"
 
@@ -3018,7 +3027,7 @@ msgstr "Kapat"
 #: apps/desktop/ui/dialogs.slint:215 apps/desktop/ui/dialogs.slint:318
 #: apps/desktop/ui/dialogs.slint:403 apps/desktop/ui/dialogs.slint:674
 #: apps/desktop/ui/dialogs.slint:715 apps/desktop/ui/dialogs.slint:775
-#: apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:301
+#: apps/desktop/ui/dialogs.slint:811 apps/desktop/ui/edit.slint:304
 #: apps/desktop/ui/extras.slint:41 apps/desktop/ui/library.slint:374
 #: apps/desktop/ui/ocr.slint:119 apps/desktop/ui/optimize.slint:239
 #: apps/desktop/ui/password-dialog.slint:131
@@ -3040,7 +3049,7 @@ msgstr "Dönüştür"
 
 #. verb, on a button that goes back to the previous step
 #: apps/desktop/ui/conformance.slint:178 apps/desktop/ui/dialogs.slint:528
-#: apps/desktop/ui/tool-row.slint:899 apps/mobile/ui/header.slint:94
+#: apps/desktop/ui/tool-row.slint:904 apps/mobile/ui/header.slint:94
 msgid "Back"
 msgstr "Geri"
 
@@ -3218,7 +3227,7 @@ msgstr "Dosya başına sayfa"
 msgid "You choose a folder next. The files are named after this document with the page numbers."
 msgstr "Sonra bir klasör seçeceksiniz. Dosyalar bu belgenin adı ve sayfa numaralarıyla adlandırılır."
 
-#: apps/desktop/ui/dialogs.slint:324 apps/desktop/ui/tool-row.slint:842
+#: apps/desktop/ui/dialogs.slint:324 apps/desktop/ui/tool-row.slint:847
 msgid "Split…"
 msgstr "Böl…"
 
@@ -3226,7 +3235,7 @@ msgstr "Böl…"
 #. verb, on the button that crops the pages
 #. verb, on a button that crops the image
 #: apps/desktop/ui/dialogs.slint:335 apps/desktop/ui/dialogs.slint:410
-#: apps/desktop/ui/edit.slint:448
+#: apps/desktop/ui/edit.slint:456
 msgid "Crop"
 msgstr "Kırp"
 
@@ -3298,7 +3307,7 @@ msgstr "{} uygulamasının sisteminizle nasıl çalışacağını seçin. Her ş
 msgid "Remove all system integration"
 msgstr "Tüm sistem tümleştirmesini kaldır"
 
-#: apps/desktop/ui/dialogs.slint:528 apps/desktop/ui/edit.slint:271
+#: apps/desktop/ui/dialogs.slint:528 apps/desktop/ui/edit.slint:274
 #: apps/desktop/ui/settings.slint:271 apps/desktop/ui/signing.slint:688
 #: apps/desktop/ui/tool-row.slint:635 apps/mobile/ui/edit-bar.slint:374
 #: apps/mobile/ui/prep-bar.slint:134 apps/mobile/ui/sheets.slint:587
@@ -3396,179 +3405,179 @@ msgstr "İmzayı yeniden adlandır"
 msgid "Rename"
 msgstr "Yeniden adlandır"
 
-#: apps/desktop/ui/edit.slint:55 apps/desktop/ui/tool-row.slint:597
+#: apps/desktop/ui/edit.slint:58 apps/desktop/ui/tool-row.slint:597
 #: apps/mobile/ui/edit-bar.slint:345
 msgid "Bold"
 msgstr "Kalın"
 
 #. {} is a keyboard shortcut; mixed: the selection is partly bold or italic
-#: apps/desktop/ui/edit.slint:57 apps/desktop/ui/edit.slint:67
+#: apps/desktop/ui/edit.slint:60 apps/desktop/ui/edit.slint:70
 msgid "{}, mixed"
 msgstr "{}, karışık"
 
-#: apps/desktop/ui/edit.slint:66 apps/desktop/ui/tool-row.slint:609
+#: apps/desktop/ui/edit.slint:69 apps/desktop/ui/tool-row.slint:609
 #: apps/mobile/ui/edit-bar.slint:355
 msgid "Italic"
 msgstr "İtalik"
 
-#: apps/desktop/ui/edit.slint:76
+#: apps/desktop/ui/edit.slint:79
 msgid "Choose the font family"
 msgstr "Yazı tipi ailesini seçin"
 
-#: apps/desktop/ui/edit.slint:126
+#: apps/desktop/ui/edit.slint:129
 msgid "Smaller"
 msgstr "Daha küçük"
 
-#: apps/desktop/ui/edit.slint:137
+#: apps/desktop/ui/edit.slint:140
 msgid "{} in points"
 msgstr "Punto cinsinden {}"
 
 #. abbreviation of points, the unit of font size
-#: apps/desktop/ui/edit.slint:147
+#: apps/desktop/ui/edit.slint:150
 msgid "pt"
 msgstr "pt"
 
 #. a button that makes the font size larger
-#: apps/desktop/ui/edit.slint:156
+#: apps/desktop/ui/edit.slint:159
 msgid "Larger"
 msgstr "Daha büyük"
 
-#: apps/desktop/ui/edit.slint:164
+#: apps/desktop/ui/edit.slint:167
 msgid "Common sizes"
 msgstr "Sık kullanılan boyutlar"
 
-#: apps/desktop/ui/edit.slint:193 apps/desktop/ui/page-view.slint:542
+#: apps/desktop/ui/edit.slint:196 apps/desktop/ui/page-view.slint:542
 #: apps/mobile/ui/edit-bar.slint:178 crates/app-core/src/edit.rs:149
 msgid "Bring to front"
 msgstr "En öne getir"
 
-#: apps/desktop/ui/edit.slint:201 apps/desktop/ui/page-view.slint:550
+#: apps/desktop/ui/edit.slint:204 apps/desktop/ui/page-view.slint:550
 #: apps/mobile/ui/edit-bar.slint:185 crates/app-core/src/edit.rs:151
 msgid "Bring forward"
 msgstr "Öne getir"
 
-#: apps/desktop/ui/edit.slint:209 apps/desktop/ui/page-view.slint:558
+#: apps/desktop/ui/edit.slint:212 apps/desktop/ui/page-view.slint:558
 #: apps/mobile/ui/edit-bar.slint:192 crates/app-core/src/edit.rs:152
 msgid "Send backward"
 msgstr "Geriye gönder"
 
-#: apps/desktop/ui/edit.slint:217 apps/desktop/ui/page-view.slint:566
+#: apps/desktop/ui/edit.slint:220 apps/desktop/ui/page-view.slint:566
 #: apps/mobile/ui/edit-bar.slint:200 crates/app-core/src/edit.rs:150
 msgid "Send to back"
 msgstr "En arkaya gönder"
 
-#: apps/desktop/ui/edit.slint:231 apps/mobile/ui/edit-bar.slint:326
+#: apps/desktop/ui/edit.slint:234 apps/mobile/ui/edit-bar.slint:326
 #: apps/mobile/ui/edit-bar.slint:364
 msgid "Editing text"
 msgstr "Metin düzenleniyor"
 
-#: apps/desktop/ui/edit.slint:236
+#: apps/desktop/ui/edit.slint:239
 msgid "Type to change the text. Shift with the arrows selects, Ctrl+X, C and V cut, copy and paste. Escape or a click outside finishes; Ctrl+Z undoes typing."
 msgstr "Metni değiştirmek için yazın. Shift ile ok tuşları seçim yapar; Ctrl+X, C ve V kesme, kopyalama ve yapıştırma yapar. Bitirmek için Esc tuşuna basın veya dışarıya tıklayın; Ctrl+Z yazılanı geri alır."
 
-#: apps/desktop/ui/edit.slint:254 apps/desktop/ui/edit.slint:257
-#: apps/desktop/ui/edit.slint:375 apps/desktop/ui/edit.slint:378
+#: apps/desktop/ui/edit.slint:257 apps/desktop/ui/edit.slint:260
+#: apps/desktop/ui/edit.slint:378 apps/desktop/ui/edit.slint:381
 #: apps/desktop/ui/prepare.slint:332 apps/desktop/ui/stamps.slint:595
 #: apps/desktop/ui/tool-row.slint:619 apps/desktop/ui/tool-row.slint:690
 msgid "Text colour"
 msgstr "Metin rengi"
 
-#: apps/desktop/ui/edit.slint:283
+#: apps/desktop/ui/edit.slint:286
 msgid "Cropping the image"
 msgstr "Görüntü kırpılıyor"
 
-#: apps/desktop/ui/edit.slint:288
+#: apps/desktop/ui/edit.slint:291
 msgid "Drag the handles to choose what stays. Enter applies, Escape cancels."
 msgstr "Kalacak bölümü seçmek için tutamaçları sürükleyin. Enter uygular, Esc iptal eder."
 
-#: apps/desktop/ui/edit.slint:294
+#: apps/desktop/ui/edit.slint:297
 msgid "Apply crop"
 msgstr "Kırpmayı uygula"
 
-#: apps/desktop/ui/edit.slint:312
+#: apps/desktop/ui/edit.slint:315
 msgid "Click text, a picture or a drawing on the page to select it. Shift+click or drag a box selects several; Tab moves from object to object. Double-click text to change it."
 msgstr "Seçmek için sayfadaki bir metne, resme veya çizime tıklayın. Shift+tıklama veya kutu sürükleme birden çok nesne seçer; Tab nesneden nesneye geçer. Metni değiştirmek için çift tıklayın."
 
-#: apps/desktop/ui/edit.slint:318 apps/desktop/ui/tool-row.slint:534
+#: apps/desktop/ui/edit.slint:321 apps/desktop/ui/tool-row.slint:534
 #: crates/app-core/src/edit.rs:164
 msgid "Add text"
 msgstr "Metin ekle"
 
-#: apps/desktop/ui/edit.slint:320 apps/desktop/ui/tool-row.slint:535
+#: apps/desktop/ui/edit.slint:323 apps/desktop/ui/tool-row.slint:535
 msgid "Click on the page where the text goes"
 msgstr "Metnin yerleşeceği yere tıklayın"
 
-#: apps/desktop/ui/edit.slint:326 apps/desktop/ui/page-view.slint:605
+#: apps/desktop/ui/edit.slint:329 apps/desktop/ui/page-view.slint:605
 #: apps/desktop/ui/tool-row.slint:545
 msgid "Add image…"
 msgstr "Görüntü ekle…"
 
-#: apps/desktop/ui/edit.slint:348 apps/desktop/ui/page-view.slint:515
-#: apps/desktop/ui/tool-row.slint:708 apps/mobile/ui/edit-bar.slint:224
+#: apps/desktop/ui/edit.slint:351 apps/desktop/ui/page-view.slint:515
+#: apps/desktop/ui/tool-row.slint:713 apps/mobile/ui/edit-bar.slint:224
 #: crates/app-core/src/edit.rs:162
 msgid "Edit text"
 msgstr "Metni düzenle"
 
-#: apps/desktop/ui/edit.slint:357
+#: apps/desktop/ui/edit.slint:360
 msgid "Font: {}"
 msgstr "Yazı tipi: {}"
 
-#: apps/desktop/ui/edit.slint:375 apps/desktop/ui/edit.slint:378
+#: apps/desktop/ui/edit.slint:378 apps/desktop/ui/edit.slint:381
 #: apps/desktop/ui/tool-row.slint:690 apps/mobile/ui/edit-bar.slint:118
 msgid "Fill colour"
 msgstr "Dolgu rengi"
 
-#: apps/desktop/ui/edit.slint:388 apps/desktop/ui/edit.slint:391
+#: apps/desktop/ui/edit.slint:396 apps/desktop/ui/edit.slint:399
 msgid "Line colour"
 msgstr "Çizgi rengi"
 
-#: apps/desktop/ui/edit.slint:399 apps/desktop/ui/right-panel.slint:195
+#: apps/desktop/ui/edit.slint:407 apps/desktop/ui/right-panel.slint:195
 #: apps/desktop/ui/tool-row.slint:667
 msgid "Line width"
 msgstr "Çizgi kalınlığı"
 
-#: apps/desktop/ui/edit.slint:410
+#: apps/desktop/ui/edit.slint:418
 msgid "Dashed line"
 msgstr "Kesikli çizgi"
 
-#: apps/desktop/ui/edit.slint:417 apps/desktop/ui/stamps.slint:264
+#: apps/desktop/ui/edit.slint:425 apps/desktop/ui/stamps.slint:264
 #: apps/mobile/ui/edit-bar.slint:159 apps/mobile/ui/edit-bar.slint:250
 msgid "Opacity"
 msgstr "Opaklık"
 
 #. heading of the buttons that change the stacking order
-#: apps/desktop/ui/edit.slint:428 apps/mobile/ui/edit-bar.slint:174
+#: apps/desktop/ui/edit.slint:436 apps/mobile/ui/edit-bar.slint:174
 #: apps/mobile/ui/edit-bar.slint:258
 msgid "Arrange"
 msgstr "Yerleştir"
 
 #. heading of the actions for a selected image
-#: apps/desktop/ui/edit.slint:435 apps/desktop/ui/reading.slint:449
+#: apps/desktop/ui/edit.slint:443 apps/desktop/ui/reading.slint:449
 #: crates/app-core/src/object_edit/select.rs:77
 msgid "Image"
 msgstr "Görüntü"
 
-#: apps/desktop/ui/edit.slint:441
+#: apps/desktop/ui/edit.slint:449
 msgid "Replace…"
 msgstr "Değiştir…"
 
-#: apps/desktop/ui/edit.slint:455
+#: apps/desktop/ui/edit.slint:463
 msgid "Save…"
 msgstr "Kaydet…"
 
-#: apps/desktop/ui/edit.slint:457
+#: apps/desktop/ui/edit.slint:465
 msgid "Save the image as a PNG file"
 msgstr "Görüntüyü PNG dosyası olarak kaydet"
 
-#: apps/desktop/ui/edit.slint:469 apps/desktop/ui/page-view.slint:524
+#: apps/desktop/ui/edit.slint:477 apps/desktop/ui/page-view.slint:524
 #: apps/desktop/ui/prepare.slint:362 apps/desktop/ui/prepare.slint:450
-#: apps/desktop/ui/tool-row.slint:729 apps/desktop/ui/tool-row.slint:797
+#: apps/desktop/ui/tool-row.slint:734 apps/desktop/ui/tool-row.slint:802
 #: apps/mobile/ui/edit-bar.slint:266 apps/mobile/ui/prep-bar.slint:108
 msgid "Duplicate"
 msgstr "Çoğalt"
 
-#: apps/desktop/ui/edit.slint:477 apps/desktop/ui/page-view.slint:533
-#: apps/desktop/ui/right-panel.slint:224 apps/desktop/ui/tool-row.slint:740
+#: apps/desktop/ui/edit.slint:485 apps/desktop/ui/page-view.slint:533
+#: apps/desktop/ui/right-panel.slint:224 apps/desktop/ui/tool-row.slint:745
 #: apps/mobile/src/app/input.rs:648 apps/mobile/ui/edit-bar.slint:273
 #: apps/mobile/ui/main.slint:279 apps/mobile/ui/prep-bar.slint:123
 msgid "Delete"
@@ -3787,7 +3796,7 @@ msgstr "Fotoğraf kalitesi"
 #. heading: what to remove from the file
 #. verb, on a button that deletes the selected pages
 #: apps/desktop/ui/optimize.slint:125 apps/desktop/ui/signing.slint:670
-#: apps/desktop/ui/tool-row.slint:828
+#: apps/desktop/ui/tool-row.slint:833
 msgid "Remove"
 msgstr "Kaldır"
 
@@ -4804,10 +4813,6 @@ msgstr "Yer imini sil"
 msgid "Add to document outline"
 msgstr "Belge ana hattına ekle"
 
-#: apps/desktop/ui/redaction.slint:55
-msgid "No fill"
-msgstr "Dolgu yok"
-
 #: apps/desktop/ui/redaction.slint:63
 msgid "Selected mark"
 msgstr "Seçili işaret"
@@ -4976,7 +4981,7 @@ msgid "Add a comment"
 msgstr "Yorum ekle"
 
 #. noun, heading above the comment text
-#: apps/desktop/ui/right-panel.slint:111 apps/desktop/ui/tool-row.slint:719
+#: apps/desktop/ui/right-panel.slint:111 apps/desktop/ui/tool-row.slint:724
 msgid "Comment"
 msgstr "Yorum"
 
@@ -6191,54 +6196,54 @@ msgstr[1] "{n} işaretli"
 msgid "Nothing marked"
 msgstr "İşaretli alan yok"
 
-#: apps/desktop/ui/tool-row.slint:765
+#: apps/desktop/ui/tool-row.slint:770
 msgid "Insert pages…"
 msgstr "Sayfa ekle…"
 
-#: apps/desktop/ui/tool-row.slint:777 crates/integration/src/catalog.rs:95
+#: apps/desktop/ui/tool-row.slint:782 crates/integration/src/catalog.rs:95
 msgid "Rotate left"
 msgstr "Sola döndür"
 
-#: apps/desktop/ui/tool-row.slint:787
+#: apps/desktop/ui/tool-row.slint:792
 msgid "Rotate"
 msgstr "Döndür"
 
-#: apps/desktop/ui/tool-row.slint:807
+#: apps/desktop/ui/tool-row.slint:812
 msgid "Extract…"
 msgstr "Çıkar…"
 
-#: apps/desktop/ui/tool-row.slint:817
+#: apps/desktop/ui/tool-row.slint:822
 msgid "Crop…"
 msgstr "Kırp…"
 
-#: apps/desktop/ui/tool-row.slint:851
+#: apps/desktop/ui/tool-row.slint:856
 msgid "Merge…"
 msgstr "Birleştir…"
 
-#: apps/desktop/ui/tool-row.slint:864
+#: apps/desktop/ui/tool-row.slint:869
 msgid "{n} selected"
 msgid_plural "{n} selected"
 msgstr[0] "{n} seçili"
 msgstr[1] "{n} seçili"
 
-#: apps/desktop/ui/tool-row.slint:908 apps/mobile/ui/edit-bar.slint:184
+#: apps/desktop/ui/tool-row.slint:913 apps/mobile/ui/edit-bar.slint:184
 msgid "Forward"
 msgstr "İleri"
 
-#: apps/desktop/ui/tool-row.slint:929
+#: apps/desktop/ui/tool-row.slint:934
 msgid "({} of {})"
 msgstr ""
 
-#: apps/desktop/ui/tool-row.slint:929
+#: apps/desktop/ui/tool-row.slint:934
 msgid "of {}"
 msgstr "/ {}"
 
-#: apps/desktop/ui/tool-row.slint:947 apps/desktop/ui/vim-bindings.slint:23
+#: apps/desktop/ui/tool-row.slint:952 apps/desktop/ui/vim-bindings.slint:23
 #: apps/desktop/ui/vim-status.slint:23
 msgid "Zoom out"
 msgstr "Uzaklaştır"
 
-#: apps/desktop/ui/tool-row.slint:957 apps/desktop/ui/vim-bindings.slint:23
+#: apps/desktop/ui/tool-row.slint:962 apps/desktop/ui/vim-bindings.slint:23
 #: apps/desktop/ui/vim-status.slint:23
 msgid "Zoom in"
 msgstr "Yakınlaştır"

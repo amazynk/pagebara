@@ -17,6 +17,9 @@ export global EditState {
     in property <bool> has-stroke;
     // Nearest palette swatches of the colours, -1 for none.
     in property <int> fill: -1;
+    // Drawings can have their fill switched off ("No fill"); whether it is.
+    in property <bool> fill-clearable;
+    in property <bool> fill-none;
     in property <int> stroke: -1;
     in property <float> opacity: 100;
     in property <float> line-width;
@@ -377,8 +380,13 @@ export component EditPanel inherits VerticalLayout {
             ColourRow {
                 name: EditState.is-text ? @tr("Text colour") : @tr("Fill colour");
                 selected: EditState.fill;
+                clearable: EditState.fill-clearable;
+                cleared: EditState.fill-none;
                 picked(i) => {
                     EditState.action("fill", i);
+                }
+                clear => {
+                    EditState.action("fill-none", "");
                 }
             }
         }

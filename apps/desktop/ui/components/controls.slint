@@ -1,7 +1,7 @@
 import { RowLayout } from "row.slint";
 import { Slider } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
-import { FocusRing, Reveal } from "button.slint";
+import { FocusRing, Reveal, Tip } from "button.slint";
 
 export global Palette2 {
     out property <[color]> colours: [#FACC15, #4ADE80, #60A5FA, #F472B6, #FB923C, #DC2626, #18181B];
@@ -13,12 +13,27 @@ export component ColourRow inherits RowLayout {
     in property <int> selected;
     // What the colour is of, for screen readers.
     in property <string> name: @tr("Colour");
+    // With a last swatch for no colour at all ("No fill"), and whether that is the choice.
+    in property <bool> clearable;
+    in property <bool> cleared;
     callback picked(index: int);
+    callback clear();
+    // The places in the row and the chosen one: the colours, then "No fill". -1 when the
+    // colour is none of them.
+    property <int> places: Palette2.colours.length + (root.clearable ? 1 : 0);
+    property <int> place: root.clearable && root.cleared ? Palette2.colours.length : root.selected;
+    function pick(place: int) {
+        if place >= Palette2.colours.length {
+            root.clear();
+        } else {
+            root.picked(place);
+        }
+    }
     spacing: 6px;
     alignment: start;
     accessible-role: radio-group;
     accessible-label: root.name;
-    accessible-value: root.selected >= 0 ? Palette2.names[root.selected] : "";
+    accessible-value: root.place >= Palette2.colours.length ? @tr("No fill") : root.place >= 0 ? Palette2.names[root.place] : "";
     forward-focus: keys;
     keys := FocusScope {
         changed has-focus => {
@@ -29,11 +44,11 @@ export component ColourRow inherits RowLayout {
         width: 0px;
         key-pressed(e) => {
             if e.text == Key.RightArrow || e.text == Key.DownArrow {
-                root.picked(mod(max(root.selected, -1) + 1, Palette2.colours.length));
+                root.pick(mod(max(root.place, -1) + 1, root.places));
                 return accept;
             }
             if e.text == Key.LeftArrow || e.text == Key.UpArrow {
-                root.picked(mod(max(root.selected, 0) + Palette2.colours.length - 1, Palette2.colours.length));
+                root.pick(mod(max(root.place, 0) + root.places - 1, root.places));
                 return accept;
             }
             reject
@@ -43,14 +58,14 @@ export component ColourRow inherits RowLayout {
         width: Theme.touch ? 40px : 28px;
         height: self.width;
         border-radius: self.width / 2;
-        border-width: i == root.selected ? 2px : keys.has-focus && root.selected < 0 && i == 0 ? Theme.focus-width : 0px;
-        border-color: i == root.selected ? (keys.has-focus ? Theme.focus : Theme.accent-fg) : Theme.focus;
+        border-width: i == root.place ? 2px : keys.has-focus && root.place < 0 && i == 0 ? Theme.focus-width : 0px;
+        border-color: i == root.place ? (keys.has-focus ? Theme.focus : Theme.accent-fg) : Theme.focus;
         accessible-role: radio-button;
         accessible-label: Palette2.names[i];
         accessible-checkable: true;
-        accessible-checked: i == root.selected;
+        accessible-checked: i == root.place;
         accessible-item-index: i;
-        accessible-item-count: Palette2.colours.length;
+        accessible-item-count: root.places;
         accessible-action-default => {
             root.picked(i);
         }
@@ -63,7 +78,7 @@ export component ColourRow inherits RowLayout {
             // A light ring in dark mode, where the black swatch would vanish into the panel.
             border-color: Theme.high-contrast ? Theme.text : Theme.dark ? #FFFFFF59 : #00000018;
         }
-        if keys.has-focus && i == root.selected: Rectangle {
+        if keys.has-focus && i == root.place: Rectangle {
             x: -3px;
             y: -3px;
             width: parent.width + 6px;
@@ -76,6 +91,55 @@ export component ColourRow inherits RowLayout {
             mouse-cursor: pointer;
             clicked => {
                 root.picked(i);
+            }
+        }
+    }
+    // No colour at all: an empty circle with a line through it.
+    if root.clearable: Rectangle {
+        width: Theme.touch ? 40px : 28px;
+        height: self.width;
+        border-radius: self.width / 2;
+        border-width: root.cleared ? 2px : 0px;
+        border-color: keys.has-focus ? Theme.focus : Theme.accent-fg;
+        accessible-role: radio-button;
+        accessible-label: @tr("No fill");
+        accessible-checkable: true;
+        accessible-checked: root.cleared;
+        accessible-item-index: Palette2.colours.length;
+        accessible-item-count: root.places;
+        accessible-action-default => {
+            root.clear();
+        }
+        Rectangle {
+            width: parent.width - 8px;
+            height: self.width;
+            border-radius: self.width / 2;
+            border-width: 1px;
+            border-color: Theme.high-contrast ? Theme.text : Theme.control-border;
+            Image {
+                width: parent.width;
+                height: parent.height;
+                source: @image-url("../icons/no-fill.svg");
+            }
+        }
+        if keys.has-focus && root.cleared: Rectangle {
+            x: -3px;
+            y: -3px;
+            width: parent.width + 6px;
+            height: parent.height + 6px;
+            border-radius: self.width / 2;
+            border-width: Theme.focus-width;
+            border-color: Theme.focus;
+        }
+        TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.clear();
+            }
+        }
+        Tooltip {
+            Tip {
+                text: @tr("No fill");
             }
         }
     }

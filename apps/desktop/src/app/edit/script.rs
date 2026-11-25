@@ -214,8 +214,13 @@ pub fn query(s: &mut State, ui: &AppWindow, key: &str) -> Option<Result<String, 
             .and_then(|t| oe::text_look(&objs, t))
             .map_or(String::new(), |l| format!("{:.0}", l.size))),
         "edit.opacity" => Ok(first.map_or(String::new(), |o| {
-            format!("{:.0}", super::actions::fill_of(&objs, o).1 * 100.0)
+            format!("{:.0}", super::actions::opacity_of(&objs, o) * 100.0)
         })),
+        // Whether the fill of the first selected drawing is switched off ("No fill").
+        "edit.fill-none" => Ok(first
+            .and_then(|o| o.path())
+            .is_some_and(super::actions::fill_off)
+            .to_string()),
         "edit.mirrored" => Ok(first.is_some_and(oe::mirrored).to_string()),
         "edit.order" => Ok(first
             .and_then(|o| objs.top_level().position(|p| p.id == o.id))

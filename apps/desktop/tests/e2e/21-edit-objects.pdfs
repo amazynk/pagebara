@@ -51,6 +51,24 @@ assert edit.fill == #dc2626
 call edit opacity 50
 assert undo == Change opacity
 assert edit.opacity == 50
+# No fill switches the fill off in one step; a colour brings it back, fully opaque.
+assert edit.fill-none == false
+call edit fill-none
+assert undo == Change fill colour
+assert edit.fill-none == true
+assert edit.opacity == 0
+wait 500
+screenshot 21-no-fill.png
+call edit fill 2
+assert undo == Change fill colour
+assert edit.fill-none == false
+assert edit.fill == #60a5fa
+assert edit.opacity == 100
+key ctrl+z
+key ctrl+z
+assert edit.fill-none == false
+assert edit.fill == #dc2626
+assert edit.opacity == 50
 # Arrangement: to the back and to the front again.
 assert edit.order == 4
 call edit back

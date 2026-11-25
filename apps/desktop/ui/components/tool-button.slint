@@ -139,7 +139,11 @@ export component ColourButton inherits Rectangle {
     in property <int> selected;
     in property <string> label: @tr("Colour");
     in property <bool> shown: true;
+    // With a swatch for no colour at all ("No fill"), and whether that is the choice.
+    in property <bool> clearable;
+    in property <bool> cleared;
     callback picked(index: int);
+    callback clear();
 
     public function focus-button() {
         focus.focus();
@@ -147,7 +151,7 @@ export component ColourButton inherits Rectangle {
 
     accessible-role: button;
     accessible-label: label;
-    accessible-value: selected >= 0 && selected < Palette2.names.length ? Palette2.names[selected] : "";
+    accessible-value: clearable && cleared ? @tr("No fill") : selected >= 0 && selected < Palette2.names.length ? Palette2.names[selected] : "";
     forward-focus: focus;
     visible: shown;
     width: shown ? 34px : 0px;
@@ -173,6 +177,11 @@ export component ColourButton inherits Rectangle {
         background: root.selected >= 0 && root.selected < Palette2.colours.length ? Palette2.colours[root.selected] : transparent;
         border-width: 1px;
         border-color: Theme.high-contrast ? Theme.text : root.selected < 0 ? Theme.control-border : Theme.dark ? #FFFFFF59 : #00000018;
+        if root.clearable && root.cleared: Image {
+            width: parent.width;
+            height: parent.height;
+            source: @image-url("../icons/no-fill.svg");
+        }
     }
 
     touch := TouchArea {
@@ -200,12 +209,18 @@ export component ColourButton inherits Rectangle {
                     y: 6px;
                     name: root.label;
                     selected: root.selected;
+                    clearable: root.clearable;
+                    cleared: root.cleared;
                     init => {
                         self.focus();
                     }
                     picked(i) => {
                         menu.close();
                         root.picked(i);
+                    }
+                    clear => {
+                        menu.close();
+                        root.clear();
                     }
                 }
             }

@@ -8,7 +8,8 @@ use std::rc::Rc;
 use pagebara_app_core::edit::{EditOp, ImageData, StyleChange};
 use pagebara_app_core::object_edit::{self as oe, Drag, DragKind, Handle, Selection};
 use pagebara_edit::{
-    Color, ImageFit, Kind, Matrix, ObjectData, PageObjects, Point, Rect, Target, TextStyle, ZOrder,
+    Color, ImageFit, Kind, Matrix, ObjectData, PageObjects, PathInfo, Point, Rect, Target,
+    TextStyle, ZOrder,
 };
 use pagebara_i18n::{tr, tr_noop};
 use slint::ComponentHandle;
@@ -59,6 +60,22 @@ pub fn fill_of(objs: &PageObjects, ob: &pagebara_edit::PageObject) -> (Option<[f
     }
 }
 
+/// Whether a drawing's fill is switched off ("No fill"): it has one that is fully
+/// transparent, while its line, when it has one, is not. A drawing whose line is
+/// transparent too was faded out with the opacity slider: that is opacity 0, not this.
+pub fn fill_off(p: &PathInfo) -> bool {
+    p.fill.is_some() && p.fill_alpha <= 0.0 && (p.stroke.is_none() || p.stroke_alpha > 0.0)
+}
+
+/// The opacity of an object as the panel shows it: of its line when its fill is switched
+/// off, of its fill otherwise.
+pub fn opacity_of(objs: &PageObjects, ob: &pagebara_edit::PageObject) -> f32 {
+    match ob.path() {
+        Some(p) if fill_off(p) && p.stroke.is_some() => p.stroke_alpha,
+        _ => fill_of(objs, ob).1,
+    }
+}
+
 /// Fills the panel for the selection.
 pub fn show(es: &EditState, objs: &PageObjects, sel: &Selection) {
     let obs: Vec<_> = sel.objects(objs).collect();
@@ -82,12 +99,21 @@ pub fn show(es: &EditState, objs: &PageObjects, sel: &Selection) {
         _ => false,
     }));
     es.set_has_stroke(path.is_some_and(|p| p.stroke.is_some()));
-    let (fill, alpha) = fill_of(objs, first);
-    es.set_fill(swatch(fill));
+    let (fill, _) = fill_of(objs, first);
+    // "No fill" is offered for drawings, and chosen when the first one's fill is off.
+    let off = first.path().is_some_and(fill_off);
+    es.set_fill_clearable(
+        text.is_none()
+            && obs
+                .iter()
+                .any(|o| o.path().is_some_and(|p| p.fill.is_some())),
+    );
+    es.set_fill_none(off);
+    es.set_fill(if off { -1 } else { swatch(fill) });
     es.set_stroke(swatch(
         path.and_then(|p| p.stroke.as_ref()).and_then(|s| s.rgb()),
     ));
-    es.set_opacity((alpha * 100.0).round());
+    es.set_opacity((opacity_of(objs, first) * 100.0).round());
     let width = path.map_or(0.0, |p| p.line_width * oe::scale_of(&p.ctm));
     es.set_line_width((width * 10.0).round() / 10.0);
     es.set_dashed(path.is_some_and(|p| p.dashed));
@@ -228,6 +254,24 @@ impl App {
                         c,
                     ));
                 }
+                // A colour is chosen to be seen: a fill that was switched off, or faded
+                // out to nothing, shows again, as opaque as the drawing's line.
+                for o in &other {
+                    let Some(p) = o.path().filter(|p| p.fill.is_some() && p.fill_alpha <= 0.0)
+                    else {
+                        continue;
+                    };
+                    let (fill, line) = match p.stroke {
+                        Some(_) if p.stroke_alpha > 0.0 => (p.stroke_alpha, None),
+                        Some(_) => (1.0, Some(1.0)),
+                        None => (1.0, None),
+                    };
+                    ops.push(EditOp::Opacity(
+                        vec![Target::Object(o.id)],
+                        Some(fill),
+                        line,
+                    ));
+                }
                 let label = if other.is_empty() {
                     tr!("Change text colour")
                 } else {
@@ -239,9 +283,40 @@ impl App {
                 let c = palette(v as i32);
                 self.edit_apply(s, ui, vec![EditOp::Stroke(targets, c)], id)
             }
+            // "No fill": the fill of drawings becomes fully transparent; their lines stay.
+            "fill-none" => {
+                let filled: Vec<_> = sel
+                    .objects(&objs)
+                    .filter(|o| o.path().is_some_and(|p| p.fill.is_some()))
+                    .map(|o| Target::Object(o.id))
+                    .collect();
+                if filled.is_empty() {
+                    return;
+                }
+                let ops = vec![EditOp::Opacity(filled, Some(0.0), None)];
+                let label = tr!("Change fill colour");
+                self.edit_apply_as(s, ui, ops, &label, |o, n, i| oe::refind(o, n, i, &id))
+            }
             "opacity" => {
                 let a = (v / 100.0).clamp(0.0, 1.0);
-                self.edit_apply(s, ui, vec![EditOp::Opacity(targets, Some(a), Some(a))], id)
+                // A drawing whose fill is switched off keeps it off: only its line changes.
+                let (line_only, rest): (Vec<_>, Vec<_>) = sel
+                    .objects(&objs)
+                    .partition(|o| o.path().is_some_and(|p| fill_off(p) && p.stroke.is_some()));
+                let ids = |v: &[&pagebara_edit::PageObject]| -> Vec<_> {
+                    v.iter().map(|o| Target::Object(o.id)).collect()
+                };
+                let mut ops = Vec::new();
+                if !rest.is_empty() {
+                    ops.push(EditOp::Opacity(ids(&rest), Some(a), Some(a)));
+                }
+                if !line_only.is_empty() {
+                    ops.push(EditOp::Opacity(ids(&line_only), None, Some(a)));
+                }
+                let Some(label) = ops.first().map(EditOp::label) else {
+                    return;
+                };
+                self.edit_apply_as(s, ui, ops, &label, |o, n, i| oe::refind(o, n, i, &id))
             }
             "line-width" if v > 0.0 => {
                 let op = EditOp::Line {
@@ -501,5 +576,40 @@ impl App {
             vec![EditOp::Crop(vec![Target::Object(id)], rect)],
             Matrix::IDENTITY,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pagebara_edit::Paint;
+
+    fn path(fill: Option<f32>, stroke: Option<f32>) -> PathInfo {
+        PathInfo {
+            paints: 1,
+            fill: fill.map(|_| Paint::black()),
+            stroke: stroke.map(|_| Paint::black()),
+            line_width: 1.0,
+            dashed: false,
+            ctm: Matrix::IDENTITY,
+            fill_alpha: fill.unwrap_or(1.0),
+            stroke_alpha: stroke.unwrap_or(1.0),
+            clips: false,
+            outline: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn no_fill_is_a_transparent_fill_beside_a_visible_line() {
+        // A filled shape, with and without an outline.
+        assert!(fill_off(&path(Some(0.0), None)));
+        assert!(fill_off(&path(Some(0.0), Some(1.0))));
+        assert!(fill_off(&path(Some(0.0), Some(0.4))));
+        assert!(!fill_off(&path(Some(1.0), Some(1.0))));
+        assert!(!fill_off(&path(Some(0.5), None)));
+        // Faded out whole with the opacity slider: opacity 0, not "No fill".
+        assert!(!fill_off(&path(Some(0.0), Some(0.0))));
+        // A line has no fill to switch off.
+        assert!(!fill_off(&path(None, Some(1.0))));
     }
 }
