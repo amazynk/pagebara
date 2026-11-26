@@ -140,6 +140,28 @@ fn object_zero_is_not_a_page() {
     assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
 }
 
+/// A fuzzer find: the same for a node of the tree. Pages under a node numbered 0 counted,
+/// and a save, which cannot write object 0, lost them.
+#[test]
+fn object_zero_is_not_a_node() {
+    let page = "<</Type/Page/MediaBox[0 0 10 10]>>";
+    let doc = tree_with(
+        "<</Type/Pages/Kids[0 0 R 3 0 R]/Count 2>>",
+        &[
+            (0, "<</Type/Pages/Kids[4 0 R]/Count 1>>"),
+            (3, page),
+            (4, page),
+        ],
+    );
+    let t = PageTree::load(&doc);
+    assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
+    let lazy = PageTree::open(&doc);
+    assert!(lazy.page(0).is_some_and(|p| p.r.num == 3));
+    assert!(lazy.page(1).is_none());
+    let back = open(doc.save_full().unwrap());
+    assert_eq!(PageTree::load(&back).len(), 1);
+}
+
 #[test]
 fn missing_tree_is_recovered_by_scanning() {
     let o = vec![

@@ -267,7 +267,7 @@ impl PageTree {
             if kids.len() == total
                 && let Some(r) = kids.get(i).and_then(Object::as_objref)
                 && !seen.contains(&r.num)
-                && let Some(o) = doc.get(r)
+                && let Some(o) = kid(doc, r)
                 && let Some(kd) = page_dict(r, &o)
                 && !is_node(doc, kd)
             {
@@ -280,7 +280,7 @@ impl PageTree {
                 if !seen.insert(r.num) {
                     return None;
                 }
-                let o = doc.get(r)?;
+                let o = kid(doc, r)?;
                 let kd = o.as_dict()?;
                 let leaf = !is_node(doc, kd);
                 let c = if leaf { 1 } else { count(kd)? };
@@ -315,7 +315,7 @@ impl PageTree {
                 return Some(i);
             }
             let parent = doc.get(cur)?.as_dict()?.get(b"Parent")?.as_objref()?;
-            let p = doc.get(parent)?;
+            let p = kid(doc, parent)?;
             let pd = p.as_dict()?;
             let kids = doc.get_in(pd, b"Kids");
             let kids = kids.as_array().unwrap_or_default();
@@ -330,7 +330,7 @@ impl PageTree {
                 if k == cur {
                     break;
                 }
-                let o = doc.get(k)?;
+                let o = kid(doc, k)?;
                 let kd = o.as_dict()?;
                 i = i.checked_add(if is_node(doc, kd) { count(kd)? } else { 1 })?;
             }
@@ -360,7 +360,7 @@ impl Walk {
             if !seen.insert(r.num) {
                 continue;
             }
-            let Some(obj) = doc.get(r) else { continue };
+            let Some(obj) = kid(doc, r) else { continue };
             let Some(d) = obj.as_dict() else { continue };
             if is_node(doc, d) {
                 self.nodes.push(r);
@@ -393,7 +393,18 @@ impl Walk {
 }
 
 fn pages_ref(doc: &Document) -> Option<ObjRef> {
-    doc.catalog()?.as_dict()?.get(b"Pages")?.as_objref()
+    doc.catalog()?
+        .as_dict()?
+        .get(b"Pages")?
+        .as_objref()
+        .filter(|r| r.num > 0)
+}
+
+/// The object of `r`, a node's kid or parent, or the root. Never object 0, the head of
+/// the free list: repair may find one in a damaged file, but no file can save it, so a
+/// tree that went through it would lose those pages on saving.
+fn kid(doc: &Document, r: ObjRef) -> Option<Arc<Object>> {
+    (r.num > 0).then(|| doc.get(r))?
 }
 
 fn index(pages: &[Page]) -> NumMap<usize> {
@@ -424,7 +435,7 @@ fn root_count(doc: &Document, root: ObjRef, d: &Dict) -> Option<usize> {
         if !seen.insert(r.num) {
             return None;
         }
-        let o = doc.get(r)?;
+        let o = kid(doc, r)?;
         let kd = o.as_dict()?;
         sum = sum.checked_add(if is_node(doc, kd) { count(kd)? } else { 1 })?;
     }
