@@ -518,14 +518,19 @@ impl Document {
 
     /// Adds a new object and returns its reference.
     pub fn add(&mut self, o: impl Into<Object>) -> ObjRef {
+        let r = ObjRef::new(self.fresh_num(), 0);
+        self.set(r, o);
+        r
+    }
+
+    /// The number the next new object gets.
+    fn fresh_num(&mut self) -> u32 {
         // Objects found only by the fallback scan must not be shadowed by new ones.
         if let Some(t) = self.base.repaired.get() {
             let max = t.slots.keys().copied().max().unwrap_or(0);
             self.overlay.next_num = self.overlay.next_num.max(max.saturating_add(1));
         }
-        let r = ObjRef::new(self.overlay.next_num, 0);
-        self.set(r, o);
-        r
+        self.overlay.next_num
     }
 
     pub fn delete(&mut self, r: ObjRef) {
@@ -545,6 +550,10 @@ impl Document {
 
     /// Gives a catalog that repair found as object 0 an object of its own: object 0 is the
     /// head of the free list and cannot be written. Returns whether it moved.
+    ///
+    /// Its number is one that no reference names. Such a file is damaged, and a reference
+    /// in it may name an object that is missing: a catalog given that number would answer
+    /// to the reference, as its own page tree for one.
     pub fn move_root_off_zero(&mut self) -> bool {
         if !self.root_is_object_zero() {
             return false;
@@ -552,7 +561,12 @@ impl Document {
         let Some(cat) = self.catalog() else {
             return false;
         };
-        let moved = self.add((*cat).clone());
+        let from = self.fresh_num();
+        let Some(num) = self.unnamed_num(from) else {
+            return false;
+        };
+        let moved = ObjRef::new(num, 0);
+        self.set(moved, (*cat).clone());
         let mut t = self.trailer().clone();
         t.set(b"Root", moved);
         self.set_trailer(t);

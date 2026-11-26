@@ -18,7 +18,9 @@ All notable changes to Pagebara are listed here. The format follows
   file the list of pages can be labelled as one of the file's internal containers, which
   a full save and Optimize write anew. They left that list out, and the saved file then
   showed the pages a repair scan found instead: sometimes more, sometimes fewer. An
-  object the file still refers to is now kept, whatever its label says.
+  object the file still refers to is now kept, whatever its label says. A damaged file
+  with no list of pages at all could come out with one empty page; it now stays as it
+  was.
 
 ## [0.2.3] - 2026-11-25
 

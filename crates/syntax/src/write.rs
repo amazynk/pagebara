@@ -351,6 +351,27 @@ impl Document {
             .collect()
     }
 
+    /// The first object number from `from` on that no reference in the file names.
+    pub(crate) fn unnamed_num(&self, from: u32) -> Option<u32> {
+        let mut named: NumMap<()> = NumMap::default();
+        let mut note = |n: u32| {
+            if n >= from {
+                named.insert(n, ());
+            }
+        };
+        for (_, o) in self.objects() {
+            each_reference(&o, &mut note);
+        }
+        for (_, v) in self.trailer().iter() {
+            each_reference(v, &mut note);
+        }
+        let mut num = from;
+        while named.contains_key(&num) {
+            num = num.checked_add(1)?;
+        }
+        Some(num)
+    }
+
     /// [`Document::old_structure`], given [`Document::objects`].
     fn old_among(&self, objects: &[(ObjRef, Arc<Object>)]) -> HashSet<u32> {
         let mut old: HashSet<u32> = objects
@@ -391,20 +412,20 @@ impl Document {
 
 /// Adds the numbers `o` refers to that `among` marks.
 fn references_among(o: &Object, among: &NumMap<()>, found: &mut Vec<u32>) {
-    match o {
-        Object::Ref(r) => {
-            if among.contains_key(&r.num) {
-                found.push(r.num);
-            }
+    each_reference(o, &mut |n| {
+        if among.contains_key(&n) {
+            found.push(n);
         }
-        Object::Array(a) => a.iter().for_each(|e| references_among(e, among, found)),
-        Object::Dict(d) => d
-            .iter()
-            .for_each(|(_, v)| references_among(v, among, found)),
-        Object::Stream(s) => s
-            .dict
-            .iter()
-            .for_each(|(_, v)| references_among(v, among, found)),
+    });
+}
+
+/// Calls `f` with the number of every object `o` refers to.
+fn each_reference(o: &Object, f: &mut impl FnMut(u32)) {
+    match o {
+        Object::Ref(r) => f(r.num),
+        Object::Array(a) => a.iter().for_each(|e| each_reference(e, f)),
+        Object::Dict(d) => d.iter().for_each(|(_, v)| each_reference(v, f)),
+        Object::Stream(s) => s.dict.iter().for_each(|(_, v)| each_reference(v, f)),
         _ => {}
     }
 }

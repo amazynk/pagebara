@@ -118,6 +118,41 @@ fn catalog_numbered_zero_survives_saving() {
     assert!(!doc.move_root_off_zero());
 }
 
+/// A fuzzer find: the catalog numbered 0 names a page tree that is missing, under the
+/// number the next new object would get. Moved to that number, the catalog was its own
+/// page tree, and the saved file had a page the first never had.
+#[test]
+fn catalog_numbered_zero_does_not_take_a_number_something_refers_to() {
+    let objs = [
+        (1, "<</Kind/Other/Next 3 0 R>>"),
+        (0, "<</Type/Catalog/Pages 2 0 R>>"),
+    ];
+    let doc = Document::open(bare(&objs, "")).unwrap();
+    let tree = |d: &Document| {
+        let root = d.catalog().unwrap();
+        d.get_in(root.as_dict().unwrap(), b"Pages")
+            .as_dict()
+            .cloned()
+    };
+    assert!(tree(&doc).is_none());
+    for out in [
+        doc.save_full().unwrap(),
+        doc.save_full_with(&SaveOptions::compact()).unwrap(),
+    ] {
+        let back = Document::open(out).unwrap();
+        assert!(back.catalog().is_some());
+        assert!(tree(&back).is_none());
+    }
+    let mut moved = doc.clone();
+    assert!(moved.move_root_off_zero());
+    let root = moved
+        .trailer()
+        .get(b"Root")
+        .and_then(|o| o.as_objref())
+        .unwrap();
+    assert_eq!(root.num, 4);
+}
+
 /// A fuzzer find: a trailer that names object 0 as the catalog in a file with no object 0.
 /// The full save moves such a catalog to a number of its own and starts again; with no
 /// catalog to move it started again without end.
