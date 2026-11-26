@@ -64,10 +64,19 @@ pub fn delete(doc: &mut Document, pages: &[usize]) -> Result<()> {
 /// Writes a proper page tree when the pages could only be found by scanning every object
 /// (the tree was missing or broken), so that rewriting the file keeps them; returns
 /// whether it did.
+///
+/// A scan that finds no page gives an empty tree. Without one, whoever opens the rewritten
+/// file scans it again, and there a leftover (text inside a stream that reads as an
+/// object, say) can show as a page once the object that had its number is gone or
+/// renumbered.
 pub fn repair_tree(doc: &mut Document) -> bool {
     let tree = PageTree::load(doc);
-    if !tree.repaired() || tree.is_empty() {
+    if !tree.repaired() {
         return false;
+    }
+    if tree.is_empty() {
+        rebuild(doc, &tree, &[]);
+        return true;
     }
     let refs = tree.refs();
     // What each page inherits through its old parents goes onto the page itself.

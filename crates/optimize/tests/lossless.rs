@@ -435,6 +435,29 @@ fn a_page_tree_root_typed_as_an_object_stream_is_kept() {
     check("object stream root", &bytes, &Preset::Lossless.options());
 }
 
+/// A fuzzer find: no page tree and no page, but a stream whose data reads as a page
+/// object. In the file that number belongs to another object; in the output, renumbered,
+/// it belonged to none, and whoever opened the output found the page by scanning.
+#[test]
+fn a_file_without_pages_stays_without_pages() {
+    let fake = "9 0 obj\n<</Type/Page/MediaBox[0 0 10 10]>>\nendobj\n";
+    let mut objs = vec![
+        "<</Type/Catalog/Pages 20 0 R/A 2 0 R/B 9 0 R>>".to_owned(),
+        format!(
+            "<</Filter/FlateDecode/Length {}>>stream\n{fake}\nendstream",
+            fake.len()
+        ),
+    ];
+    objs.extend((3..=9).map(|n| format!("<</Kind/Other/N {n}>>")));
+    let bytes = classic(&objs);
+    let pages = |b: &[u8]| pagebara_pages::PageTree::load(&open(b).unwrap()).len();
+    assert_eq!(pages(&bytes), 0);
+    for preset in [Preset::Lossless, Preset::Small] {
+        let out = optimize(&open(&bytes).unwrap(), &preset.options(), None).unwrap();
+        assert_eq!(pages(&out.bytes), 0, "{preset:?}");
+    }
+}
+
 /// A fuzzer find: a catalog numbered 0 whose page tree is missing. The catalog was moved
 /// to the number its `/Pages` names, became its own page tree, and the output had a page.
 #[test]
