@@ -6,6 +6,8 @@ All notable changes to Pagebara are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-11-26
+
 ### Fixed
 
 - **Check marks and other dingbats on Windows.** A PDF that uses the ZapfDingbats font
@@ -215,7 +217,8 @@ The first public release.
   page colours and live text. It is built in CI and is not packaged for release yet.
 - **Packages.** AppImage, .deb, MSI and DMG.
 
-[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/amazynk/pagebara/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/amazynk/pagebara/releases/tag/v0.2.4
 [0.2.3]: https://github.com/amazynk/pagebara/releases/tag/v0.2.3
 [0.2.2]: https://github.com/amazynk/pagebara/releases/tag/v0.2.2
 [0.2.1]: https://github.com/amazynk/pagebara/releases/tag/v0.2.1
