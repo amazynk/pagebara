@@ -454,6 +454,13 @@ impl Document {
         stream::decode(self.raw(s), &s.dict, &|o| (*self.resolve(o)).clone())
     }
 
+    /// Scans the file for objects its own table leaves out, as looking up a missing object
+    /// does. For a caller about to search every object: what [`Document::object_numbers`]
+    /// lists must not depend on what was looked up before.
+    pub fn scan_for_objects(&self) {
+        self.base.scanned();
+    }
+
     /// Every object number in use, ascending. Includes the objects the fallback scan
     /// found when the file's own table proved incomplete.
     pub fn object_numbers(&self) -> Vec<u32> {
@@ -662,13 +669,19 @@ impl Base {
             .slots
             .get(&num)
             .is_some_and(|s| s.entry == Entry::Free);
-        if free || self.table.kind == Kind::Repaired {
+        if free {
             return None;
         }
-        let repaired = self
-            .repaired
-            .get_or_init(|| crate::repair::repair(&self.src).into());
-        self.load(repaired, num, depth)
+        self.load(self.scanned()?, num, depth)
+    }
+
+    /// The table made by scanning the file, on first use; `None` when the file's own
+    /// table is already one.
+    fn scanned(&self) -> Option<&Table> {
+        (self.table.kind != Kind::Repaired).then(|| {
+            self.repaired
+                .get_or_init(|| crate::repair::repair(&self.src).into())
+        })
     }
 
     fn load(&self, t: &Table, num: u32, depth: u32) -> Option<Arc<Object>> {

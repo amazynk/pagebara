@@ -166,6 +166,36 @@ fn missing_tree_is_recovered_by_scanning() {
     assert_eq!(texts(&doc), ["Page 2", "Page 1"]);
 }
 
+/// A fuzzer find: the table lists the catalog, marks the page tree free and leaves the
+/// pages out. The pages were found only once a lookup of some other missing object had
+/// made the document scan the file, so the same file had no pages, and two after a save.
+#[test]
+fn pages_missing_from_the_table_are_found_at_once() {
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let at = out.len();
+    out.extend(b"1 0 obj\n<</Type/Catalog/Pages 2 0 R/Outlines 9 0 R>>\nendobj\n");
+    for n in [3, 4] {
+        out.extend(format!("{n} 0 obj\n<</Type/Page/MediaBox[0 0 10 10]>>\nendobj\n").bytes());
+    }
+    let x = out.len();
+    out.extend(
+        format!(
+            "xref\n0 3\n0000000000 65535 f\r\n{at:010} 00000 n\r\n0000000000 00001 f\r\n\
+             trailer\n<</Size 3/Root 1 0 R>>\nstartxref\n{x}\n%%EOF\n"
+        )
+        .bytes(),
+    );
+    let doc = open(out);
+    let t = PageTree::load(&doc);
+    assert!(t.repaired());
+    assert_eq!(t.len(), 2);
+    // Looking up the missing outline changes nothing.
+    assert!(doc.get(pagebara_syntax::ObjRef::new(9, 0)).is_none());
+    assert_eq!(PageTree::load(&doc).len(), 2);
+    let back = open(doc.save_full().unwrap());
+    assert_eq!(PageTree::load(&back).len(), 2);
+}
+
 #[test]
 fn empty_document() {
     let doc = pagebara_pages::blank((1, 7));

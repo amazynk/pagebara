@@ -374,6 +374,9 @@ impl Walk {
 
     fn scan(&mut self, doc: &Document) {
         self.repaired = true;
+        // Pages the file's table leaves out count too, whether or not a lookup of some
+        // other missing object has made the document scan the file yet.
+        doc.scan_for_objects();
         let none = Arc::new(Inherited::default());
         for num in doc.object_numbers() {
             let Some(r) = doc.reference(num) else {

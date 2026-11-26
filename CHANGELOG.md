@@ -21,6 +21,10 @@ All notable changes to Pagebara are listed here. The format follows
   object the file still refers to is now kept, whatever its label says. A damaged file
   with no list of pages at all could come out with one empty page; it now stays as it
   was.
+- **A damaged PDF could open with no pages.** When a file's index of its own contents
+  left the pages out, Pagebara found them only after something else had made it search
+  the file, so the same file could show no pages when opened and all of them after a
+  save. It now searches the file before deciding that there are no pages.
 
 ## [0.2.3] - 2026-11-25
 
