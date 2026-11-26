@@ -8,6 +8,12 @@ All notable changes to Pagebara are listed here. The format follows
 
 ### Fixed
 
+- **Check marks and other dingbats on Windows.** A PDF that uses the ZapfDingbats font
+  without carrying it, which is how most forms draw the mark in a ticked check box, was
+  drawn with Wingdings on Windows: the check mark came out as a stack of pages, the cross
+  as a computer mouse, the star as a pointing hand. Pagebara now uses Segoe UI Symbol,
+  which has the right characters. Converting such a file to PDF/A, which failed on
+  Windows with "font ZapfDingbats is not embedded", works too.
 - **Saving or optimizing a damaged PDF could change which pages it has.** In a damaged
   file the list of pages can be labelled as one of the file's internal containers, which
   a full save and Optimize write anew. They left that list out, and the saved file then

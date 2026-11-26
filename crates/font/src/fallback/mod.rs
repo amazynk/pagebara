@@ -513,7 +513,13 @@ const REPLACEMENTS: &[(&str, &[&str])] = &[
     ),
     (
         "zapfdingbats",
-        &["D050000L", "Dingbats", "Zapf Dingbats", "ITC Zapf Dingbats"],
+        &[
+            "D050000L",
+            "Dingbats",
+            "Zapf Dingbats",
+            "ITC Zapf Dingbats",
+            "Segoe UI Symbol",
+        ],
     ),
     ("calibri", &["Carlito"]),
     ("cambria", &["Caladea"]),
@@ -611,11 +617,16 @@ const SYMBOL: &[&str] = &[
     "Symbol",
     "OpenSymbol",
 ];
+/// Fonts with ZapfDingbats' glyphs, by name or by character. Windows has none of the
+/// first four; its Segoe UI Symbol has the characters. Wingdings comes last: it is a
+/// dingbats font too, but with other glyphs at ZapfDingbats' codes (the check mark of a
+/// check box, code 0x34, is another picture there).
 const DINGBATS: &[&str] = &[
     "D050000L",
     "Dingbats",
     "Zapf Dingbats",
     "ITC Zapf Dingbats",
+    "Segoe UI Symbol",
     "Wingdings",
 ];
 const JAPANESE_SANS: [&str; 14] = [

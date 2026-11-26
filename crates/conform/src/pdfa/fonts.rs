@@ -30,6 +30,18 @@ fn num(v: f32) -> Object {
     }
 }
 
+/// Families with many characters, for when the closest match lacks one: what Linux
+/// desktops bring, then Windows' own (which has none of the first four).
+const BROAD: [&str; 7] = [
+    "Liberation Sans",
+    "DejaVu Sans",
+    "Noto Sans",
+    "FreeSans",
+    "Arial",
+    "Segoe UI",
+    "Segoe UI Symbol",
+];
+
 /// A TrueType (`glyf`) face that has every character, trying the closest match first.
 fn substitute(req: &FontRequest, chars: &[char]) -> Option<Sfnt> {
     let db = db();
@@ -49,7 +61,7 @@ fn substitute(req: &FontRequest, chars: &[char]) -> Option<Sfnt> {
         }
     }
     let class_ok = |f: &fallback::FaceInfo| f.italic == req.italic && (f.weight >= 600) == req.bold;
-    for family in ["Liberation Sans", "DejaVu Sans", "Noto Sans", "FreeSans"] {
+    for family in BROAD {
         for face in db.faces().iter().filter(|f| {
             fallback::normalize(&f.family) == fallback::normalize(family) && class_ok(f)
         }) {

@@ -112,7 +112,7 @@ fn standard_14() {
         false,
     );
     check("Symbol", 4, &["Symbol", "Standard Symbols PS"], 400, false);
-    check("ZapfDingbats", 4, &["D050000L"], 400, false);
+    check("ZapfDingbats", 4, DINGBATS, 400, false);
     check("Calibri-Bold", 32, &["Calibri", "Carlito"], 700, false);
     // Unknown names: by flags.
     check("SomeUnknownFont", 1, &["Liberation Mono"], 400, false);
@@ -144,6 +144,45 @@ fn cjk_by_ordering() {
         assert_eq!(f.family, fam);
         let font = db().load(f).unwrap();
         assert!(font.glyph_for_char('中').is_some());
+    }
+}
+
+/// The installed fonts that have ZapfDingbats' glyphs, by name or by character, in the
+/// order the substitution prefers them.
+const DINGBATS: &[&str] = &[
+    "D050000L",
+    "Dingbats",
+    "Zapf Dingbats",
+    "ITC Zapf Dingbats",
+    "Segoe UI Symbol",
+];
+
+/// A ZapfDingbats that is not embedded draws ZapfDingbats' glyphs, with and without the
+/// symbolic flag: code 0x34 is the check mark of a check box, 0x6C the dot of a radio
+/// button. Windows has Wingdings in the same class, with other pictures at those codes.
+#[test]
+fn zapf_dingbats_substitute_has_its_glyphs() {
+    if first_installed(DINGBATS).is_none() {
+        return;
+    }
+    for flags in [0, 4] {
+        let mut s = FontSpec::new(PdfFontType::Type1);
+        s.base_font = Some("ZapfDingbats".into());
+        s.flags = flags;
+        let face = fallback::find(db(), &FontRequest::from_spec(&s)).unwrap();
+        let pf = PdfFont::substitute(db().load(face).unwrap(), s);
+        for (code, name, ch) in [(0x34, "a20", '\u{2714}'), (0x6C, "a71", '\u{25CF}')] {
+            let own = pf
+                .font()
+                .glyph_by_name(name.as_bytes())
+                .or_else(|| pf.font().glyph_for_char(ch))
+                .filter(|&g| g != 0);
+            assert!(own.is_some(), "{} has no {ch}", face.family);
+            assert_eq!(Some(pf.glyph(code)), own, "{} flags {flags}", face.family);
+            assert_eq!(pf.unicode(code).as_deref(), Some(ch.to_string().as_str()));
+            let mut p = Path::new();
+            assert!(pf.outline(code, &mut p), "{}", face.family);
+        }
     }
 }
 
