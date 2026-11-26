@@ -377,11 +377,17 @@ impl Walk {
         // Pages the file's table leaves out count too, whether or not a lookup of some
         // other missing object has made the document scan the file yet.
         doc.scan_for_objects();
+        // The catalog is no page, whatever its `/Type` says: as object 0 it would not count,
+        // and a save gives a catalog numbered 0 another number.
+        let catalog = doc.trailer().get(b"Root").and_then(Object::as_objref);
         let none = Arc::new(Inherited::default());
         for num in doc.object_numbers() {
             let Some(r) = doc.reference(num) else {
                 continue;
             };
+            if catalog.is_some_and(|c| c.num == num) {
+                continue;
+            }
             let Some(obj) = doc.get(r) else { continue };
             if let Some(d) = page_dict(r, &obj)
                 && d.name(b"Type") == Some(b"Page")

@@ -162,6 +162,22 @@ fn object_zero_is_not_a_node() {
     assert_eq!(PageTree::load(&back).len(), 1);
 }
 
+/// A fuzzer find: the trailer names a page object numbered 0 as the catalog. As object 0
+/// it was no page; a save gave it another number, and the scan then found one page more.
+#[test]
+fn the_catalog_is_not_a_page() {
+    let page = "<</Type/Page/MediaBox[0 0 10 10]>>";
+    for root in [0, 1] {
+        let o = vec![(root, page.to_string()), (3, page.to_string())];
+        let doc = open(pdf(&o, root));
+        let t = PageTree::load(&doc);
+        assert!(t.repaired());
+        assert_eq!(t.pages().iter().map(|p| p.r.num).collect::<Vec<_>>(), [3]);
+        let back = open(doc.save_full().unwrap());
+        assert_eq!(PageTree::load(&back).len(), 1, "root {root}");
+    }
+}
+
 #[test]
 fn missing_tree_is_recovered_by_scanning() {
     let o = vec![
