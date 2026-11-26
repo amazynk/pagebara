@@ -1,5 +1,6 @@
 //! Dropping resource entries no content stream asks for. A category dictionary is only
-//! pruned when every stream that may look into it was read.
+//! pruned when every stream that may look into it was read, and one that is an object of
+//! its own only when resource dictionaries are all that refer to it.
 
 use std::collections::{HashMap, HashSet};
 
@@ -29,6 +30,8 @@ pub(crate) fn prune(doc: &mut Document, u: &Usage) -> usize {
     // Every holder of resources, and where its resources are.
     let mut blocked: HashSet<CatKey> = HashSet::new();
     let mut prunable: HashMap<CatKey, (ResLoc, &'static [u8])> = HashMap::new();
+    // For a category dictionary that is an object of its own: where it is referred to.
+    let mut sites: HashMap<u32, HashSet<(ResLoc, &'static [u8])>> = HashMap::new();
     for num in doc.object_numbers() {
         let Some(r) = doc.reference(num) else {
             continue;
@@ -49,6 +52,9 @@ pub(crate) fn prune(doc: &mut Document, u: &Usage) -> usize {
             let Some(res) = res.as_dict() else { continue };
             let scanned = key == b"Resources" && u.holders.contains(&num);
             for (k, cat) in cat_keys(res, loc) {
+                if let CatKey::Obj(n) = k {
+                    sites.entry(n).or_default().insert((loc, cat));
+                }
                 if scanned {
                     prunable.insert(k, (loc, cat));
                 } else {
@@ -57,6 +63,25 @@ pub(crate) fn prune(doc: &mut Document, u: &Usage) -> usize {
             }
         }
     }
+    // In a damaged file such an object can be something else as well (a fuzzer find: the
+    // root of the page tree, which lost its kids). Any other reference to it blocks it.
+    let mut refs: HashMap<u32, usize> = sites.keys().map(|&n| (n, 0)).collect();
+    if !refs.is_empty() {
+        for num in doc.object_numbers() {
+            if let Some(o) = doc.reference(num).and_then(|r| doc.get(r)) {
+                count_refs(&o, &mut refs);
+            }
+        }
+        for (_, v) in doc.trailer().iter() {
+            count_refs(v, &mut refs);
+        }
+    }
+    blocked.extend(
+        sites
+            .iter()
+            .filter(|(n, at)| refs[*n] > at.len())
+            .map(|(&n, _)| CatKey::Obj(n)),
+    );
     let mut n = 0;
     for (key, (loc, cat)) in prunable {
         if blocked.contains(&key) {
@@ -69,8 +94,9 @@ pub(crate) fn prune(doc: &mut Document, u: &Usage) -> usize {
         };
         match target {
             Some(r) => {
+                // A stream is no category dictionary, and would lose its data.
                 let Some(o) = doc.get(r) else { continue };
-                let Some(d) = o.as_dict() else { continue };
+                let Object::Dict(d) = &*o else { continue };
                 let (d, k) = keep_used(d, used);
                 if k > 0 {
                     n += k;
@@ -119,6 +145,21 @@ pub(crate) fn prune(doc: &mut Document, u: &Usage) -> usize {
         }
     }
     n
+}
+
+/// Counts the references in `o` to the objects `refs` has.
+fn count_refs(o: &Object, refs: &mut HashMap<u32, usize>) {
+    match o {
+        Object::Ref(r) => {
+            if let Some(n) = refs.get_mut(&r.num) {
+                *n += 1;
+            }
+        }
+        Object::Array(a) => a.iter().for_each(|e| count_refs(e, refs)),
+        Object::Dict(d) => d.iter().for_each(|(_, v)| count_refs(v, refs)),
+        Object::Stream(s) => s.dict.iter().for_each(|(_, v)| count_refs(v, refs)),
+        _ => {}
+    }
 }
 
 fn keep_used(d: &Dict, used: Option<&HashSet<Vec<u8>>>) -> (Dict, usize) {

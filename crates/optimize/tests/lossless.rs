@@ -458,6 +458,31 @@ fn a_file_without_pages_stays_without_pages() {
     }
 }
 
+/// A fuzzer find: resources that name the root of the page tree as their font dictionary.
+/// No content uses a font called `Kids` or `Count`, so pruning emptied the root.
+#[test]
+fn a_page_tree_root_named_as_a_font_dictionary_keeps_its_kids() {
+    let objs = [
+        "<</Type/Catalog/Pages 2 0 R>>".to_owned(),
+        "<</Type/Pages/Kids[3 0 R]/Count 1/MediaBox[0 0 100 100]/Resources 5 0 R>>".into(),
+        "<</Type/Page/Parent 2 0 R/Contents 4 0 R>>".into(),
+        stream("1 0 0 rg 10 10 50 50 re f"),
+        "<</Font 2 0 R>>".into(),
+    ];
+    let bytes = classic(&objs);
+    let pages = |b: &[u8]| pagebara_pages::PageTree::load(&open(b).unwrap()).len();
+    assert_eq!(pages(&bytes), 1);
+    for preset in [Preset::Lossless, Preset::Small] {
+        let out = optimize(&open(&bytes).unwrap(), &preset.options(), None).unwrap();
+        assert_eq!(pages(&out.bytes), 1, "{preset:?}");
+    }
+    check(
+        "root as font dictionary",
+        &bytes,
+        &Preset::Lossless.options(),
+    );
+}
+
 /// A fuzzer find: a catalog numbered 0 whose page tree is missing. The catalog was moved
 /// to the number its `/Pages` names, became its own page tree, and the output had a page.
 #[test]
